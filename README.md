@@ -63,7 +63,10 @@ DogCal is a scheduling and coordination tool that helps dog owners arrange hango
 3. **Set up Supabase database**
    - Go to [supabase.com](https://supabase.com) and create a new project
    - Navigate to Settings → Database → Connection String → URI
-   - Copy the connection string (format: `postgresql://postgres:[password]@[host]:5432/postgres`)
+   - **Important**: For serverless deployments (Vercel), use the connection pooler:
+     - Change port from `5432` to `6543`
+     - Add query parameters: `?pgbouncer=true&connection_limit=1`
+     - Format: `postgresql://postgres:[password]@[host]:6543/postgres?pgbouncer=true&connection_limit=1`
    - **Important**: URL-encode special characters in the password:
      - `?` becomes `%3F`
      - `!` becomes `%21`
@@ -71,8 +74,8 @@ DogCal is a scheduling and coordination tool that helps dog owners arrange hango
 
 4. **Configure environment variables**
    ```bash
-   # Create .env.local file
-   echo 'DATABASE_URL="your-supabase-connection-string-here"' > .env.local
+   # Create .env.local file with connection pooler for serverless compatibility
+   echo 'DATABASE_URL="postgresql://postgres:[encoded-password]@[host]:6543/postgres?pgbouncer=true&connection_limit=1"' > .env.local
    ```
 
 5. **Run database migrations**
@@ -160,6 +163,8 @@ npm run prisma:seed
 3. **Add Environment Variables**
    - In Vercel project settings → Environment Variables
    - Add `DATABASE_URL` with your Supabase connection string
+   - **CRITICAL**: Use port `6543` (connection pooler) with `?pgbouncer=true&connection_limit=1`
+   - Format: `postgresql://postgres:[encoded-password]@[host]:6543/postgres?pgbouncer=true&connection_limit=1`
    - Make sure the password special characters are URL-encoded
 
 4. **Deploy**
