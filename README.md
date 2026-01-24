@@ -74,7 +74,8 @@ DogCal is a scheduling and coordination tool that helps dog owners arrange hango
 4. **Configure environment variables**
    ```bash
    # Create .env.local file with Transaction pooler connection string
-   echo 'DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[encoded-password]@aws-X-region.pooler.supabase.com:6543/postgres"' > .env.local
+   # IMPORTANT: Add ?pgbouncer=true to disable prepared statements (required for transaction pooling)
+   echo 'DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[encoded-password]@aws-X-region.pooler.supabase.com:6543/postgres?pgbouncer=true"' > .env.local
    ```
 
 5. **Run database migrations**
@@ -163,7 +164,8 @@ npm run prisma:seed
    - In Vercel project settings → Environment Variables
    - Add `DATABASE_URL` with your Supabase **Transaction pooler** connection string
    - **CRITICAL**: Must use the pooler URL from Connect → Transaction pooler
-   - Format: `postgresql://postgres.[PROJECT-REF]:[encoded-password]@aws-X-region.pooler.supabase.com:6543/postgres`
+   - Format: `postgresql://postgres.[PROJECT-REF]:[encoded-password]@aws-X-region.pooler.supabase.com:6543/postgres?pgbouncer=true`
+   - **IMPORTANT**: Include `?pgbouncer=true` at the end to disable prepared statements (required for transaction pooling)
    - Make sure the password special characters are URL-encoded
 
 4. **Deploy**
