@@ -103,26 +103,30 @@ export default async function CalendarPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col h-screen overflow-hidden">
       <TopNav user={actingUser} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Calendar
-          </h1>
-          <p className="text-gray-600">
-            {actingUser.role === 'OWNER'
-              ? 'View and manage hangouts for your pups'
-              : 'View available hangouts and your upcoming commitments'}
-          </p>
-        </div>
+      <main className="flex-1 min-h-0 overflow-hidden">
+        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
+          <div className="flex-shrink-0 mb-4">
+            <h1 className="text-2xl font-bold text-slate-900 mb-1">
+              Calendar
+            </h1>
+            <p className="text-sm text-slate-600">
+              {actingUser.role === 'OWNER'
+                ? 'View and manage hangouts for your pups'
+                : 'View available hangouts and your upcoming commitments'}
+            </p>
+          </div>
 
-        <CalendarClient
-          hangouts={upcomingHangouts}
-          actingUserId={actingUserId}
-          actingUserRole={actingUser.role}
-        />
+          <div className="flex-1 min-h-0">
+            <CalendarClient
+              hangouts={upcomingHangouts}
+              actingUserId={actingUserId}
+              actingUserRole={actingUser.role}
+            />
+          </div>
+        </div>
       </main>
     </div>
   );

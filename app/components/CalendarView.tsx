@@ -61,7 +61,7 @@ export default function CalendarView({
     end: hangout.endAt,
     backgroundColor:
       hangout.status === 'OPEN'
-        ? '#FCD34D' // yellow
+        ? '#FDE68A' // yellow
         : hangout.status === 'ASSIGNED'
         ? '#FB923C' // orange
         : '#9CA3AF', // gray for completed/cancelled
@@ -100,27 +100,34 @@ export default function CalendarView({
   };
 
   return (
-    <div>
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[timeGridPlugin, listPlugin, interactionPlugin]}
-          initialView="timeGridWeek"
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: 'timeGridWeek,listWeek',
-          }}
-          events={events}
-          eventClick={handleEventClick}
-          height="auto"
-          slotMinTime="06:00:00"
-          slotMaxTime="22:00:00"
-          allDaySlot={false}
-          nowIndicator={true}
-          editable={false}
-          selectable={false}
-        />
+    <div className="h-full flex flex-col min-h-0">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 p-4">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[timeGridPlugin, listPlugin, interactionPlugin]}
+            initialView="timeGridWeek"
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'timeGridWeek,listWeek',
+            }}
+            events={events}
+            eventClick={handleEventClick}
+            height="100%"
+            expandRows={true}
+            handleWindowResize={true}
+            slotMinTime="06:00:00"
+            slotMaxTime="22:00:00"
+            allDaySlot={false}
+            nowIndicator={true}
+            editable={false}
+            selectable={false}
+            stickyHeaderDates={true}
+            dayMaxEventRows={6}
+            eventMaxStack={3}
+          />
+        </div>
       </div>
 
       {/* Event Details Modal */}

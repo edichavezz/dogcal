@@ -310,6 +310,82 @@ Required environment variables:
 DATABASE_URL="postgresql://postgres:[encoded-password]@[host]:5432/postgres"
 ```
 
+## UI Notes
+
+### Design System
+
+DogCal uses a minimalist sunshine-themed design with warm, welcoming colors and modern typography.
+
+#### Typography
+- **Body Font**: Inter - Clean, highly readable sans-serif for all UI text
+- **Display Font**: Sora - Modern, friendly sans-serif for headings and branding
+- Both fonts are loaded via `next/font/google` in `app/layout.tsx`
+
+#### Color Palette
+
+All design tokens are defined in `app/globals.css` as CSS custom properties:
+
+**Base Colors:**
+- `--background`: `#FFFDF8` - Warm off-white background
+- `--foreground`: `#0F172A` - Slate-900 for high-contrast primary text
+- `--muted`: `#475569` - Slate-600 for secondary text
+
+**Accent Colors:**
+- `--accent-yellow`: `#FDE68A` - Soft sunshine yellow (OPEN hangouts)
+- `--accent-yellow-darker`: `#F59E0B` - Amber-500 (borders, hover states)
+- `--accent-orange`: `#FB923C` - Warm orange (ASSIGNED hangouts)
+- `--accent-orange-darker`: `#EA580C` - Orange-600 (borders, hover states)
+
+**UI Surfaces:**
+- `--card`: `#FFFFFF` - Pure white for cards and modals
+- `--border`: `#E2E8F0` - Slate-200 for primary borders
+- `--border-light`: `#F1F5F9` - Slate-100 for subtle dividers
+
+#### Calendar Layout
+
+The `/calendar` page uses a **100dvh no-scroll layout**:
+- **Header**: Fixed 64px height (`h-16` in TopNav)
+- **Main Area**: `calc(100dvh - 64px)` with `overflow-hidden`
+- **Calendar Card**: Fills remaining height with flex layout
+- **FullCalendar**: Configured with:
+  - `height="100%"` and `expandRows={true}` to fill container
+  - `slotMinTime="06:00:00"` and `slotMaxTime="22:00:00"` (working hours only)
+  - Compact slot height (2.5rem) for better density
+  - Sticky header dates and now indicator
+
+#### Event Styling
+
+Events are color-coded by status:
+- **OPEN** (yellow): `#FDE68A` background, `#F59E0B` border
+- **ASSIGNED** (orange): `#FB923C` background, `#EA580C` border
+- **COMPLETED/CANCELLED** (gray): `#9CA3AF` background, `#6B7280` border
+
+Events use rounded corners (`border-radius: 0.75rem`), a left accent border (3px), and subtle hover animations.
+
+#### Customization Guide
+
+To tweak the design:
+
+1. **Change Colors**: Edit CSS variables in `app/globals.css` (lines 3-24)
+2. **Adjust Typography**: Update font imports in `app/layout.tsx` (lines 2-13)
+3. **Modify Calendar Density**:
+   - Slot height: `.fc-timegrid-slot { height: 2.5rem !important; }` in `globals.css`
+   - Font sizes: `.fc` block starting at line 101 in `globals.css`
+4. **Pawprint Decoration**:
+   - Opacity: Change `fill-opacity` in `body::before` and `body::after` (lines 59-85 in `globals.css`)
+   - Position/size: Adjust `width`, `height`, and `background-position`
+5. **Role Badge Colors**:
+   - Owner: Update classes in `TopNav.tsx` line 99
+   - Friend: Update classes in `TopNav.tsx` line 100
+
+#### Mobile Responsive
+
+The design is mobile-first:
+- Navigation links collapse on small screens
+- User name hidden on `sm` breakpoint and below
+- Calendar switches to list view automatically on narrow viewports
+- Touch-friendly tap targets (minimum 44x44px)
+
 ## License
 
 Private project - All rights reserved.
