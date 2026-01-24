@@ -1,0 +1,127 @@
+// DogCal Prisma Schema
+// Database: Supabase Postgres
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  OWNER
+  FRIEND
+}
+
+enum HangoutStatus {
+  OPEN
+  ASSIGNED
+  COMPLETED
+  CANCELLED
+}
+
+enum SuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Models
+
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  addressText String?
+  role        UserRole
+  createdAt   DateTime @default(now())
+
+  // Relations
+  ownedPups              Pup[]                @relation("PupOwner")
+  createdHangouts        Hangout[]            @relation("HangoutCreator")
+  assignedHangouts       Hangout[]            @relation("HangoutAssignedFriend")
+  pupFriendships         PupFriendship[]      @relation("FriendUser")
+  hangoutNotes           HangoutNote[]
+  hangoutSuggestions     HangoutSuggestion[]  @relation("SuggestionFriend")
+  ownerDecisions         HangoutSuggestion[]  @relation("SuggestionOwnerDecision")
+}
+
+model Pup {
+  id               String   @id @default(uuid())
+  name             String
+  ownerUserId      String
+  careInstructions String?
+  createdAt        DateTime @default(now())
+
+  // Relations
+  owner       User                @relation("PupOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  hangouts    Hangout[]
+  friendships PupFriendship[]
+  suggestions HangoutSuggestion[]
+}
+
+model PupFriendship {
+  id             String   @id @default(uuid())
+  pupId          String
+  friendUserId   String
+  historyWithPup String?
+  createdAt      DateTime @default(now())
+
+  // Relations
+  pup    Pup  @relation(fields: [pupId], references: [id], onDelete: Cascade)
+  friend User @relation("FriendUser", fields: [friendUserId], references: [id], onDelete: Cascade)
+
+  @@unique([pupId, friendUserId])
+}
+
+model Hangout {
+  id                    String        @id @default(uuid())
+  pupId                 String
+  startAt               DateTime
+  endAt                 DateTime
+  status                HangoutStatus @default(OPEN)
+  assignedFriendUserId  String?
+  createdByOwnerUserId  String
+  ownerNotes            String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  // Relations
+  pup             Pup           @relation(fields: [pupId], references: [id], onDelete: Cascade)
+  assignedFriend  User?         @relation("HangoutAssignedFriend", fields: [assignedFriendUserId], references: [id], onDelete: SetNull)
+  createdByOwner  User          @relation("HangoutCreator", fields: [createdByOwnerUserId], references: [id], onDelete: Cascade)
+  notes           HangoutNote[]
+}
+
+model HangoutNote {
+  id         String   @id @default(uuid())
+  hangoutId  String
+  authorUserId String
+  noteText   String
+  createdAt  DateTime @default(now())
+
+  // Relations
+  hangout Hangout @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+}
+
+model HangoutSuggestion {
+  id                     String           @id @default(uuid())
+  pupId                  String
+  suggestedByFriendUserId String
+  startAt                DateTime
+  endAt                  DateTime
+  status                 SuggestionStatus @default(PENDING)
+  friendComment          String?
+  ownerComment           String?
+  ownerDecisionByUserId  String?
+  ownerDecisionAt        DateTime?
+  createdAt              DateTime         @default(now())
+
+  // Relations
+  pup                Pup   @relation(fields: [pupId], references: [id], onDelete: Cascade)
+  suggestedByFriend  User  @relation("SuggestionFriend", fields: [suggestedByFriendUserId], references: [id], onDelete: Cascade)
+  ownerDecisionBy    User? @relation("SuggestionOwnerDecision", fields: [ownerDecisionByUserId], references: [id], onDelete: SetNull)
+}
