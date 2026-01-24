@@ -62,11 +62,10 @@ DogCal is a scheduling and coordination tool that helps dog owners arrange hango
 
 3. **Set up Supabase database**
    - Go to [supabase.com](https://supabase.com) and create a new project
-   - Navigate to Settings → Database → Connection String → URI
-   - **Important**: For serverless deployments (Vercel), use the connection pooler:
-     - Change port from `5432` to `6543`
-     - Add query parameters: `?pgbouncer=true&connection_limit=1`
-     - Format: `postgresql://postgres:[password]@[host]:6543/postgres?pgbouncer=true&connection_limit=1`
+   - **CRITICAL for Vercel**: Click the green **"Connect"** button at the top of your dashboard
+   - In the connection modal:
+     - Select **"Transaction pooler"** from the mode dropdown
+     - Copy the connection string (format: `postgresql://postgres.[PROJECT-REF]:[password]@aws-X-region.pooler.supabase.com:6543/postgres`)
    - **Important**: URL-encode special characters in the password:
      - `?` becomes `%3F`
      - `!` becomes `%21`
@@ -74,8 +73,8 @@ DogCal is a scheduling and coordination tool that helps dog owners arrange hango
 
 4. **Configure environment variables**
    ```bash
-   # Create .env.local file with connection pooler for serverless compatibility
-   echo 'DATABASE_URL="postgresql://postgres:[encoded-password]@[host]:6543/postgres?pgbouncer=true&connection_limit=1"' > .env.local
+   # Create .env.local file with Transaction pooler connection string
+   echo 'DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[encoded-password]@aws-X-region.pooler.supabase.com:6543/postgres"' > .env.local
    ```
 
 5. **Run database migrations**
@@ -162,9 +161,9 @@ npm run prisma:seed
 
 3. **Add Environment Variables**
    - In Vercel project settings → Environment Variables
-   - Add `DATABASE_URL` with your Supabase connection string
-   - **CRITICAL**: Use port `6543` (connection pooler) with `?pgbouncer=true&connection_limit=1`
-   - Format: `postgresql://postgres:[encoded-password]@[host]:6543/postgres?pgbouncer=true&connection_limit=1`
+   - Add `DATABASE_URL` with your Supabase **Transaction pooler** connection string
+   - **CRITICAL**: Must use the pooler URL from Connect → Transaction pooler
+   - Format: `postgresql://postgres.[PROJECT-REF]:[encoded-password]@aws-X-region.pooler.supabase.com:6543/postgres`
    - Make sure the password special characters are URL-encoded
 
 4. **Deploy**
