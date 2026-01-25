@@ -39,6 +39,22 @@ export function getFriendColor(friendUserId: string): string {
 }
 
 /**
+ * Generate a consistent color for a pup based on their pup ID.
+ * Uses the same algorithm as getFriendColor for consistency.
+ */
+export function getPupColor(pupId: string): string {
+  // Simple hash: sum character codes
+  let hash = 0;
+  for (let i = 0; i < pupId.length; i++) {
+    hash = pupId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Map to palette index
+  const index = Math.abs(hash) % FRIEND_COLOR_PALETTE.length;
+  return FRIEND_COLOR_PALETTE[index];
+}
+
+/**
  * Get border and opacity styles based on hangout status
  */
 export function getHangoutStyles(status: HangoutStatus): {

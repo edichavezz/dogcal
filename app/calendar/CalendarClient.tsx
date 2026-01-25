@@ -33,14 +33,36 @@ type Hangout = {
   }>;
 };
 
+type Suggestion = {
+  id: string;
+  startAt: Date;
+  endAt: Date;
+  status: string;
+  friendComment?: string | null;
+  pup: {
+    id: string;
+    name: string;
+    owner: {
+      id: string;
+      name: string;
+    };
+  };
+  suggestedByFriend: {
+    id: string;
+    name: string;
+  };
+};
+
 type CalendarClientProps = {
   hangouts: Hangout[];
+  suggestions: Suggestion[];
   actingUserId: string;
   actingUserRole: 'OWNER' | 'FRIEND';
 };
 
 export default function CalendarClient({
   hangouts,
+  suggestions,
   actingUserId,
   actingUserRole,
 }: CalendarClientProps) {
@@ -53,6 +75,7 @@ export default function CalendarClient({
   return (
     <CalendarView
       hangouts={hangouts}
+      suggestions={suggestions}
       actingUserId={actingUserId}
       actingUserRole={actingUserRole}
       onUpdate={handleUpdate}

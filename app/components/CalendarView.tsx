@@ -9,9 +9,13 @@ import { EventClickArg, EventInput, EventMountArg } from '@fullcalendar/core';
 import EventDetailsModal from './EventDetailsModal';
 import {
   getFriendColor,
+  getPupColor,
   OPEN_HANGOUT_COLOR,
+  SUGGESTED_HANGOUT_COLOR,
   generateHangoutTitle,
+  generateSuggestionTitle,
   getHangoutStyles,
+  getSuggestionStyles,
 } from '@/lib/colorUtils';
 
 type Hangout = {
@@ -44,8 +48,29 @@ type Hangout = {
   }>;
 };
 
+type Suggestion = {
+  id: string;
+  startAt: Date;
+  endAt: Date;
+  status: string;
+  friendComment?: string | null;
+  pup: {
+    id: string;
+    name: string;
+    owner: {
+      id: string;
+      name: string;
+    };
+  };
+  suggestedByFriend: {
+    id: string;
+    name: string;
+  };
+};
+
 type CalendarViewProps = {
   hangouts: Hangout[];
+  suggestions: Suggestion[];
   actingUserId: string;
   actingUserRole: 'OWNER' | 'FRIEND';
   onUpdate: () => void;
@@ -53,6 +78,7 @@ type CalendarViewProps = {
 
 export default function CalendarView({
   hangouts,
+  suggestions,
   actingUserId,
   actingUserRole,
   onUpdate,
@@ -63,9 +89,19 @@ export default function CalendarView({
   // Convert hangouts to FullCalendar events
   const events: EventInput[] = hangouts.map((hangout) => {
     const isAssigned = hangout.status === 'ASSIGNED' && hangout.assignedFriend;
-    const backgroundColor = isAssigned
-      ? getFriendColor(hangout.assignedFriend!.id)
-      : OPEN_HANGOUT_COLOR;
+
+    // Color coding logic:
+    // - For OWNERS: color by friend (who's taking care of the pup)
+    // - For FRIENDS: color by pup (which pup they're caring for)
+    let backgroundColor: string;
+    if (isAssigned) {
+      backgroundColor = actingUserRole === 'OWNER'
+        ? getFriendColor(hangout.assignedFriend!.id)
+        : getPupColor(hangout.pup.id);
+    } else {
+      backgroundColor = OPEN_HANGOUT_COLOR;
+    }
+
     const styles = getHangoutStyles(hangout.status);
 
     return {
@@ -84,7 +120,39 @@ export default function CalendarView({
     };
   });
 
+  // Convert suggestions to FullCalendar events
+  const suggestionEvents: EventInput[] = suggestions.map((suggestion) => {
+    const styles = getSuggestionStyles();
+
+    return {
+      id: `suggestion-${suggestion.id}`,
+      title: `[Suggested] ${generateSuggestionTitle(suggestion)}`,
+      start: suggestion.startAt,
+      end: suggestion.endAt,
+      backgroundColor: SUGGESTED_HANGOUT_COLOR,
+      borderColor: SUGGESTED_HANGOUT_COLOR,
+      textColor: '#1F2937',
+      extendedProps: {
+        suggestion,
+        isSuggestion: true,
+        borderStyle: styles.borderStyle,
+        opacity: styles.opacity,
+      },
+    };
+  });
+
+  // Combine all events
+  const allEvents = [...events, ...suggestionEvents];
+
   const handleEventClick = async (info: EventClickArg) => {
+    // Check if this is a suggestion
+    if (info.event.extendedProps.isSuggestion) {
+      const suggestion = info.event.extendedProps.suggestion as Suggestion;
+      // Navigate to approvals page to see suggestion details
+      window.location.href = '/approvals';
+      return;
+    }
+
     const hangout = info.event.extendedProps.hangout as Hangout;
 
     // Fetch full hangout details including notes
@@ -131,7 +199,7 @@ export default function CalendarView({
               center: 'title',
               right: 'timeGridWeek,listWeek',
             }}
-            events={events}
+            events={allEvents}
             eventClick={handleEventClick}
             eventDidMount={handleEventDidMount}
             height="100%"

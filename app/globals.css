@@ -155,11 +155,13 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.25rem 0.5rem !important;
   font-size: 0.8125rem !important;
   transition: all 0.2s ease;
+  cursor: pointer !important;
 }
 
 .fc-event:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+  filter: brightness(1.05);
 }
 
 .fc-event-title {

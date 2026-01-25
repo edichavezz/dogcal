@@ -27,9 +27,10 @@ export default async function CalendarPage() {
     redirect('/');
   }
 
-  // Get upcoming hangouts based on role
+  // Get upcoming hangouts and suggestions based on role
   const now = new Date();
   let upcomingHangouts;
+  let upcomingSuggestions;
 
   if (actingUser.role === 'OWNER') {
     // Owners see all hangouts for their pups
@@ -55,6 +56,25 @@ export default async function CalendarPage() {
             createdAt: 'asc',
           },
         },
+      },
+      orderBy: { startAt: 'asc' },
+    });
+
+    // Owners see PENDING suggestions for their pups
+    upcomingSuggestions = await prisma.hangoutSuggestion.findMany({
+      where: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        pupId: { in: actingUser.ownedPups.map((p: any) => p.id) },
+        status: 'PENDING',
+        endAt: { gte: now },
+      },
+      include: {
+        pup: {
+          include: {
+            owner: true,
+          },
+        },
+        suggestedByFriend: true,
       },
       orderBy: { startAt: 'asc' },
     });
@@ -100,6 +120,24 @@ export default async function CalendarPage() {
       },
       orderBy: { startAt: 'asc' },
     });
+
+    // Friends see their own PENDING suggestions
+    upcomingSuggestions = await prisma.hangoutSuggestion.findMany({
+      where: {
+        suggestedByFriendUserId: actingUserId,
+        status: 'PENDING',
+        endAt: { gte: now },
+      },
+      include: {
+        pup: {
+          include: {
+            owner: true,
+          },
+        },
+        suggestedByFriend: true,
+      },
+      orderBy: { startAt: 'asc' },
+    });
   }
 
   return (
@@ -122,6 +160,7 @@ export default async function CalendarPage() {
           <div className="flex-1 min-h-0">
             <CalendarClient
               hangouts={upcomingHangouts}
+              suggestions={upcomingSuggestions || []}
               actingUserId={actingUserId}
               actingUserRole={actingUser.role}
             />
