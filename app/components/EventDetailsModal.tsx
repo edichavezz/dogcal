@@ -9,10 +9,13 @@ type Hangout = {
   endAt: string;
   status: string;
   ownerNotes?: string | null;
+  eventName: string | null;
   pup: {
+    id: string;
     name: string;
     careInstructions?: string | null;
     owner: {
+      id: string;
       name: string;
     };
   };
@@ -49,10 +52,19 @@ export default function EventDetailsModal({
   const [error, setError] = useState('');
   const [noteText, setNoteText] = useState('');
   const [submittingNote, setSubmittingNote] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedEventName, setEditedEventName] = useState(hangout.eventName || '');
 
   const isAssignedToMe = hangout.assignedFriend?.id === actingUserId;
+  const isOwner = actingUserRole === 'OWNER' && hangout.pup.owner.id === actingUserId;
   const canAssign = actingUserRole === 'FRIEND' && hangout.status === 'OPEN';
   const canUnassign = actingUserRole === 'FRIEND' && isAssignedToMe;
+
+  // Generate display title
+  const displayTitle = hangout.eventName ||
+    `${hangout.pup.name}${
+      hangout.assignedFriend ? ` - ${hangout.assignedFriend.name}` : ' (Open)'
+    }`;
 
   const handleAssign = async () => {
     setLoading(true);
@@ -132,23 +144,97 @@ export default function EventDetailsModal({
     }
   };
 
+  const handleSaveEventName = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/hangouts/${hangout.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventName: editedEventName || null }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update event name');
+      }
+
+      setIsEditingName(false);
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEditName = () => {
+    setEditedEventName(hangout.eventName || '');
+    setIsEditingName(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="border-b border-gray-200 p-6">
           <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                Hangout with {hangout.pup.name}
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Owner: {hangout.pup.owner.name}
-              </p>
+            <div className="flex-1">
+              {isEditingName ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={editedEventName}
+                    onChange={(e) => setEditedEventName(e.target.value)}
+                    maxLength={100}
+                    placeholder={`${hangout.pup.name}${
+                      hangout.assignedFriend ? ` - ${hangout.assignedFriend.name}` : ' (Open)'
+                    }`}
+                    className="w-full text-2xl font-bold px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveEventName}
+                      disabled={loading}
+                      className="px-4 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-sm font-medium rounded-md hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50"
+                    >
+                      {loading ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={handleCancelEditName}
+                      disabled={loading}
+                      className="px-4 py-1 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      {displayTitle}
+                    </h2>
+                    {isOwner && (
+                      <button
+                        onClick={() => setIsEditingName(true)}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        title="Edit event name"
+                      >
+                        ✎
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Owner: {hangout.pup.owner.name} • Pup: {hangout.pup.name}
+                  </p>
+                </div>
+              )}
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl"
+              className="text-gray-400 hover:text-gray-600 text-2xl ml-4"
             >
               ×
             </button>

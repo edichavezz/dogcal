@@ -5,19 +5,28 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
-import { EventClickArg, EventInput } from '@fullcalendar/core';
+import { EventClickArg, EventInput, EventMountArg } from '@fullcalendar/core';
 import EventDetailsModal from './EventDetailsModal';
+import {
+  getFriendColor,
+  OPEN_HANGOUT_COLOR,
+  generateHangoutTitle,
+  getHangoutStyles,
+} from '@/lib/colorUtils';
 
 type Hangout = {
   id: string;
   startAt: Date;
   endAt: Date;
-  status: string;
+  status: 'OPEN' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
   ownerNotes?: string | null;
+  eventName: string | null;
   pup: {
+    id: string;
     name: string;
     careInstructions?: string | null;
     owner: {
+      id: string;
       name: string;
     };
   };
@@ -52,30 +61,28 @@ export default function CalendarView({
   const [selectedHangout, setSelectedHangout] = useState<Hangout | null>(null);
 
   // Convert hangouts to FullCalendar events
-  const events: EventInput[] = hangouts.map((hangout) => ({
-    id: hangout.id,
-    title: `${hangout.pup.name}${
-      hangout.assignedFriend ? ` - ${hangout.assignedFriend.name}` : ' (Open)'
-    }`,
-    start: hangout.startAt,
-    end: hangout.endAt,
-    backgroundColor:
-      hangout.status === 'OPEN'
-        ? '#FDE68A' // yellow
-        : hangout.status === 'ASSIGNED'
-        ? '#FB923C' // orange
-        : '#9CA3AF', // gray for completed/cancelled
-    borderColor:
-      hangout.status === 'OPEN'
-        ? '#F59E0B'
-        : hangout.status === 'ASSIGNED'
-        ? '#EA580C'
-        : '#6B7280',
-    textColor: '#1F2937', // dark gray text
-    extendedProps: {
-      hangout,
-    },
-  }));
+  const events: EventInput[] = hangouts.map((hangout) => {
+    const isAssigned = hangout.status === 'ASSIGNED' && hangout.assignedFriend;
+    const backgroundColor = isAssigned
+      ? getFriendColor(hangout.assignedFriend!.id)
+      : OPEN_HANGOUT_COLOR;
+    const styles = getHangoutStyles(hangout.status);
+
+    return {
+      id: hangout.id,
+      title: generateHangoutTitle(hangout),
+      start: hangout.startAt,
+      end: hangout.endAt,
+      backgroundColor,
+      borderColor: backgroundColor,
+      textColor: '#1F2937', // dark gray text for readability
+      extendedProps: {
+        hangout,
+        borderStyle: styles.borderStyle,
+        opacity: styles.opacity,
+      },
+    };
+  });
 
   const handleEventClick = async (info: EventClickArg) => {
     const hangout = info.event.extendedProps.hangout as Hangout;
@@ -99,6 +106,18 @@ export default function CalendarView({
     onUpdate();
   };
 
+  const handleEventDidMount = (info: EventMountArg) => {
+    const borderStyle = info.event.extendedProps.borderStyle;
+    const opacity = info.event.extendedProps.opacity;
+
+    if (borderStyle) {
+      info.el.style.borderStyle = borderStyle;
+    }
+    if (opacity !== undefined) {
+      info.el.style.opacity = opacity.toString();
+    }
+  };
+
   return (
     <div className="h-full flex flex-col min-h-0">
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
@@ -114,6 +133,7 @@ export default function CalendarView({
             }}
             events={events}
             eventClick={handleEventClick}
+            eventDidMount={handleEventDidMount}
             height="100%"
             expandRows={true}
             handleWindowResize={true}

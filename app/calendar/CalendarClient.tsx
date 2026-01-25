@@ -7,12 +7,15 @@ type Hangout = {
   id: string;
   startAt: Date;
   endAt: Date;
-  status: string;
+  status: 'OPEN' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
   ownerNotes?: string | null;
+  eventName: string | null;
   pup: {
+    id: string;
     name: string;
     careInstructions?: string | null;
     owner: {
+      id: string;
       name: string;
     };
   };

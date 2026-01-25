@@ -32,6 +32,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
   const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('');
   const [ownerNotes, setOwnerNotes] = useState('');
+  const [eventName, setEventName] = useState('');
   const [assignedFriendUserId, setAssignedFriendUserId] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +52,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
           startAt,
           endAt,
           ownerNotes: ownerNotes || undefined,
+          eventName: eventName || undefined,
           assignedFriendUserId: assignedFriendUserId || undefined,
         }),
       });
@@ -163,6 +165,33 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
         </div>
+      </div>
+
+      {/* Event Name */}
+      <div>
+        <label htmlFor="eventName" className="block text-sm font-medium text-gray-700 mb-2">
+          Event Name (optional)
+        </label>
+        <input
+          type="text"
+          id="eventName"
+          value={eventName}
+          onChange={(e) => setEventName(e.target.value)}
+          maxLength={100}
+          placeholder="E.g., Morning Walk, Vet Visit, etc."
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        />
+        {pupId && (
+          <p className="mt-2 text-sm text-gray-600">
+            Calendar will show: <span className="font-medium">
+              {eventName || `${pups.find(p => p.id === pupId)?.name}${
+                assignedFriendUserId
+                  ? ` - ${friends.find(f => f.id === assignedFriendUserId)?.name}`
+                  : ' (Open)'
+              }`}
+            </span>
+          </p>
+        )}
       </div>
 
       {/* Owner Notes */}

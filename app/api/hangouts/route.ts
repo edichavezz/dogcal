@@ -1,6 +1,6 @@
 // API Route: Create Hangout
 // POST /api/hangouts
-// Body: { pupId, startAt, endAt, ownerNotes?, assignedFriendUserId? }
+// Body: { pupId, startAt, endAt, ownerNotes?, eventName?, assignedFriendUserId? }
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -12,6 +12,7 @@ const createHangoutSchema = z.object({
   startAt: z.string().datetime(),
   endAt: z.string().datetime(),
   ownerNotes: z.string().optional(),
+  eventName: z.string().max(100).optional(),
   assignedFriendUserId: z.string().uuid().optional(),
 });
 
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate request body
     const body = await request.json();
-    const { pupId, startAt, endAt, ownerNotes, assignedFriendUserId } = createHangoutSchema.parse(body);
+    const { pupId, startAt, endAt, ownerNotes, eventName, assignedFriendUserId } = createHangoutSchema.parse(body);
 
     // Validate that pup belongs to acting user
     const pup = await prisma.pup.findUnique({
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
         assignedFriendUserId,
         createdByOwnerUserId: actingUserId,
         ownerNotes,
+        eventName,
       },
       include: {
         pup: true,
