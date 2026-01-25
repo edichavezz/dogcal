@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, addHours } from 'date-fns';
+import { getPupColor } from '@/lib/colorUtils';
 
 type Pup = {
   id: string;
@@ -25,15 +26,43 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Form state
-  const [pupId, setPupId] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [endTime, setEndTime] = useState('');
+  // Get current time and smart defaults
+  const now = new Date();
+  const roundedNow = new Date(now);
+  roundedNow.setMinutes(0, 0, 0); // Round to current hour
+  const fourHoursLater = addHours(roundedNow, 4);
+
+  // Form state with smart defaults
+  const [pupId, setPupId] = useState(pups.length === 1 ? pups[0].id : ''); // Pre-select if only one pup
+  const [startDate, setStartDate] = useState(format(now, 'yyyy-MM-dd')); // Today
+  const [startTime, setStartTime] = useState(format(roundedNow, 'HH:mm')); // Current hour
+  const [endDate, setEndDate] = useState(format(now, 'yyyy-MM-dd')); // Same as start date
+  const [endTime, setEndTime] = useState(format(fourHoursLater, 'HH:mm')); // 4 hours later
   const [ownerNotes, setOwnerNotes] = useState('');
   const [eventName, setEventName] = useState('');
   const [assignedFriendUserId, setAssignedFriendUserId] = useState('');
+
+  // Auto-sync end date with start date
+  useEffect(() => {
+    if (startDate) {
+      setEndDate(startDate);
+    }
+  }, [startDate]);
+
+  // Auto-update end time when start time changes (maintain 4-hour duration)
+  useEffect(() => {
+    if (startTime && startDate === endDate) {
+      try {
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const startDateTime = new Date();
+        startDateTime.setHours(hours, minutes, 0, 0);
+        const endDateTime = addHours(startDateTime, 4);
+        setEndTime(format(endDateTime, 'HH:mm'));
+      } catch {
+        // If parsing fails, keep existing end time
+      }
+    }
+  }, [startTime, startDate, endDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,10 +100,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
     }
   };
 
-  // Set default dates (tomorrow)
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const defaultDate = format(tomorrow, 'yyyy-MM-dd');
+  const today = format(now, 'yyyy-MM-dd');
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -84,25 +110,35 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
         </div>
       )}
 
-      {/* Select Pup */}
+      {/* Select Pup - Pill Selector */}
       <div>
-        <label htmlFor="pupId" className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
           Which pup? *
         </label>
-        <select
-          id="pupId"
-          value={pupId}
-          onChange={(e) => setPupId(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
-        >
-          <option value="">Select a pup...</option>
-          {pups.map((pup) => (
-            <option key={pup.id} value={pup.id}>
-              {pup.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap gap-2">
+          {pups.map((pup) => {
+            const isSelected = pupId === pup.id;
+            const pupColor = getPupColor(pup.id);
+
+            return (
+              <button
+                key={pup.id}
+                type="button"
+                onClick={() => setPupId(pup.id)}
+                style={{
+                  backgroundColor: isSelected ? pupColor : 'transparent',
+                  borderColor: pupColor,
+                  color: isSelected ? '#FFFFFF' : pupColor,
+                }}
+                className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${
+                  isSelected ? 'shadow-md' : 'hover:shadow-sm'
+                }`}
+              >
+                {pup.name}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Start Date & Time */}
@@ -117,8 +153,9 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             required
-            min={defaultDate}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            min={today}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
         <div>
@@ -131,7 +168,8 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
       </div>
@@ -140,7 +178,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
-            End Date *
+            End Date * {startDate !== endDate && <span className="text-xs text-gray-500">(multi-day)</span>}
           </label>
           <input
             type="date"
@@ -148,8 +186,9 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             required
-            min={startDate || defaultDate}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            min={startDate || today}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
         <div>
@@ -162,7 +201,8 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
       </div>
