@@ -33,10 +33,11 @@ enum SuggestionStatus {
 
 model User {
   id          String   @id @default(uuid())
-  name        String
-  addressText String?
-  role        UserRole
-  createdAt   DateTime @default(now())
+  name          String
+  addressText   String?
+  role          UserRole
+  profilePhotoUrl String?
+  createdAt     DateTime @default(now())
 
   // Relations
   ownedPups              Pup[]                @relation("PupOwner")
@@ -52,6 +53,7 @@ model Pup {
   id               String   @id @default(uuid())
   name             String
   ownerUserId      String
+  profilePhotoUrl  String?
   careInstructions String?
   createdAt        DateTime @default(now())
 

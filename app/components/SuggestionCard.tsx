@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
+import Avatar from './Avatar';
 
 type Suggestion = {
   id: string;
@@ -10,6 +11,7 @@ type Suggestion = {
   friendComment?: string | null;
   pup: {
     name: string;
+    profilePhotoUrl?: string | null;
   };
   suggestedByFriend: {
     name: string;
@@ -64,13 +66,20 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
 
       <div className="space-y-4">
         {/* Header */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800">
-            {suggestion.pup.name}
-          </h3>
-          <p className="text-sm text-gray-600">
-            Suggested by: <strong>{suggestion.suggestedByFriend.name}</strong>
-          </p>
+        <div className="flex items-center gap-3">
+          <Avatar
+            photoUrl={suggestion.pup.profilePhotoUrl}
+            name={suggestion.pup.name}
+            size="md"
+          />
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">
+              {suggestion.pup.name}
+            </h3>
+            <p className="text-sm text-gray-600">
+              Suggested by: <strong>{suggestion.suggestedByFriend.name}</strong>
+            </p>
+          </div>
         </div>
 
         {/* Date & Time */}

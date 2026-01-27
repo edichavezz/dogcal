@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
+import Avatar from './Avatar';
 
 type Hangout = {
   id: string;
@@ -14,6 +15,7 @@ type Hangout = {
     id: string;
     name: string;
     careInstructions?: string | null;
+    profilePhotoUrl?: string | null;
     owner: {
       id: string;
       name: string;
@@ -226,9 +228,21 @@ export default function EventDetailsModal({
                       </button>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Owner: {hangout.pup.owner.name} • Pup: {hangout.pup.name}
-                  </p>
+                  <div className="flex items-center gap-3 mt-3">
+                    <Avatar
+                      photoUrl={hangout.pup.profilePhotoUrl}
+                      name={hangout.pup.name}
+                      size="md"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {hangout.pup.name}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Owner: {hangout.pup.owner.name}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
