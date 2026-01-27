@@ -10,6 +10,7 @@ type Suggestion = {
   friendComment?: string | null;
   pup: {
     name: string;
+    profilePhotoUrl?: string | null;
   };
   suggestedByFriend: {
     name: string;

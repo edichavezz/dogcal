@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { format, addHours } from 'date-fns';
 import { getPupColor } from '@/lib/colorUtils';
 
 type Pup = {
   id: string;
   name: string;
+  profilePhotoUrl?: string | null;
   careInstructions?: string | null;
 };
 
@@ -130,10 +132,19 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
                   borderColor: pupColor,
                   color: isSelected ? '#FFFFFF' : pupColor,
                 }}
-                className={`px-4 py-2 rounded-full border-2 font-medium transition-all ${
+                className={`px-4 py-2 rounded-full border-2 font-medium transition-all flex items-center gap-2 ${
                   isSelected ? 'shadow-md' : 'hover:shadow-sm'
                 }`}
               >
+                {pup.profilePhotoUrl && (
+                  <Image
+                    src={pup.profilePhotoUrl}
+                    alt={pup.name}
+                    width={24}
+                    height={24}
+                    className="rounded-full object-cover"
+                  />
+                )}
                 {pup.name}
               </button>
             );

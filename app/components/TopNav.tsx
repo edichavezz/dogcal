@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 type User = {
@@ -8,6 +9,7 @@ type User = {
   name: string;
   role: 'OWNER' | 'FRIEND';
   addressText?: string | null;
+  profilePhotoUrl?: string | null;
 };
 
 type TopNavProps = {
@@ -68,25 +70,60 @@ export default function TopNav({ user }: TopNavProps) {
                 >
                   Approvals
                 </Link>
+                <Link
+                  href="/manage"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isActive('/manage')
+                      ? 'bg-amber-50 text-amber-900 border-b-2 border-amber-500'
+                      : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  Pups & Friends
+                </Link>
               </>
             )}
 
             {user.role === 'FRIEND' && (
-              <Link
-                href="/suggest"
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isActive('/suggest')
-                    ? 'bg-amber-50 text-amber-900 border-b-2 border-amber-500'
-                    : 'text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                Suggest Time
-              </Link>
+              <>
+                <Link
+                  href="/suggest"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isActive('/suggest')
+                      ? 'bg-amber-50 text-amber-900 border-b-2 border-amber-500'
+                      : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  Suggest Time
+                </Link>
+                <Link
+                  href="/manage"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isActive('/manage')
+                      ? 'bg-amber-50 text-amber-900 border-b-2 border-amber-500'
+                      : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  Pups
+                </Link>
+              </>
             )}
           </div>
 
           {/* User Info and Role Badge */}
           <div className="flex items-center space-x-3">
+            {user.profilePhotoUrl ? (
+              <Image
+                src={user.profilePhotoUrl}
+                alt={user.name}
+                width={40}
+                height={40}
+                className="rounded-full object-cover hidden sm:block"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center hidden sm:block">
+                <span className="text-sm font-semibold">{user.name.charAt(0)}</span>
+              </div>
+            )}
             <div className="text-right hidden sm:block">
               <div className="text-sm font-semibold text-slate-900">{user.name}</div>
               <div className="text-xs text-slate-500">

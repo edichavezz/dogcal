@@ -28,6 +28,7 @@ type Hangout = {
   pup: {
     id: string;
     name: string;
+    profilePhotoUrl?: string | null;
     careInstructions?: string | null;
     owner: {
       id: string;
@@ -57,6 +58,7 @@ type Suggestion = {
   pup: {
     id: string;
     name: string;
+    profilePhotoUrl?: string | null;
     owner: {
       id: string;
       name: string;
@@ -186,6 +188,28 @@ export default function CalendarView({
     }
   };
 
+  const renderEventContent = (eventInfo: { event: { extendedProps: { hangout?: Hangout; suggestion?: Suggestion }; title: string }; timeText: string }) => {
+    const hangout = eventInfo.event.extendedProps.hangout;
+    const suggestion = eventInfo.event.extendedProps.suggestion;
+    const pup = hangout?.pup || suggestion?.pup;
+
+    return (
+      <div className="flex items-center gap-1 px-1 overflow-hidden">
+        {pup?.profilePhotoUrl && (
+          <img
+            src={pup.profilePhotoUrl}
+            alt={pup.name}
+            className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+          />
+        )}
+        <div className="flex-1 overflow-hidden">
+          <div className="text-xs font-semibold truncate">{eventInfo.timeText}</div>
+          <div className="text-xs truncate">{eventInfo.event.title}</div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="h-full flex flex-col min-h-0">
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
@@ -202,6 +226,7 @@ export default function CalendarView({
             events={allEvents}
             eventClick={handleEventClick}
             eventDidMount={handleEventDidMount}
+            eventContent={renderEventContent}
             height="100%"
             expandRows={true}
             handleWindowResize={true}

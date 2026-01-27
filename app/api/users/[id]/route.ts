@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma';
 const updateUserSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   addressText: z.string().max(500).optional().nullable(),
+  phoneNumber: z.string().max(50).optional().nullable(),
   profilePhotoUrl: z.string().url().optional().nullable(),
 });
 

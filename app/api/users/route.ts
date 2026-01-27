@@ -19,6 +19,7 @@ export async function GET() {
         id: true,
         name: true,
         role: true,
+        profilePhotoUrl: true,
       },
       orderBy: [
         { role: 'asc' }, // OWNER first, then FRIEND

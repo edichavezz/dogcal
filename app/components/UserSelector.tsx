@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 type User = {
   id: string;
   name: string;
   role: 'OWNER' | 'FRIEND';
+  profilePhotoUrl?: string | null;
 };
 
 export default function UserSelector() {
@@ -51,42 +53,88 @@ export default function UserSelector() {
     }
   };
 
-  return (
-    <div className="w-full max-w-md space-y-4">
-      <select
-        value={selectedUserId}
-        onChange={(e) => setSelectedUserId(e.target.value)}
-        className="w-full px-4 py-3 text-lg border-2 border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white"
-        disabled={loading}
-      >
-        <option value="">Choose a user...</option>
-        <optgroup label="Pup Owners">
-          {users
-            .filter((u) => u.role === 'OWNER')
-            .map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-        </optgroup>
-        <optgroup label="Pup Friends">
-          {users
-            .filter((u) => u.role === 'FRIEND')
-            .map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-        </optgroup>
-      </select>
+  const owners = users.filter((u) => u.role === 'OWNER');
+  const friends = users.filter((u) => u.role === 'FRIEND');
 
-      <button
-        onClick={() => handleUserSelect(selectedUserId)}
-        disabled={!selectedUserId || loading}
-        className="w-full px-6 py-3 text-lg font-medium text-white bg-gradient-to-r from-yellow-400 to-orange-400 rounded-lg hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-      >
-        {loading ? 'Loading...' : 'Continue'}
-      </button>
+  return (
+    <div className="w-full max-w-2xl space-y-6">
+      {/* Owners Section */}
+      {owners.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-gray-700">Pup Owners</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {owners.map((user) => (
+              <button
+                key={user.id}
+                onClick={() => handleUserSelect(user.id)}
+                disabled={loading}
+                className={`flex flex-col items-center p-4 border-2 rounded-lg transition-all ${
+                  selectedUserId === user.id
+                    ? 'border-orange-400 bg-orange-50'
+                    : 'border-gray-200 hover:border-orange-200 bg-white'
+                } disabled:opacity-50`}
+              >
+                {user.profilePhotoUrl ? (
+                  <Image
+                    src={user.profilePhotoUrl}
+                    alt={user.name}
+                    width={60}
+                    height={60}
+                    className="rounded-full object-cover mb-2"
+                  />
+                ) : (
+                  <div className="w-15 h-15 bg-gray-200 rounded-full flex items-center justify-center mb-2">
+                    <span className="text-2xl">{user.name.charAt(0)}</span>
+                  </div>
+                )}
+                <span className="text-sm font-medium text-center">{user.name}</span>
+                <span className="text-xs text-gray-500">Owner</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Friends Section */}
+      {friends.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-gray-700">Pup Friends</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {friends.map((user) => (
+              <button
+                key={user.id}
+                onClick={() => handleUserSelect(user.id)}
+                disabled={loading}
+                className={`flex flex-col items-center p-4 border-2 rounded-lg transition-all ${
+                  selectedUserId === user.id
+                    ? 'border-yellow-400 bg-yellow-50'
+                    : 'border-gray-200 hover:border-yellow-200 bg-white'
+                } disabled:opacity-50`}
+              >
+                {user.profilePhotoUrl ? (
+                  <Image
+                    src={user.profilePhotoUrl}
+                    alt={user.name}
+                    width={60}
+                    height={60}
+                    className="rounded-full object-cover mb-2"
+                  />
+                ) : (
+                  <div className="w-15 h-15 bg-gray-200 rounded-full flex items-center justify-center mb-2">
+                    <span className="text-2xl">{user.name.charAt(0)}</span>
+                  </div>
+                )}
+                <span className="text-sm font-medium text-center">{user.name}</span>
+                <span className="text-xs text-gray-500">Friend</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-center text-gray-600">Loading...</div>
+      )}
     </div>
   );
 }

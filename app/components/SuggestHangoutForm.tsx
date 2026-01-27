@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { format } from 'date-fns';
+import { getPupColor } from '@/lib/colorUtils';
 
 type Pup = {
   id: string;
   name: string;
+  profilePhotoUrl?: string | null;
   owner: {
     name: string;
   };
@@ -76,25 +79,45 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
         </div>
       )}
 
-      {/* Select Pup */}
+      {/* Select Pup - Pill Selector */}
       <div>
-        <label htmlFor="pupId" className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-3">
           Which pup would you like to hang out with? *
         </label>
-        <select
-          id="pupId"
-          value={pupId}
-          onChange={(e) => setPupId(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
-        >
-          <option value="">Select a pup...</option>
-          {pups.map((pup) => (
-            <option key={pup.id} value={pup.id}>
-              {pup.name} (owner: {pup.owner.name})
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap gap-2">
+          {pups.map((pup) => {
+            const isSelected = pupId === pup.id;
+            const pupColor = getPupColor(pup.id);
+
+            return (
+              <button
+                key={pup.id}
+                type="button"
+                onClick={() => setPupId(pup.id)}
+                style={{
+                  backgroundColor: isSelected ? pupColor : 'transparent',
+                  borderColor: pupColor,
+                  color: isSelected ? '#FFFFFF' : pupColor,
+                }}
+                className={`px-4 py-2 rounded-full border-2 font-medium transition-all flex items-center gap-2 ${
+                  isSelected ? 'shadow-md' : 'hover:shadow-sm'
+                }`}
+              >
+                {pup.profilePhotoUrl && (
+                  <Image
+                    src={pup.profilePhotoUrl}
+                    alt={pup.name}
+                    width={24}
+                    height={24}
+                    className="rounded-full object-cover"
+                  />
+                )}
+                {pup.name}
+                <span className="text-xs opacity-75">({pup.owner.name})</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Start Date & Time */}

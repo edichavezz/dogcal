@@ -13,6 +13,7 @@ type Hangout = {
   pup: {
     id: string;
     name: string;
+    profilePhotoUrl?: string | null;
     careInstructions?: string | null;
     owner: {
       id: string;
@@ -42,6 +43,7 @@ type Suggestion = {
   pup: {
     id: string;
     name: string;
+    profilePhotoUrl?: string | null;
     owner: {
       id: string;
       name: string;
