@@ -269,6 +269,12 @@ const data = await response.json();
 
 ## Contributing
 
+### Git Workflow
+- Always create a new branch from `main` before making changes.
+- Commit all related changes on that feature branch.
+- Run `npm run dev` and other checks from that branch.
+- If you need to pause and work on something else, leave your in-progress work committed on the feature branch so it can be resumed later without losing changes.
+
 When adding new features:
 1. Follow existing patterns
 2. Add API validation with Zod
