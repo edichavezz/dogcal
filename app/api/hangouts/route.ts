@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
+import { addDays, addWeeks, addMonths } from 'date-fns';
 
 const createHangoutSchema = z.object({
   pupId: z.string().uuid(),
@@ -14,7 +15,38 @@ const createHangoutSchema = z.object({
   ownerNotes: z.string().optional(),
   eventName: z.string().max(100).optional(),
   assignedFriendUserId: z.string().uuid().optional(),
+  repeatEnabled: z.boolean().optional(),
+  repeatFrequency: z.enum(['daily', 'weekly', 'monthly']).optional(),
+  repeatCount: z.number().int().min(2).max(52).optional(),
 });
+
+// Helper function to generate repeated dates
+function generateRepeatDates(
+  startAt: Date,
+  endAt: Date,
+  frequency: 'daily' | 'weekly' | 'monthly',
+  count: number
+): Array<{ startAt: Date; endAt: Date }> {
+  const dates: Array<{ startAt: Date; endAt: Date }> = [];
+  const duration = endAt.getTime() - startAt.getTime();
+
+  for (let i = 0; i < count; i++) {
+    let newStart: Date;
+
+    if (frequency === 'daily') {
+      newStart = addDays(startAt, i);
+    } else if (frequency === 'weekly') {
+      newStart = addWeeks(startAt, i);
+    } else {
+      newStart = addMonths(startAt, i);
+    }
+
+    const newEnd = new Date(newStart.getTime() + duration);
+    dates.push({ startAt: newStart, endAt: newEnd });
+  }
+
+  return dates;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate request body
     const body = await request.json();
-    const { pupId, startAt, endAt, ownerNotes, eventName, assignedFriendUserId } = createHangoutSchema.parse(body);
+    const { pupId, startAt, endAt, ownerNotes, eventName, assignedFriendUserId, repeatEnabled, repeatFrequency, repeatCount } = createHangoutSchema.parse(body);
 
     // Validate that pup belongs to acting user
     const pup = await prisma.pup.findUnique({
@@ -72,26 +104,64 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create hangout
-    const hangout = await prisma.hangout.create({
-      data: {
-        pupId,
-        startAt: new Date(startAt),
-        endAt: new Date(endAt),
-        status: assignedFriendUserId ? 'ASSIGNED' : 'OPEN',
-        assignedFriendUserId,
-        createdByOwnerUserId: actingUserId,
-        ownerNotes,
-        eventName,
-      },
-      include: {
-        pup: true,
-        assignedFriend: true,
-        createdByOwner: true,
-      },
-    });
+    // Create hangout(s)
+    if (repeatEnabled && repeatFrequency && repeatCount && repeatCount > 1) {
+      // Create multiple hangouts for repetition
+      const seriesId = crypto.randomUUID();
+      const dates = generateRepeatDates(
+        new Date(startAt),
+        new Date(endAt),
+        repeatFrequency,
+        repeatCount
+      );
 
-    return NextResponse.json({ hangout }, { status: 201 });
+      const hangouts = await Promise.all(
+        dates.map((date, index) =>
+          prisma.hangout.create({
+            data: {
+              pupId,
+              startAt: date.startAt,
+              endAt: date.endAt,
+              status: assignedFriendUserId ? 'ASSIGNED' : 'OPEN',
+              assignedFriendUserId,
+              createdByOwnerUserId: actingUserId,
+              ownerNotes,
+              eventName,
+              seriesId,
+              seriesIndex: index,
+            },
+            include: {
+              pup: true,
+              assignedFriend: true,
+              createdByOwner: true,
+            },
+          })
+        )
+      );
+
+      return NextResponse.json({ hangouts, count: hangouts.length }, { status: 201 });
+    } else {
+      // Create single hangout
+      const hangout = await prisma.hangout.create({
+        data: {
+          pupId,
+          startAt: new Date(startAt),
+          endAt: new Date(endAt),
+          status: assignedFriendUserId ? 'ASSIGNED' : 'OPEN',
+          assignedFriendUserId,
+          createdByOwnerUserId: actingUserId,
+          ownerNotes,
+          eventName,
+        },
+        include: {
+          pup: true,
+          assignedFriend: true,
+          createdByOwner: true,
+        },
+      });
+
+      return NextResponse.json({ hangout }, { status: 201 });
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

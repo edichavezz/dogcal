@@ -11,6 +11,8 @@ const updateHangoutSchema = z.object({
   eventName: z.string().max(100).optional(),
   startAt: z.string().datetime().optional(),
   endAt: z.string().datetime().optional(),
+  ownerNotes: z.string().optional().nullable(),
+  assignedFriendUserId: z.string().uuid().optional().nullable(),
 });
 
 export async function GET(
@@ -106,10 +108,10 @@ export async function PATCH(
     const isOwner = existingHangout.pup.ownerUserId === actingUserId;
     const isAssignedFriend = existingHangout.assignedFriendUserId === actingUserId;
 
-    // Only owner can change eventName
-    if (updates.eventName !== undefined && !isOwner) {
+    // Only owner can change eventName, ownerNotes, or assignedFriendUserId
+    if ((updates.eventName !== undefined || updates.ownerNotes !== undefined || updates.assignedFriendUserId !== undefined) && !isOwner) {
       return NextResponse.json(
-        { error: 'Only the pup owner can update the event name' },
+        { error: 'Only the pup owner can update event details and assignment' },
         { status: 403 }
       );
     }
@@ -174,18 +176,18 @@ export async function PATCH(
       }
     }
 
-    // Validate friendship still exists if assigned
-    if (existingHangout.assignedFriendUserId) {
+    // Validate new friendship if changing assignment
+    if (updates.assignedFriendUserId !== undefined && updates.assignedFriendUserId) {
       const friendship = await prisma.pupFriendship.findFirst({
         where: {
           pupId: existingHangout.pupId,
-          friendUserId: existingHangout.assignedFriendUserId,
+          friendUserId: updates.assignedFriendUserId,
         },
       });
 
       if (!friendship) {
         return NextResponse.json(
-          { error: 'Cannot update: friendship no longer exists' },
+          { error: 'Cannot assign to this friend - no friendship exists' },
           { status: 400 }
         );
       }
@@ -194,8 +196,13 @@ export async function PATCH(
     // Build update data
     const updateData: any = {};
     if (updates.eventName !== undefined) updateData.eventName = updates.eventName;
+    if (updates.ownerNotes !== undefined) updateData.ownerNotes = updates.ownerNotes;
     if (updates.startAt) updateData.startAt = newStartAt;
     if (updates.endAt) updateData.endAt = newEndAt;
+    if (updates.assignedFriendUserId !== undefined) {
+      updateData.assignedFriendUserId = updates.assignedFriendUserId;
+      updateData.status = updates.assignedFriendUserId ? 'ASSIGNED' : 'OPEN';
+    }
 
     // Update hangout
     const updatedHangout = await prisma.hangout.update({

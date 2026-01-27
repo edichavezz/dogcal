@@ -90,6 +90,8 @@ model Hangout {
   createdByOwnerUserId String
   ownerNotes           String?
   eventName            String?
+  seriesId             String?
+  seriesIndex          Int?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
@@ -119,10 +121,13 @@ model HangoutSuggestion {
   startAt                 DateTime
   endAt                   DateTime
   status                  SuggestionStatus @default(PENDING)
+  eventName               String?
   friendComment           String?
   ownerComment            String?
   ownerDecisionByUserId   String?
   ownerDecisionAt         DateTime?
+  seriesId                String?
+  seriesIndex             Int?
   createdAt               DateTime         @default(now())
 
   // Relations

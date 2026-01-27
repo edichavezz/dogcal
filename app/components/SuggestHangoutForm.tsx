@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { format } from 'date-fns';
+import { format, addHours } from 'date-fns';
 import { getPupColor } from '@/lib/colorUtils';
 
 type Pup = {
@@ -19,18 +19,62 @@ type SuggestHangoutFormProps = {
   pups: Pup[];
 };
 
+// Fun activity placeholders
+const generatePlaceholder = () => {
+  const timesOfDay = ['Morning', 'Afternoon', 'Evening', 'Nighttime', 'Full Day'];
+  const activities = ['Hangout', 'Walk', 'Playtime', 'Cuddles', 'Adventure', 'Park Visit', 'Fetch Session'];
+
+  const time = timesOfDay[Math.floor(Math.random() * timesOfDay.length)];
+  const activity = activities[Math.floor(Math.random() * activities.length)];
+
+  return `${time} ${activity}`;
+};
+
 export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Form state
-  const [pupId, setPupId] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [endTime, setEndTime] = useState('');
+  // Get current time and smart defaults
+  const now = new Date();
+  const roundedNow = new Date(now);
+  roundedNow.setMinutes(0, 0, 0); // Round to current hour
+  const fourHoursLater = addHours(roundedNow, 4);
+
+  // Form state with smart defaults
+  const [pupId, setPupId] = useState(pups.length === 1 ? pups[0].id : ''); // Pre-select if only one pup
+  const [startDate, setStartDate] = useState(format(now, 'yyyy-MM-dd')); // Today
+  const [startTime, setStartTime] = useState(format(roundedNow, 'HH:mm')); // Current hour
+  const [endDate, setEndDate] = useState(format(now, 'yyyy-MM-dd')); // Same as start date
+  const [endTime, setEndTime] = useState(format(fourHoursLater, 'HH:mm')); // 4 hours later
   const [friendComment, setFriendComment] = useState('');
+  const [eventName, setEventName] = useState('');
+  const [placeholder] = useState(generatePlaceholder());
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatFrequency, setRepeatFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [repeatCount, setRepeatCount] = useState(4);
+
+  // Auto-sync end date with start date
+  useEffect(() => {
+    if (startDate) {
+      setEndDate(startDate);
+    }
+  }, [startDate]);
+
+  // Auto-update end time when start time changes (maintain 4-hour duration)
+  useEffect(() => {
+    if (startTime && startDate === endDate) {
+      try {
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const startDateTime = new Date();
+        startDateTime.setHours(hours, minutes, 0, 0);
+        const endDateTime = addHours(startDateTime, 4);
+        setEndTime(format(endDateTime, 'HH:mm'));
+      } catch {
+        // If parsing fails, keep existing end time
+      }
+    }
+  }, [startTime, startDate, endDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +92,11 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
           pupId,
           startAt,
           endAt,
+          eventName: eventName || undefined,
           friendComment: friendComment || undefined,
+          repeatEnabled: repeatEnabled || undefined,
+          repeatFrequency: repeatEnabled ? repeatFrequency : undefined,
+          repeatCount: repeatEnabled ? repeatCount : undefined,
         }),
       });
 
@@ -66,10 +114,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
     }
   };
 
-  // Set default dates (tomorrow)
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const defaultDate = format(tomorrow, 'yyyy-MM-dd');
+  const today = format(now, 'yyyy-MM-dd');
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -132,8 +177,9 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             required
-            min={defaultDate}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            min={today}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
         <div>
@@ -146,7 +192,8 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
       </div>
@@ -155,7 +202,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
-            End Date *
+            End Date * {startDate !== endDate && <span className="text-xs text-gray-500">(multi-day)</span>}
           </label>
           <input
             type="date"
@@ -163,8 +210,9 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             required
-            min={startDate || defaultDate}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            min={startDate || today}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
         <div>
@@ -177,24 +225,98 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
+      </div>
+
+      {/* Event Name */}
+      <div>
+        <label htmlFor="eventName" className="block text-sm font-medium text-gray-700 mb-2">
+          Event Name (optional)
+        </label>
+        <input
+          type="text"
+          id="eventName"
+          value={eventName}
+          onChange={(e) => setEventName(e.target.value)}
+          maxLength={100}
+          placeholder={placeholder}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        />
+        {pupId && (
+          <p className="mt-2 text-sm text-gray-600">
+            Calendar will show: <span className="font-medium">
+              [Suggested] {eventName || `${pups.find(p => p.id === pupId)?.name}`}
+            </span>
+          </p>
+        )}
       </div>
 
       {/* Friend Comment */}
       <div>
         <label htmlFor="friendComment" className="block text-sm font-medium text-gray-700 mb-2">
-          Why are you available? (optional)
+          Your Comment (optional)
         </label>
         <textarea
           id="friendComment"
           value={friendComment}
           onChange={(e) => setFriendComment(e.target.value)}
-          rows={3}
-          placeholder="E.g., I have the day off, I'm working from home, etc."
+          rows={4}
+          placeholder="E.g., I'm available all day, can do morning or evening, etc."
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
         />
+      </div>
+
+      {/* Repeat Options */}
+      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            type="checkbox"
+            id="repeatEnabled"
+            checked={repeatEnabled}
+            onChange={(e) => setRepeatEnabled(e.target.checked)}
+            className="w-4 h-4 text-yellow-400 focus:ring-yellow-400 border-gray-300 rounded"
+          />
+          <label htmlFor="repeatEnabled" className="text-sm font-medium text-gray-700">
+            Repeat this suggestion
+          </label>
+        </div>
+
+        {repeatEnabled && (
+          <div className="grid grid-cols-2 gap-4 mt-3">
+            <div>
+              <label htmlFor="repeatFrequency" className="block text-sm font-medium text-gray-700 mb-2">
+                Frequency
+              </label>
+              <select
+                id="repeatFrequency"
+                value={repeatFrequency}
+                onChange={(e) => setRepeatFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="repeatCount" className="block text-sm font-medium text-gray-700 mb-2">
+                Number of occurrences
+              </label>
+              <input
+                type="number"
+                id="repeatCount"
+                value={repeatCount}
+                onChange={(e) => setRepeatCount(Math.max(2, Math.min(52, parseInt(e.target.value) || 2)))}
+                min="2"
+                max="52"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Submit Button */}

@@ -5,6 +5,7 @@
 import { redirect } from 'next/navigation';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
+import TopNav from '@/components/TopNav';
 import ManageClient from './ManageClient';
 
 export default async function ManagePage() {
@@ -71,5 +72,12 @@ export default async function ManagePage() {
       })
     : [];
 
-  return <ManageClient user={user} allFriends={allFriends} />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <TopNav user={user} />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <ManageClient user={user} allFriends={allFriends} />
+      </main>
+    </div>
+  );
 }

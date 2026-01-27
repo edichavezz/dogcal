@@ -23,6 +23,17 @@ type CreateHangoutFormProps = {
   friends: Friend[];
 };
 
+// Fun activity placeholders
+const generatePlaceholder = () => {
+  const timesOfDay = ['Morning', 'Afternoon', 'Evening', 'Nighttime', 'Full Day'];
+  const activities = ['Hangout', 'Walk', 'Playtime', 'Cuddles', 'Adventure', 'Park Visit', 'Fetch Session'];
+
+  const time = timesOfDay[Math.floor(Math.random() * timesOfDay.length)];
+  const activity = activities[Math.floor(Math.random() * activities.length)];
+
+  return `${time} ${activity}`;
+};
+
 export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -43,6 +54,10 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
   const [ownerNotes, setOwnerNotes] = useState('');
   const [eventName, setEventName] = useState('');
   const [assignedFriendUserId, setAssignedFriendUserId] = useState('');
+  const [placeholder] = useState(generatePlaceholder());
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatFrequency, setRepeatFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [repeatCount, setRepeatCount] = useState(4);
 
   // Auto-sync end date with start date
   useEffect(() => {
@@ -85,6 +100,9 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
           ownerNotes: ownerNotes || undefined,
           eventName: eventName || undefined,
           assignedFriendUserId: assignedFriendUserId || undefined,
+          repeatEnabled: repeatEnabled || undefined,
+          repeatFrequency: repeatEnabled ? repeatFrequency : undefined,
+          repeatCount: repeatEnabled ? repeatCount : undefined,
         }),
       });
 
@@ -229,7 +247,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
           value={eventName}
           onChange={(e) => setEventName(e.target.value)}
           maxLength={100}
-          placeholder="E.g., Morning Walk, Vet Visit, etc."
+          placeholder={placeholder}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
         />
         {pupId && (
@@ -278,6 +296,56 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Repeat Options */}
+      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            type="checkbox"
+            id="repeatEnabled"
+            checked={repeatEnabled}
+            onChange={(e) => setRepeatEnabled(e.target.checked)}
+            className="w-4 h-4 text-yellow-400 focus:ring-yellow-400 border-gray-300 rounded"
+          />
+          <label htmlFor="repeatEnabled" className="text-sm font-medium text-gray-700">
+            Repeat this hangout
+          </label>
+        </div>
+
+        {repeatEnabled && (
+          <div className="grid grid-cols-2 gap-4 mt-3">
+            <div>
+              <label htmlFor="repeatFrequency" className="block text-sm font-medium text-gray-700 mb-2">
+                Frequency
+              </label>
+              <select
+                id="repeatFrequency"
+                value={repeatFrequency}
+                onChange={(e) => setRepeatFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="repeatCount" className="block text-sm font-medium text-gray-700 mb-2">
+                Number of occurrences
+              </label>
+              <input
+                type="number"
+                id="repeatCount"
+                value={repeatCount}
+                onChange={(e) => setRepeatCount(Math.max(2, Math.min(52, parseInt(e.target.value) || 2)))}
+                min="2"
+                max="52"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Submit Button */}

@@ -56,6 +56,14 @@ export default function EventDetailsModal({
   const [submittingNote, setSubmittingNote] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedEventName, setEditedEventName] = useState(hangout.eventName || '');
+  const [isEditingFull, setIsEditingFull] = useState(false);
+  const [editedStartDate, setEditedStartDate] = useState('');
+  const [editedStartTime, setEditedStartTime] = useState('');
+  const [editedEndDate, setEditedEndDate] = useState('');
+  const [editedEndTime, setEditedEndTime] = useState('');
+  const [editedOwnerNotes, setEditedOwnerNotes] = useState(hangout.ownerNotes || '');
+  const [editedAssignedFriend, setEditedAssignedFriend] = useState(hangout.assignedFriend?.id || '');
+  const [friends, setFriends] = useState<Array<{ id: string; name: string }>>([]);
 
   const isAssignedToMe = hangout.assignedFriend?.id === actingUserId;
   const isOwner = actingUserRole === 'OWNER' && hangout.pup.owner.id === actingUserId;
@@ -176,6 +184,80 @@ export default function EventDetailsModal({
     setIsEditingName(false);
   };
 
+  const handleStartFullEdit = async () => {
+    // Initialize form with current values
+    const startDate = new Date(hangout.startAt);
+    const endDate = new Date(hangout.endAt);
+    setEditedStartDate(format(startDate, 'yyyy-MM-dd'));
+    setEditedStartTime(format(startDate, 'HH:mm'));
+    setEditedEndDate(format(endDate, 'yyyy-MM-dd'));
+    setEditedEndTime(format(endDate, 'HH:mm'));
+    setEditedEventName(hangout.eventName || '');
+    setEditedOwnerNotes(hangout.ownerNotes || '');
+    setEditedAssignedFriend(hangout.assignedFriend?.id || '');
+
+    // Fetch friends for the pup if owner is editing
+    if (isOwner) {
+      try {
+        const response = await fetch(`/api/pups/${hangout.pup.id}`);
+        const data = await response.json();
+        if (data.pup?.friendships) {
+          setFriends(data.pup.friendships.map((f: any) => ({ id: f.friend.id, name: f.friend.name })));
+        }
+      } catch (error) {
+        console.error('Error fetching friends:', error);
+      }
+    }
+
+    setIsEditingFull(true);
+  };
+
+  const handleSaveFullEdit = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const startAt = new Date(`${editedStartDate}T${editedStartTime}`).toISOString();
+      const endAt = new Date(`${editedEndDate}T${editedEndTime}`).toISOString();
+
+      const updates: any = {
+        startAt,
+        endAt,
+      };
+
+      if (isOwner) {
+        updates.eventName = editedEventName || null;
+        updates.ownerNotes = editedOwnerNotes || null;
+        updates.assignedFriendUserId = editedAssignedFriend || null;
+      }
+
+      const response = await fetch(`/api/hangouts/${hangout.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update hangout');
+      }
+
+      setIsEditingFull(false);
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelFullEdit = () => {
+    setIsEditingFull(false);
+    setError('');
+  };
+
+  const canEdit = isOwner || isAssignedToMe;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -218,7 +300,7 @@ export default function EventDetailsModal({
                     <h2 className="text-2xl font-bold text-gray-800">
                       {displayTitle}
                     </h2>
-                    {isOwner && (
+                    {isOwner && !isEditingFull && (
                       <button
                         onClick={() => setIsEditingName(true)}
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -263,18 +345,151 @@ export default function EventDetailsModal({
             </div>
           )}
 
-          {/* Date & Time */}
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Date & Time</h3>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <p className="text-gray-800">
-                <strong>Start:</strong> {format(new Date(hangout.startAt), 'MMM d, yyyy h:mm a')}
-              </p>
-              <p className="text-gray-800 mt-1">
-                <strong>End:</strong> {format(new Date(hangout.endAt), 'MMM d, yyyy h:mm a')}
-              </p>
+          {/* Edit Mode */}
+          {isEditingFull ? (
+            <div className="space-y-4">
+              {/* Event Name - Owner only */}
+              {isOwner && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Event Name (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editedEventName}
+                    onChange={(e) => setEditedEventName(e.target.value)}
+                    maxLength={100}
+                    placeholder={`${hangout.pup.name}${hangout.assignedFriend ? ` - ${hangout.assignedFriend.name}` : ' (Open)'}`}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                </div>
+              )}
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={editedStartDate}
+                    onChange={(e) => setEditedStartDate(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={editedStartTime}
+                    onChange={(e) => setEditedStartTime(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={editedEndDate}
+                    onChange={(e) => setEditedEndDate(e.target.value)}
+                    required
+                    min={editedStartDate}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={editedEndTime}
+                    onChange={(e) => setEditedEndTime(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                </div>
+              </div>
+
+              {/* Owner Notes - Owner only */}
+              {isOwner && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Care Instructions / Notes
+                  </label>
+                  <textarea
+                    value={editedOwnerNotes}
+                    onChange={(e) => setEditedOwnerNotes(e.target.value)}
+                    rows={4}
+                    placeholder="E.g., Feed at noon, needs medication, etc."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                </div>
+              )}
+
+              {/* Assign to Friend - Owner only */}
+              {isOwner && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Assign to Friend (optional)
+                  </label>
+                  <select
+                    value={editedAssignedFriend}
+                    onChange={(e) => setEditedAssignedFriend(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  >
+                    <option value="">Leave open for any friend...</option>
+                    {friends.map((friend) => (
+                      <option key={friend.id} value={friend.id}>
+                        {friend.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Edit Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleSaveFullEdit}
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium rounded-md hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50"
+                >
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={handleCancelFullEdit}
+                  disabled={loading}
+                  className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Date & Time */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Date & Time</h3>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <p className="text-gray-800">
+                    <strong>Start:</strong> {format(new Date(hangout.startAt), 'MMM d, yyyy h:mm a')}
+                  </p>
+                  <p className="text-gray-800 mt-1">
+                    <strong>End:</strong> {format(new Date(hangout.endAt), 'MMM d, yyyy h:mm a')}
+                  </p>
+                </div>
+              </div>
 
           {/* Status */}
           <div>
@@ -365,33 +580,46 @@ export default function EventDetailsModal({
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            {canAssign && (
-              <button
-                onClick={handleAssign}
-                disabled={loading}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium rounded-md hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {loading ? 'Assigning...' : "I'll take this!"}
-              </button>
-            )}
-            {canUnassign && (
-              <button
-                onClick={handleUnassign}
-                disabled={loading}
-                className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {loading ? 'Unassigning...' : 'Unassign Myself'}
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-all"
-            >
-              Close
-            </button>
-          </div>
+              {/* Action Buttons */}
+              {!isEditingFull && (
+                <div className="flex gap-3 pt-4">
+                  {canEdit && (
+                    <button
+                      onClick={handleStartFullEdit}
+                      disabled={loading}
+                      className="flex-1 px-6 py-3 bg-blue-500 text-white font-medium rounded-md hover:bg-blue-600 disabled:opacity-50 transition-all"
+                    >
+                      Edit Hangout
+                    </button>
+                  )}
+                  {canAssign && (
+                    <button
+                      onClick={handleAssign}
+                      disabled={loading}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium rounded-md hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      {loading ? 'Assigning...' : "I'll take this!"}
+                    </button>
+                  )}
+                  {canUnassign && (
+                    <button
+                      onClick={handleUnassign}
+                      disabled={loading}
+                      className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      {loading ? 'Unassigning...' : 'Unassign Myself'}
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-all"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
