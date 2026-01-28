@@ -108,7 +108,6 @@ function AddOwnerForm({ onSuccess }: { onSuccess: () => void }) {
   const [formData, setFormData] = useState({
     name: '',
     phoneNumber: '',
-    profilePhotoUrl: '',
     address: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -125,7 +124,6 @@ function AddOwnerForm({ onSuccess }: { onSuccess: () => void }) {
           name: formData.name,
           role: 'OWNER',
           phoneNumber: formData.phoneNumber || null,
-          profilePhotoUrl: formData.profilePhotoUrl || null,
           address: formData.address || null,
         }),
       });
@@ -135,7 +133,7 @@ function AddOwnerForm({ onSuccess }: { onSuccess: () => void }) {
       }
 
       // Reset form
-      setFormData({ name: '', phoneNumber: '', profilePhotoUrl: '', address: '' });
+      setFormData({ name: '', phoneNumber: '', address: '' });
       onSuccess();
     } catch (error) {
       console.error('Error creating owner:', error);
@@ -175,19 +173,6 @@ function AddOwnerForm({ onSuccess }: { onSuccess: () => void }) {
 
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">
-          Profile Photo URL
-        </label>
-        <input
-          type="url"
-          value={formData.profilePhotoUrl}
-          onChange={e => setFormData({ ...formData, profilePhotoUrl: e.target.value })}
-          placeholder="https://example.com/photo.jpg"
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
           Address
         </label>
         <input
@@ -217,7 +202,6 @@ function AddPupForm({ owners, onSuccess }: { owners: User[]; onSuccess: () => vo
   const [formData, setFormData] = useState({
     name: '',
     breed: '',
-    profilePhotoUrl: '',
     careInstructions: '',
     ownerUserId: '',
   });
@@ -239,7 +223,7 @@ function AddPupForm({ owners, onSuccess }: { owners: User[]; onSuccess: () => vo
       }
 
       // Reset form
-      setFormData({ name: '', breed: '', profilePhotoUrl: '', careInstructions: '', ownerUserId: '' });
+      setFormData({ name: '', breed: '', careInstructions: '', ownerUserId: '' });
       onSuccess();
     } catch (error) {
       console.error('Error creating pup:', error);
@@ -298,19 +282,6 @@ function AddPupForm({ owners, onSuccess }: { owners: User[]; onSuccess: () => vo
 
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">
-          Profile Photo URL
-        </label>
-        <input
-          type="url"
-          value={formData.profilePhotoUrl}
-          onChange={e => setFormData({ ...formData, profilePhotoUrl: e.target.value })}
-          placeholder="https://example.com/photo.jpg"
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
           Care Instructions
         </label>
         <textarea
@@ -340,7 +311,6 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
   const [formData, setFormData] = useState({
     name: '',
     phoneNumber: '',
-    profilePhotoUrl: '',
     address: '',
   });
   const [selectedPups, setSelectedPups] = useState<string[]>([]);
@@ -367,7 +337,6 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
           name: formData.name,
           role: 'FRIEND',
           phoneNumber: formData.phoneNumber || null,
-          profilePhotoUrl: formData.profilePhotoUrl || null,
           address: formData.address || null,
         }),
       });
@@ -390,7 +359,7 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
       );
 
       // Reset form
-      setFormData({ name: '', phoneNumber: '', profilePhotoUrl: '', address: '' });
+      setFormData({ name: '', phoneNumber: '', address: '' });
       setSelectedPups([]);
       onSuccess();
     } catch (error) {
@@ -425,19 +394,6 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
           value={formData.phoneNumber}
           onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
           placeholder="+1234567890"
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Profile Photo URL
-        </label>
-        <input
-          type="url"
-          value={formData.profilePhotoUrl}
-          onChange={e => setFormData({ ...formData, profilePhotoUrl: e.target.value })}
-          placeholder="https://example.com/photo.jpg"
           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>

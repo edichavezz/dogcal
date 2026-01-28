@@ -10,9 +10,9 @@ import { prisma } from '@/lib/prisma';
 
 const createPupSchema = z.object({
   name: z.string().min(1).max(100),
-  breed: z.string().max(100).optional().nullable(),
-  careInstructions: z.string().max(2000).optional().nullable(),
-  profilePhotoUrl: z.string().url().optional().nullable(),
+  breed: z.string().max(100).optional().nullable().transform(val => val === '' ? null : val),
+  careInstructions: z.string().max(2000).optional().nullable().transform(val => val === '' ? null : val),
+  profilePhotoUrl: z.string().url().optional().nullable().or(z.literal('')).transform(val => val === '' ? null : val),
   ownerUserId: z.string().uuid().optional(), // Allow admin to specify owner
 });
 
