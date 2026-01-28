@@ -189,24 +189,57 @@ const data = await response.json();
 ### Manual Testing
 - See README.md "Manual Acceptance Testing Checklist"
 
+## Database Management
+
+### Development vs Production
+
+**Development Environment** (`.env.local`)
+- Current Supabase project
+- Use for local development and testing
+- Can be reset/cleared safely
+
+**Production Environment** (`.env.production.local`)
+- Separate Supabase project (recommended)
+- Never use dev credentials in production
+- See `.env.production.local.example` for template
+
+### Reset Development Database
+
+After running tests or when database has too much test data:
+
+```bash
+npm run db:reset
+```
+
+This creates a clean dev environment with:
+- 2 owners (including "Edi & Tom" with +447476238512)
+- 2 friends (including "Alex" with +447476238512)
+- 2 pups
+- 3 sample hangouts
+- 1 pending suggestion
+
+Full documentation: See `DATABASE.md`
+
 ## Deployment
 
 ### Environment Variables
 - `DATABASE_URL`: Supabase connection string (URL-encoded password)
+- All variables in `.env.production.local.example`
 
 ### Vercel Configuration
 - Framework: Next.js
 - Node Version: 18.x or later
 - Build Command: `npm run build`
 - Install Command: `npm install`
+- Environment: Use Vercel environment variables (not `.env` files)
 
 ### Database Migrations
 - Development: `npm run prisma:migrate`
-- Production: Migrations auto-applied on deployment OR run SQL manually in Supabase
+- Production: `DATABASE_URL="<prod-url>" npx prisma migrate deploy`
 
-### Seeding
-- Development: `npm run prisma:seed`
-- Production: Optional, for demo data
+### Database Reset (Dev Only!)
+- Development: `npm run db:reset`
+- **NEVER** run on production!
 
 ## Performance Considerations
 
