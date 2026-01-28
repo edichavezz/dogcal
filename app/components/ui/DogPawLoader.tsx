@@ -21,7 +21,7 @@ export default function DogPawLoader({
   pawColor = '#1a1a1a'
 }: DogPawLoaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   const pawPrintsRef = useRef<PawPrint[]>([]);
   const positionRef = useRef({ x: size / 2, y: size / 2, angle: 0 });
   const lastStepTimeRef = useRef(0);
