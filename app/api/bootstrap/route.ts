@@ -122,7 +122,7 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       actingUser: {
         id: actingUser.id,
         name: actingUser.name,
@@ -133,6 +133,14 @@ export async function GET() {
       upcomingHangouts,
       pendingSuggestionsCount,
     });
+
+    // Add cache headers for browser caching
+    response.headers.set(
+      'Cache-Control',
+      'private, max-age=60, stale-while-revalidate=120'
+    );
+
+    return response;
   } catch (error) {
     console.error('Error in bootstrap:', error);
     return NextResponse.json(

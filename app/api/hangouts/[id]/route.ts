@@ -59,7 +59,15 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ hangout });
+    const response = NextResponse.json({ hangout });
+
+    // Add cache headers for browser caching
+    response.headers.set(
+      'Cache-Control',
+      'private, max-age=60, stale-while-revalidate=120'
+    );
+
+    return response;
   } catch (error) {
     console.error('Error fetching hangout:', error);
     return NextResponse.json(

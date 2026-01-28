@@ -13,11 +13,29 @@ export default async function CalendarPage() {
 
   const actingUser = await prisma.user.findUnique({
     where: { id: actingUserId },
-    include: {
-      ownedPups: true,
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      addressText: true,
+      phoneNumber: true,
+      ownedPups: {
+        select: {
+          id: true,
+          name: true,
+          profilePhotoUrl: true,
+        },
+      },
       pupFriendships: {
-        include: {
-          pup: true,
+        select: {
+          pupId: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
         },
       },
     },
@@ -27,146 +45,249 @@ export default async function CalendarPage() {
     redirect('/');
   }
 
-  // Get upcoming hangouts and suggestions based on role
   const now = new Date();
-  let upcomingHangouts;
-  let upcomingSuggestions;
 
+  // Build queries based on role - use parallel fetching with Promise.all
   if (actingUser.role === 'OWNER') {
-    // Owners see all hangouts for their pups
-    upcomingHangouts = await prisma.hangout.findMany({
-      where: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        pupId: { in: actingUser.ownedPups.map((p: any) => p.id) },
-        endAt: { gte: now },
-      },
-      include: {
-        pup: {
-          include: {
-            owner: true,
-          },
-        },
-        assignedFriend: true,
-        createdByOwner: true,
-        notes: {
-          include: {
-            author: true,
-          },
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
-      },
-      orderBy: { startAt: 'asc' },
-    });
+    const pupIds = actingUser.ownedPups.map((p) => p.id);
 
-    // Owners see PENDING suggestions for their pups
-    upcomingSuggestions = await prisma.hangoutSuggestion.findMany({
-      where: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        pupId: { in: actingUser.ownedPups.map((p: any) => p.id) },
-        status: 'PENDING',
-        endAt: { gte: now },
-      },
-      include: {
-        pup: {
-          include: {
-            owner: true,
+    // Parallel fetch: hangouts and suggestions simultaneously
+    const [upcomingHangouts, upcomingSuggestions] = await Promise.all([
+      // Hangouts query - removed nested notes include (fetch on demand)
+      prisma.hangout.findMany({
+        where: {
+          pupId: { in: pupIds },
+          endAt: { gte: now },
+        },
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          ownerNotes: true,
+          eventName: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+              careInstructions: true,
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          assignedFriend: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-        suggestedByFriend: true,
-      },
-      orderBy: { startAt: 'asc' },
-    });
+        orderBy: { startAt: 'asc' },
+        take: 100, // Limit to prevent unbounded queries
+      }),
+      // Suggestions query
+      prisma.hangoutSuggestion.findMany({
+        where: {
+          pupId: { in: pupIds },
+          status: 'PENDING',
+          endAt: { gte: now },
+        },
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          friendComment: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          suggestedByFriend: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 50,
+      }),
+    ]);
+
+    // Add empty notes array for compatibility with CalendarView type
+    const hangoutsWithEmptyNotes = upcomingHangouts.map((h) => ({
+      ...h,
+      notes: [],
+    }));
+
+    return (
+      <div className="flex flex-col h-screen overflow-hidden">
+        <TopNav user={actingUser} />
+
+        <main className="flex-1 min-h-0 overflow-hidden">
+          <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
+            <div className="flex-shrink-0 mb-4">
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">
+                Calendar
+              </h1>
+              <p className="text-sm text-slate-600">
+                View and manage hangouts for your pups
+              </p>
+            </div>
+
+            <div className="flex-1 min-h-0">
+              <CalendarClient
+                hangouts={hangoutsWithEmptyNotes}
+                suggestions={upcomingSuggestions}
+                actingUserId={actingUserId}
+                actingUserRole={actingUser.role}
+              />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   } else {
-    // Friends see OPEN hangouts for their pups + assigned hangouts
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const friendPupIds = actingUser.pupFriendships.map((f: any) => f.pupId);
-    upcomingHangouts = await prisma.hangout.findMany({
-      where: {
-        AND: [
-          { endAt: { gte: now } },
-          {
-            OR: [
-              {
-                AND: [
-                  { pupId: { in: friendPupIds } },
-                  { status: 'OPEN' },
-                ],
-              },
-              {
-                assignedFriendUserId: actingUserId,
-              },
-            ],
-          },
-        ],
-      },
-      include: {
-        pup: {
-          include: {
-            owner: true,
-          },
-        },
-        assignedFriend: true,
-        createdByOwner: true,
-        notes: {
-          include: {
-            author: true,
-          },
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
-      },
-      orderBy: { startAt: 'asc' },
-    });
+    // FRIEND role
+    const friendPupIds = actingUser.pupFriendships.map((f) => f.pupId);
 
-    // Friends see their own PENDING suggestions
-    upcomingSuggestions = await prisma.hangoutSuggestion.findMany({
-      where: {
-        suggestedByFriendUserId: actingUserId,
-        status: 'PENDING',
-        endAt: { gte: now },
-      },
-      include: {
-        pup: {
-          include: {
-            owner: true,
+    // Parallel fetch: hangouts and suggestions simultaneously
+    const [upcomingHangouts, upcomingSuggestions] = await Promise.all([
+      // Hangouts query for friends
+      prisma.hangout.findMany({
+        where: {
+          AND: [
+            { endAt: { gte: now } },
+            {
+              OR: [
+                {
+                  AND: [
+                    { pupId: { in: friendPupIds } },
+                    { status: 'OPEN' },
+                  ],
+                },
+                {
+                  assignedFriendUserId: actingUserId,
+                },
+              ],
+            },
+          ],
+        },
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          ownerNotes: true,
+          eventName: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+              careInstructions: true,
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          assignedFriend: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-        suggestedByFriend: true,
-      },
-      orderBy: { startAt: 'asc' },
-    });
+        orderBy: { startAt: 'asc' },
+        take: 100,
+      }),
+      // Suggestions query for friends
+      prisma.hangoutSuggestion.findMany({
+        where: {
+          suggestedByFriendUserId: actingUserId,
+          status: 'PENDING',
+          endAt: { gte: now },
+        },
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          friendComment: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          suggestedByFriend: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 50,
+      }),
+    ]);
+
+    // Add empty notes array for compatibility with CalendarView type
+    const hangoutsWithEmptyNotes = upcomingHangouts.map((h) => ({
+      ...h,
+      notes: [],
+    }));
+
+    return (
+      <div className="flex flex-col h-screen overflow-hidden">
+        <TopNav user={actingUser} />
+
+        <main className="flex-1 min-h-0 overflow-hidden">
+          <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
+            <div className="flex-shrink-0 mb-4">
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">
+                Calendar
+              </h1>
+              <p className="text-sm text-slate-600">
+                View available hangouts and your upcoming commitments
+              </p>
+            </div>
+
+            <div className="flex-1 min-h-0">
+              <CalendarClient
+                hangouts={hangoutsWithEmptyNotes}
+                suggestions={upcomingSuggestions}
+                actingUserId={actingUserId}
+                actingUserRole={actingUser.role}
+              />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
-
-  return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <TopNav user={actingUser} />
-
-      <main className="flex-1 min-h-0 overflow-hidden">
-        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
-          <div className="flex-shrink-0 mb-4">
-            <h1 className="text-2xl font-bold text-slate-900 mb-1">
-              Calendar
-            </h1>
-            <p className="text-sm text-slate-600">
-              {actingUser.role === 'OWNER'
-                ? 'View and manage hangouts for your pups'
-                : 'View available hangouts and your upcoming commitments'}
-            </p>
-          </div>
-
-          <div className="flex-1 min-h-0">
-            <CalendarClient
-              hangouts={upcomingHangouts}
-              suggestions={upcomingSuggestions || []}
-              actingUserId={actingUserId}
-              actingUserRole={actingUser.role}
-            />
-          </div>
-        </div>
-      </main>
-    </div>
-  );
 }
