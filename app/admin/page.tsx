@@ -10,24 +10,25 @@
 import AdminClient from './AdminClient';
 
 interface AdminPageProps {
-  searchParams: {
+  searchParams: Promise<{
     token?: string;
-  };
+  }>;
 }
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const adminToken = process.env.ADMIN_TOKEN;
-  const providedToken = searchParams.token;
+  const params = await searchParams;
+  const providedToken = params.token;
 
   // Check if admin access is enabled
   if (!adminToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full text-center bg-white shadow-lg rounded-lg p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full text-center bg-white shadow-sm border border-slate-200 rounded-xl p-8">
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">
             Admin Access Disabled
           </h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             Admin access is not configured. Please set the ADMIN_TOKEN environment variable.
           </p>
         </div>
@@ -38,11 +39,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   // Verify token
   if (providedToken !== adminToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full text-center bg-white shadow-lg rounded-lg p-8">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full text-center bg-white shadow-sm border border-slate-200 rounded-xl p-8">
           <div className="mb-4">
             <svg
-              className="mx-auto h-16 w-16 text-red-500"
+              className="mx-auto h-16 w-16 text-orange-500"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -56,10 +57,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">
             Access Denied
           </h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             Invalid admin token. Please contact your administrator.
           </p>
         </div>

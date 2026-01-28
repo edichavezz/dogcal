@@ -60,14 +60,14 @@ export default function ManageUsers() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Message Banner */}
       {message && (
         <div
-          className={`rounded-md p-4 ${
+          className={`rounded-lg p-4 ${
             message.type === 'success'
               ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
+              : 'bg-orange-50 text-orange-800 border border-orange-200'
           }`}
         >
           {message.text}
@@ -75,26 +75,26 @@ export default function ManageUsers() {
       )}
 
       {/* Add New Owner */}
-      <section className="bg-gray-50 rounded-lg p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Owner</h2>
+      <section className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-100">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">🏠 Add New Owner</h3>
         <AddOwnerForm onSuccess={() => { fetchData(); showMessage('success', 'Owner added successfully!'); }} />
       </section>
 
       {/* Add New Pup */}
-      <section className="bg-gray-50 rounded-lg p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Pup</h2>
+      <section className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-6 border border-amber-100">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">🐕 Add New Pup</h3>
         <AddPupForm owners={users.filter(u => u.role === 'OWNER')} onSuccess={() => { fetchData(); showMessage('success', 'Pup added successfully!'); }} />
       </section>
 
       {/* Add New Friend */}
-      <section className="bg-gray-50 rounded-lg p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Friend</h2>
+      <section className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-6 border border-yellow-100">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">🤝 Add New Friend</h3>
         <AddFriendForm pups={pups} onSuccess={() => { fetchData(); showMessage('success', 'Friend added successfully!'); }} />
       </section>
 
       {/* View All Users */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">All Users</h2>
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">👥 All Users</h3>
         <UsersTable users={users} />
       </section>
     </div>
@@ -145,20 +145,20 @@ function AddOwnerForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Name <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Name <span className="text-orange-600">*</span>
         </label>
         <input
           type="text"
           required
           value={formData.name}
           onChange={e => setFormData({ ...formData, name: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Phone Number
         </label>
         <input
@@ -166,12 +166,12 @@ function AddOwnerForm({ onSuccess }: { onSuccess: () => void }) {
           value={formData.phoneNumber}
           onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
           placeholder="+1234567890"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Profile Photo URL
         </label>
         <input
@@ -179,12 +179,12 @@ function AddOwnerForm({ onSuccess }: { onSuccess: () => void }) {
           value={formData.profilePhotoUrl}
           onChange={e => setFormData({ ...formData, profilePhotoUrl: e.target.value })}
           placeholder="https://example.com/photo.jpg"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Address
         </label>
         <input
@@ -192,14 +192,14 @@ function AddOwnerForm({ onSuccess }: { onSuccess: () => void }) {
           value={formData.address}
           onChange={e => setFormData({ ...formData, address: e.target.value })}
           placeholder="123 Main St, City, State"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
         />
       </div>
 
       <button
         type="submit"
         disabled={submitting}
-        className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        className="w-full bg-orange-500 text-white py-2.5 px-4 rounded-lg hover:bg-orange-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors font-medium"
       >
         {submitting ? 'Adding...' : 'Add Owner'}
       </button>
@@ -249,14 +249,14 @@ function AddPupForm({ owners, onSuccess }: { owners: User[]; onSuccess: () => vo
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Owner <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Owner <span className="text-orange-600">*</span>
         </label>
         <select
           required
           value={formData.ownerUserId}
           onChange={e => setFormData({ ...formData, ownerUserId: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         >
           <option value="">Select owner...</option>
           {owners.map(owner => (
@@ -268,20 +268,20 @@ function AddPupForm({ owners, onSuccess }: { owners: User[]; onSuccess: () => vo
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Name <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Name <span className="text-orange-600">*</span>
         </label>
         <input
           type="text"
           required
           value={formData.name}
           onChange={e => setFormData({ ...formData, name: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Breed
         </label>
         <input
@@ -289,12 +289,12 @@ function AddPupForm({ owners, onSuccess }: { owners: User[]; onSuccess: () => vo
           value={formData.breed}
           onChange={e => setFormData({ ...formData, breed: e.target.value })}
           placeholder="e.g., Golden Retriever"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Profile Photo URL
         </label>
         <input
@@ -302,12 +302,12 @@ function AddPupForm({ owners, onSuccess }: { owners: User[]; onSuccess: () => vo
           value={formData.profilePhotoUrl}
           onChange={e => setFormData({ ...formData, profilePhotoUrl: e.target.value })}
           placeholder="https://example.com/photo.jpg"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Care Instructions
         </label>
         <textarea
@@ -315,14 +315,14 @@ function AddPupForm({ owners, onSuccess }: { owners: User[]; onSuccess: () => vo
           onChange={e => setFormData({ ...formData, careInstructions: e.target.value })}
           rows={3}
           placeholder="Special care notes..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
 
       <button
         type="submit"
         disabled={submitting}
-        className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        className="w-full bg-amber-600 text-white py-2 px-4 rounded-lg hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
       >
         {submitting ? 'Adding...' : 'Add Pup'}
       </button>
@@ -398,20 +398,20 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Name <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Name <span className="text-orange-600">*</span>
         </label>
         <input
           type="text"
           required
           value={formData.name}
           onChange={e => setFormData({ ...formData, name: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Phone Number
         </label>
         <input
@@ -419,12 +419,12 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
           value={formData.phoneNumber}
           onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
           placeholder="+1234567890"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Profile Photo URL
         </label>
         <input
@@ -432,12 +432,12 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
           value={formData.profilePhotoUrl}
           onChange={e => setFormData({ ...formData, profilePhotoUrl: e.target.value })}
           placeholder="https://example.com/photo.jpg"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 mb-1">
           Address
         </label>
         <input
@@ -445,15 +445,15 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
           value={formData.address}
           onChange={e => setFormData({ ...formData, address: e.target.value })}
           placeholder="123 Main St, City, State"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-700 mb-2">
           Pups to Care For
         </label>
-        <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3">
+        <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-300 rounded-lg p-3">
           {pups.length === 0 ? (
             <p className="text-gray-500 text-sm">No pups available</p>
           ) : (
@@ -475,7 +475,7 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
       <button
         type="submit"
         disabled={submitting}
-        className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        className="w-full bg-amber-600 text-white py-2 px-4 rounded-lg hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
       >
         {submitting ? 'Adding...' : 'Add Friend'}
       </button>
@@ -488,34 +488,34 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
  */
 function UsersTable({ users }: { users: UserWithPups[] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-        <thead className="bg-gray-50">
+    <div className="overflow-x-auto rounded-xl border border-slate-200">
+      <table className="min-w-full bg-white">
+        <thead className="bg-slate-50">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
               Name
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
               Role
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
               Phone
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
               Info
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="divide-y divide-slate-200">
           {users.map(user => (
-            <tr key={user.id}>
+            <tr key={user.id} className="hover:bg-slate-50 transition-colors">
               <td className="px-4 py-3 whitespace-nowrap">
                 <div className="flex items-center">
-                  <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-semibold">
+                  <div className="h-10 w-10 flex-shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-semibold border-2 border-slate-200">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="ml-3">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-slate-900">
                       {user.name}
                     </div>
                   </div>
@@ -523,21 +523,21 @@ function UsersTable({ users }: { users: UserWithPups[] }) {
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 <span
-                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
                     user.role === 'OWNER'
-                      ? 'bg-purple-100 text-purple-800'
-                      : 'bg-blue-100 text-blue-800'
+                      ? 'bg-orange-50 text-orange-700 border-orange-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
                   }`}
                 >
-                  {user.role}
+                  {user.role === 'OWNER' ? '🏠 Owner' : '🤝 Friend'}
                 </span>
               </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                {user.phoneNumber || '-'}
+              <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-600">
+                {user.phoneNumber ? `📱 ${user.phoneNumber}` : '-'}
               </td>
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-600">
                 {user.role === 'OWNER' && user.ownedPups
-                  ? `${user.ownedPups.length} pup${user.ownedPups.length !== 1 ? 's' : ''}`
+                  ? `🐕 ${user.ownedPups.length} pup${user.ownedPups.length !== 1 ? 's' : ''}`
                   : '-'}
               </td>
             </tr>

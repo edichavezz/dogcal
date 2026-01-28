@@ -64,8 +64,8 @@ export default function GenerateTokens() {
   return (
     <div className="space-y-6">
       {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <p className="text-sm text-blue-800">
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <p className="text-sm text-amber-900">
           <strong>Generate Login URLs:</strong> Click the button below to create personalized
           login links for all users. Share these links via WhatsApp, email, or any other channel.
           Users can bookmark these links for easy access.
@@ -77,58 +77,58 @@ export default function GenerateTokens() {
         <button
           onClick={generateTokens}
           disabled={loading}
-          className="bg-purple-600 text-white py-3 px-6 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-lg font-semibold"
+          className="bg-amber-600 text-white py-3 px-6 rounded-lg hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-lg font-semibold transition-colors"
         >
-          {loading ? 'Generating...' : 'Generate All Login URLs'}
+          {loading ? 'Generating...' : '🔑 Generate All Login URLs'}
         </button>
       </div>
 
       {/* Tokens Table */}
       {tokens.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-            <thead className="bg-gray-50">
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="min-w-full bg-white">
+            <thead className="bg-slate-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Login URL
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-200">
               {tokens.map(token => (
-                <tr key={token.userId}>
+                <tr key={token.userId} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-slate-900">
                       {token.name}
                     </div>
                     {token.phoneNumber && (
-                      <div className="text-xs text-gray-500">
-                        {token.phoneNumber}
+                      <div className="text-xs text-slate-500">
+                        📱 {token.phoneNumber}
                       </div>
                     )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
                         token.role === 'OWNER'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-orange-50 text-orange-700 border-orange-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
                       }`}
                     >
-                      {token.role}
+                      {token.role === 'OWNER' ? '🏠 Owner' : '🤝 Friend'}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <code className="text-xs bg-gray-100 px-2 py-1 rounded break-all">
+                    <code className="text-xs bg-slate-100 px-2 py-1 rounded break-all text-slate-700">
                       {token.loginUrl}
                     </code>
                   </td>
@@ -136,20 +136,20 @@ export default function GenerateTokens() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => copyToClipboard(token.loginUrl)}
-                        className={`px-3 py-1 text-sm rounded ${
+                        className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                           copiedUrl === token.loginUrl
-                            ? 'bg-green-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                         }`}
                       >
-                        {copiedUrl === token.loginUrl ? 'Copied!' : 'Copy'}
+                        {copiedUrl === token.loginUrl ? '✓ Copied!' : '📋 Copy'}
                       </button>
                       {token.phoneNumber && (
                         <button
                           onClick={() => sendWhatsApp(token.phoneNumber!, token.loginUrl)}
-                          className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                          className="px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-colors"
                         >
-                          WhatsApp
+                          💬 WhatsApp
                         </button>
                       )}
                     </div>
@@ -160,7 +160,7 @@ export default function GenerateTokens() {
           </table>
 
           {/* Summary */}
-          <div className="mt-4 text-sm text-gray-600">
+          <div className="mt-4 px-4 pb-4 text-sm text-slate-600">
             <p>
               <strong>Total users:</strong> {tokens.length} (
               {tokens.filter(t => t.role === 'OWNER').length} owners,{' '}
