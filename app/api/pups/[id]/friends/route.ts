@@ -1,5 +1,5 @@
 // API Route: Add Friend to Pup
-// POST /api/pups/[pupId]/friends
+// POST /api/pups/[id]/friends
 // Body: { friendUserId: string }
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,10 +12,10 @@ const addFriendSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { pupId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { pupId } = params;
+    const { id: pupId } = params;
     const body = await request.json();
     const data = addFriendSchema.parse(body);
 
