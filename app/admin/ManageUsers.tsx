@@ -122,8 +122,11 @@ function AddOwnerForm({ onSuccess }: { onSuccess: () => void }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
           role: 'OWNER',
+          phoneNumber: formData.phoneNumber || null,
+          profilePhotoUrl: formData.profilePhotoUrl || null,
+          address: formData.address || null,
         }),
       });
 
@@ -361,8 +364,11 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
           role: 'FRIEND',
+          phoneNumber: formData.phoneNumber || null,
+          profilePhotoUrl: formData.profilePhotoUrl || null,
+          address: formData.address || null,
         }),
       });
 

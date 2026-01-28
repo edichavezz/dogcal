@@ -10,10 +10,10 @@ import { prisma } from '@/lib/prisma';
 const createUserSchema = z.object({
   name: z.string().min(1).max(100),
   role: z.enum(['OWNER', 'FRIEND']),
-  phoneNumber: z.string().max(20).optional().nullable(),
-  profilePhotoUrl: z.string().url().optional().nullable(),
-  address: z.string().max(500).optional().nullable(),
-  addressText: z.string().max(500).optional().nullable(), // Legacy field
+  phoneNumber: z.string().max(20).optional().nullable().transform(val => val === '' ? null : val),
+  profilePhotoUrl: z.string().url().optional().nullable().or(z.literal('')).transform(val => val === '' ? null : val),
+  address: z.string().max(500).optional().nullable().transform(val => val === '' ? null : val),
+  addressText: z.string().max(500).optional().nullable().transform(val => val === '' ? null : val), // Legacy field
 });
 
 export async function GET() {
