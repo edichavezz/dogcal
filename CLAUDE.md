@@ -270,10 +270,28 @@ const data = await response.json();
 ## Contributing
 
 ### Git Workflow
-- Always create a new branch from `main` before making changes.
-- Commit all related changes on that feature branch.
-- Run `npm run dev` and other checks from that branch.
-- If you need to pause and work on something else, leave your in-progress work committed on the feature branch so it can be resumed later without losing changes.
+
+**IMPORTANT: Claude should automatically follow this workflow without being asked:**
+
+1. **Before implementing any feature or fix:**
+   - Create a new feature branch from `main` (e.g., `feature/whatsapp-integration`, `fix/validation-bug`)
+   - Use descriptive branch names: `feature/`, `fix/`, `refactor/`, `docs/`
+
+2. **After completing implementation:**
+   - Stage all related files (excluding `.env.local` and other secrets)
+   - Create a detailed commit message following the format in this guide
+   - Commit changes to the feature branch automatically
+   - Do NOT wait for user approval to commit - do it proactively after implementation is complete
+
+3. **During implementation:**
+   - Run `npm run typecheck` to verify no TypeScript errors
+   - Run `npm run dev` for manual testing if needed
+   - If pausing work, commit in-progress changes so work can be resumed later
+
+4. **Branch management:**
+   - Leave the feature branch for the user to merge via PR or direct merge
+   - Don't automatically merge to main unless explicitly instructed
+   - Don't automatically push to remote unless explicitly instructed
 
 When adding new features:
 1. Follow existing patterns
