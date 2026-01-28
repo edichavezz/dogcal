@@ -1,53 +1,10 @@
 /**
- * Login Route
+ * Invalid Token Error Page
  *
- * Accepts encrypted login token, validates it, sets authentication cookie,
- * and redirects to home page or specified destination.
+ * Shown when a login token is invalid or expired.
  */
 
-import { redirect } from 'next/navigation';
-import { validateLoginToken } from '@/lib/loginTokens';
-import { setActingUserId } from '@/lib/cookies';
-import { prisma } from '@/lib/prisma';
-
-interface LoginPageProps {
-  params: {
-    token: string;
-  };
-}
-
-export default async function LoginPage({ params }: LoginPageProps) {
-  const { token } = params;
-
-  // Validate token
-  const result = await validateLoginToken(token);
-
-  if (!result) {
-    // Invalid token - show error page
-    return <InvalidTokenPage />;
-  }
-
-  // Verify user exists in database
-  const user = await prisma.user.findUnique({
-    where: { id: result.userId },
-  });
-
-  if (!user) {
-    // User not found - show error page
-    return <InvalidTokenPage />;
-  }
-
-  // Set acting user cookie
-  await setActingUserId(result.userId);
-
-  // Redirect to home page
-  redirect('/');
-}
-
-/**
- * Error page shown for invalid or expired tokens
- */
-function InvalidTokenPage() {
+export default function InvalidTokenPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full text-center">

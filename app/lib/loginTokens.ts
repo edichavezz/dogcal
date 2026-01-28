@@ -131,7 +131,7 @@ export async function generateAllTokens(): Promise<Array<{
     const tokens = await Promise.all(
       users.map(async (user) => {
         const token = await getOrCreateLoginToken(user.id);
-        const loginUrl = `${appUrl}/login/${token}`;
+        const loginUrl = `${appUrl}/api/login/${token}`;
 
         return {
           userId: user.id,
@@ -160,5 +160,5 @@ export async function generateAllTokens(): Promise<Array<{
 export async function getLoginUrl(userId: string): Promise<string> {
   const token = await getOrCreateLoginToken(userId);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  return `${appUrl}/login/${token}`;
+  return `${appUrl}/api/login/${token}`;
 }
