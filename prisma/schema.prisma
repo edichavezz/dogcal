@@ -34,7 +34,8 @@ enum SuggestionStatus {
 model User {
   id                 String              @id @default(uuid())
   name               String
-  addressText        String?
+  addressText        String?             // Legacy field, use address instead
+  address            String?             // New address field
   phoneNumber        String?
   role               UserRole
   profilePhotoUrl    String?
@@ -54,6 +55,7 @@ model User {
 model Pup {
   id               String   @id @default(uuid())
   name             String
+  breed            String?
   ownerUserId      String
   profilePhotoUrl  String?
   careInstructions String?

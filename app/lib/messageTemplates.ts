@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { generateLoginToken } from './loginTokens';
 
 /**
  * Get the base URL for the application
@@ -28,6 +29,7 @@ function formatTime(date: Date): string {
  * Sent to all friends of the pup
  */
 export function generateHangoutCreatedMessage(params: {
+  friendUserId: string;
   friendName: string;
   ownerName: string;
   pupName: string;
@@ -38,6 +40,7 @@ export function generateHangoutCreatedMessage(params: {
   hangoutId: string;
 }): string {
   const {
+    friendUserId,
     friendName,
     ownerName,
     pupName,
@@ -48,7 +51,11 @@ export function generateHangoutCreatedMessage(params: {
     hangoutId,
   } = params;
 
-  const deepLink = `${getAppUrl()}/calendar?hangout=${hangoutId}`;
+  // Generate personalized login token with destination
+  const destination = `/calendar?hangout=${hangoutId}`;
+  const loginToken = generateLoginToken(friendUserId, destination);
+  const deepLink = `${getAppUrl()}/login/${loginToken}`;
+
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
 
@@ -83,6 +90,7 @@ Thanks for being a pup friend!`;
  * Sent to the pup owner
  */
 export function generateSuggestionCreatedMessage(params: {
+  ownerUserId: string;
   ownerName: string;
   friendName: string;
   pupName: string;
@@ -93,6 +101,7 @@ export function generateSuggestionCreatedMessage(params: {
   suggestionId: string;
 }): string {
   const {
+    ownerUserId,
     ownerName,
     friendName,
     pupName,
@@ -103,7 +112,11 @@ export function generateSuggestionCreatedMessage(params: {
     suggestionId,
   } = params;
 
-  const deepLink = `${getAppUrl()}/approvals?suggestion=${suggestionId}`;
+  // Generate personalized login token with destination
+  const destination = `/approvals?suggestion=${suggestionId}`;
+  const loginToken = generateLoginToken(ownerUserId, destination);
+  const deepLink = `${getAppUrl()}/login/${loginToken}`;
+
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
 
@@ -138,6 +151,7 @@ You can approve or reject this suggestion.`;
  * Sent to the pup owner (future enhancement)
  */
 export function generateHangoutAssignedMessage(params: {
+  ownerUserId: string;
   ownerName: string;
   friendName: string;
   pupName: string;
@@ -147,6 +161,7 @@ export function generateHangoutAssignedMessage(params: {
   hangoutId: string;
 }): string {
   const {
+    ownerUserId,
     ownerName,
     friendName,
     pupName,
@@ -156,7 +171,11 @@ export function generateHangoutAssignedMessage(params: {
     hangoutId,
   } = params;
 
-  const deepLink = `${getAppUrl()}/calendar?hangout=${hangoutId}`;
+  // Generate personalized login token with destination
+  const destination = `/calendar?hangout=${hangoutId}`;
+  const loginToken = generateLoginToken(ownerUserId, destination);
+  const deepLink = `${getAppUrl()}/login/${loginToken}`;
+
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
 
@@ -185,6 +204,7 @@ Thanks for using DogCal!`;
  * Sent to the friend who made the suggestion (future enhancement)
  */
 export function generateSuggestionApprovedMessage(params: {
+  friendUserId: string;
   friendName: string;
   ownerName: string;
   pupName: string;
@@ -194,6 +214,7 @@ export function generateSuggestionApprovedMessage(params: {
   hangoutId: string;
 }): string {
   const {
+    friendUserId,
     friendName,
     ownerName,
     pupName,
@@ -203,7 +224,11 @@ export function generateSuggestionApprovedMessage(params: {
     hangoutId,
   } = params;
 
-  const deepLink = `${getAppUrl()}/calendar?hangout=${hangoutId}`;
+  // Generate personalized login token with destination
+  const destination = `/calendar?hangout=${hangoutId}`;
+  const loginToken = generateLoginToken(friendUserId, destination);
+  const deepLink = `${getAppUrl()}/login/${loginToken}`;
+
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
 

@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
           } else {
             // Generate message using first suggestion in series
             const message = generateSuggestionCreatedMessage({
+              ownerUserId: owner.id,
               ownerName: owner.name,
               friendName: actingUser.name,
               pupName: suggestions[0].pup.name,
@@ -217,6 +218,7 @@ export async function POST(request: NextRequest) {
           } else {
             // Generate message
             const message = generateSuggestionCreatedMessage({
+              ownerUserId: owner.id,
               ownerName: owner.name,
               friendName: actingUser.name,
               pupName: suggestion.pup.name,

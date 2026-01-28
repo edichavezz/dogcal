@@ -1,6 +1,6 @@
-// API Route: Get All Users / Create New Friend User
-// GET /api/users - Returns all users for the "act as user" selector
-// POST /api/users - Creates a new FRIEND user (owner only)
+// API Route: Get All Users / Create New User
+// GET /api/users - Returns all users
+// POST /api/users - Creates a new user (OWNER or FRIEND)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -9,17 +9,18 @@ import { prisma } from '@/lib/prisma';
 
 const createUserSchema = z.object({
   name: z.string().min(1).max(100),
-  addressText: z.string().max(500).optional().nullable(),
+  role: z.enum(['OWNER', 'FRIEND']),
+  phoneNumber: z.string().max(20).optional().nullable(),
+  profilePhotoUrl: z.string().url().optional().nullable(),
+  address: z.string().max(500).optional().nullable(),
+  addressText: z.string().max(500).optional().nullable(), // Legacy field
 });
 
 export async function GET() {
   try {
     const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        profilePhotoUrl: true,
+      include: {
+        ownedPups: true,
       },
       orderBy: [
         { role: 'asc' }, // OWNER first, then FRIEND
@@ -39,30 +40,38 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const actingUserId = await getActingUserId();
-    if (!actingUserId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const actingUser = await prisma.user.findUnique({
-      where: { id: actingUserId },
-    });
-
-    // Only owners can create friend users
-    if (!actingUser || actingUser.role !== 'OWNER') {
-      return NextResponse.json(
-        { error: 'Only owners can create friends' },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
     const data = createUserSchema.parse(body);
 
+    // If not in admin mode (no role specified or trying to create from app),
+    // require authentication
+    if (!data.role) {
+      const actingUserId = await getActingUserId();
+      if (!actingUserId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const actingUser = await prisma.user.findUnique({
+        where: { id: actingUserId },
+      });
+
+      // Only owners can create friend users
+      if (!actingUser || actingUser.role !== 'OWNER') {
+        return NextResponse.json(
+          { error: 'Only owners can create friends' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Create user with all fields
     const newUser = await prisma.user.create({
       data: {
-        ...data,
-        role: 'FRIEND',
+        name: data.name,
+        role: data.role,
+        phoneNumber: data.phoneNumber,
+        profilePhotoUrl: data.profilePhotoUrl,
+        address: data.address || data.addressText, // Support both field names
       },
     });
 
