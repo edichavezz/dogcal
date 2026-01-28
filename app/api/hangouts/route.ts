@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import { addDays, addWeeks, addMonths } from 'date-fns';
+import { sendWhatsAppMessage, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
+import { generateHangoutCreatedMessage } from '@/lib/messageTemplates';
 
 const createHangoutSchema = z.object({
   pupId: z.string().uuid(),
@@ -139,7 +141,64 @@ export async function POST(request: NextRequest) {
         )
       );
 
-      return NextResponse.json({ hangouts, count: hangouts.length }, { status: 201 });
+      // Send WhatsApp notifications to friends
+      const notificationResults: NotificationResult[] = [];
+
+      if (process.env.WHATSAPP_ENABLED === 'true') {
+        try {
+          // Get all friends of this pup
+          const friendships = await prisma.pupFriendship.findMany({
+            where: { pupId },
+            include: { friend: true },
+          });
+
+          // Send notification to each friend
+          for (const friendship of friendships) {
+            const friend = friendship.friend;
+
+            // Skip if no valid phone number
+            if (!isValidPhoneNumber(friend.phoneNumber)) {
+              notificationResults.push({
+                userId: friend.id,
+                userName: friend.name,
+                phoneNumber: friend.phoneNumber,
+                status: 'skipped',
+                reason: 'No valid phone number',
+              });
+              continue;
+            }
+
+            // Generate message using first hangout in series
+            const message = generateHangoutCreatedMessage({
+              friendName: friend.name,
+              ownerName: actingUser.name,
+              pupName: pup.name,
+              startAt: hangouts[0].startAt,
+              endAt: hangouts[0].endAt,
+              eventName: hangouts[0].eventName,
+              ownerNotes: hangouts[0].ownerNotes,
+              hangoutId: hangouts[0].id,
+            });
+
+            // Send WhatsApp message
+            const result = await sendWhatsAppMessage(friend.phoneNumber!, message);
+
+            notificationResults.push({
+              userId: friend.id,
+              userName: friend.name,
+              phoneNumber: friend.phoneNumber,
+              status: result.success ? 'sent' : 'failed',
+              reason: result.error,
+              twilioSid: result.sid,
+            });
+          }
+        } catch (error) {
+          console.error('Error sending WhatsApp notifications:', error);
+          // Don't fail the request if notifications fail
+        }
+      }
+
+      return NextResponse.json({ hangouts, count: hangouts.length, notifications: notificationResults }, { status: 201 });
     } else {
       // Create single hangout
       const hangout = await prisma.hangout.create({
@@ -160,7 +219,64 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return NextResponse.json({ hangout }, { status: 201 });
+      // Send WhatsApp notifications to friends
+      const notificationResults: NotificationResult[] = [];
+
+      if (process.env.WHATSAPP_ENABLED === 'true') {
+        try {
+          // Get all friends of this pup
+          const friendships = await prisma.pupFriendship.findMany({
+            where: { pupId },
+            include: { friend: true },
+          });
+
+          // Send notification to each friend
+          for (const friendship of friendships) {
+            const friend = friendship.friend;
+
+            // Skip if no valid phone number
+            if (!isValidPhoneNumber(friend.phoneNumber)) {
+              notificationResults.push({
+                userId: friend.id,
+                userName: friend.name,
+                phoneNumber: friend.phoneNumber,
+                status: 'skipped',
+                reason: 'No valid phone number',
+              });
+              continue;
+            }
+
+            // Generate message
+            const message = generateHangoutCreatedMessage({
+              friendName: friend.name,
+              ownerName: actingUser.name,
+              pupName: pup.name,
+              startAt: hangout.startAt,
+              endAt: hangout.endAt,
+              eventName: hangout.eventName,
+              ownerNotes: hangout.ownerNotes,
+              hangoutId: hangout.id,
+            });
+
+            // Send WhatsApp message
+            const result = await sendWhatsAppMessage(friend.phoneNumber!, message);
+
+            notificationResults.push({
+              userId: friend.id,
+              userName: friend.name,
+              phoneNumber: friend.phoneNumber,
+              status: result.success ? 'sent' : 'failed',
+              reason: result.error,
+              twilioSid: result.sid,
+            });
+          }
+        } catch (error) {
+          console.error('Error sending WhatsApp notifications:', error);
+          // Don't fail the request if notifications fail
+        }
+      }
+
+      return NextResponse.json({ hangout, notifications: notificationResults }, { status: 201 });
     }
   } catch (error) {
     if (error instanceof z.ZodError) {

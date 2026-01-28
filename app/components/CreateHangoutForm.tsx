@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { format, addHours } from 'date-fns';
 import { getPupColor } from '@/lib/colorUtils';
+import type { NotificationResult } from '@/lib/whatsapp';
+import NotificationResultModal from './NotificationResultModal';
 
 type Pup = {
   id: string;
@@ -38,6 +40,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [notificationResults, setNotificationResults] = useState<NotificationResult[] | null>(null);
 
   // Get current time and smart defaults
   const now = new Date();
@@ -111,8 +114,15 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
         throw new Error(data.error || 'Failed to create hangout');
       }
 
-      // Success! Redirect to calendar
-      router.push('/calendar');
+      const data = await response.json();
+
+      // Show notification results if available
+      if (data.notifications && data.notifications.length > 0) {
+        setNotificationResults(data.notifications);
+      } else {
+        // No notifications to show, redirect immediately
+        router.push('/calendar');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -365,6 +375,16 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
           Cancel
         </button>
       </div>
+
+      {notificationResults && (
+        <NotificationResultModal
+          results={notificationResults}
+          onClose={() => {
+            setNotificationResults(null);
+            router.push('/calendar');
+          }}
+        />
+      )}
     </form>
   );
 }

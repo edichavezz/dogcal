@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import { addDays, addWeeks, addMonths } from 'date-fns';
+import { sendWhatsAppMessage, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
+import { generateSuggestionCreatedMessage } from '@/lib/messageTemplates';
 
 const createSuggestionSchema = z.object({
   pupId: z.string().uuid(),
@@ -126,7 +128,54 @@ export async function POST(request: NextRequest) {
         )
       );
 
-      return NextResponse.json({ suggestions, count: suggestions.length }, { status: 201 });
+      // Send WhatsApp notification to owner
+      const notificationResults: NotificationResult[] = [];
+
+      if (process.env.WHATSAPP_ENABLED === 'true') {
+        try {
+          const owner = suggestions[0].pup.owner;
+
+          // Check if owner has valid phone number
+          if (!isValidPhoneNumber(owner.phoneNumber)) {
+            notificationResults.push({
+              userId: owner.id,
+              userName: owner.name,
+              phoneNumber: owner.phoneNumber,
+              status: 'skipped',
+              reason: 'No valid phone number',
+            });
+          } else {
+            // Generate message using first suggestion in series
+            const message = generateSuggestionCreatedMessage({
+              ownerName: owner.name,
+              friendName: actingUser.name,
+              pupName: suggestions[0].pup.name,
+              startAt: suggestions[0].startAt,
+              endAt: suggestions[0].endAt,
+              eventName: suggestions[0].eventName,
+              friendComment: suggestions[0].friendComment,
+              suggestionId: suggestions[0].id,
+            });
+
+            // Send WhatsApp message
+            const result = await sendWhatsAppMessage(owner.phoneNumber!, message);
+
+            notificationResults.push({
+              userId: owner.id,
+              userName: owner.name,
+              phoneNumber: owner.phoneNumber,
+              status: result.success ? 'sent' : 'failed',
+              reason: result.error,
+              twilioSid: result.sid,
+            });
+          }
+        } catch (error) {
+          console.error('Error sending WhatsApp notification:', error);
+          // Don't fail the request if notification fails
+        }
+      }
+
+      return NextResponse.json({ suggestions, count: suggestions.length, notifications: notificationResults }, { status: 201 });
     } else {
       // Create single suggestion
       const suggestion = await prisma.hangoutSuggestion.create({
@@ -149,7 +198,54 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      return NextResponse.json({ suggestion }, { status: 201 });
+      // Send WhatsApp notification to owner
+      const notificationResults: NotificationResult[] = [];
+
+      if (process.env.WHATSAPP_ENABLED === 'true') {
+        try {
+          const owner = suggestion.pup.owner;
+
+          // Check if owner has valid phone number
+          if (!isValidPhoneNumber(owner.phoneNumber)) {
+            notificationResults.push({
+              userId: owner.id,
+              userName: owner.name,
+              phoneNumber: owner.phoneNumber,
+              status: 'skipped',
+              reason: 'No valid phone number',
+            });
+          } else {
+            // Generate message
+            const message = generateSuggestionCreatedMessage({
+              ownerName: owner.name,
+              friendName: actingUser.name,
+              pupName: suggestion.pup.name,
+              startAt: suggestion.startAt,
+              endAt: suggestion.endAt,
+              eventName: suggestion.eventName,
+              friendComment: suggestion.friendComment,
+              suggestionId: suggestion.id,
+            });
+
+            // Send WhatsApp message
+            const result = await sendWhatsAppMessage(owner.phoneNumber!, message);
+
+            notificationResults.push({
+              userId: owner.id,
+              userName: owner.name,
+              phoneNumber: owner.phoneNumber,
+              status: result.success ? 'sent' : 'failed',
+              reason: result.error,
+              twilioSid: result.sid,
+            });
+          }
+        } catch (error) {
+          console.error('Error sending WhatsApp notification:', error);
+          // Don't fail the request if notification fails
+        }
+      }
+
+      return NextResponse.json({ suggestion, notifications: notificationResults }, { status: 201 });
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
