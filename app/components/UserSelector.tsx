@@ -56,6 +56,13 @@ export default function UserSelector() {
   const owners = users.filter((u) => u.role === 'OWNER');
   const friends = users.filter((u) => u.role === 'FRIEND');
 
+  // Helper to check if image URL is from allowed domain
+  const isValidImageUrl = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    // Only allow Supabase images (configured in next.config.ts)
+    return url.includes('supabase.co');
+  };
+
   return (
     <div className="w-full max-w-2xl space-y-6">
       {/* Owners Section */}
@@ -74,17 +81,17 @@ export default function UserSelector() {
                     : 'border-gray-200 hover:border-orange-200 bg-white'
                 } disabled:opacity-50`}
               >
-                {user.profilePhotoUrl ? (
+                {isValidImageUrl(user.profilePhotoUrl) ? (
                   <Image
-                    src={user.profilePhotoUrl}
+                    src={user.profilePhotoUrl!}
                     alt={user.name}
                     width={60}
                     height={60}
                     className="rounded-full object-cover mb-2"
                   />
                 ) : (
-                  <div className="w-15 h-15 bg-gray-200 rounded-full flex items-center justify-center mb-2">
-                    <span className="text-2xl">{user.name.charAt(0)}</span>
+                  <div className="w-15 h-15 bg-orange-100 rounded-full flex items-center justify-center mb-2">
+                    <span className="text-2xl text-orange-600 font-semibold">{user.name.charAt(0)}</span>
                   </div>
                 )}
                 <span className="text-sm font-medium text-center">{user.name}</span>
@@ -111,17 +118,17 @@ export default function UserSelector() {
                     : 'border-gray-200 hover:border-yellow-200 bg-white'
                 } disabled:opacity-50`}
               >
-                {user.profilePhotoUrl ? (
+                {isValidImageUrl(user.profilePhotoUrl) ? (
                   <Image
-                    src={user.profilePhotoUrl}
+                    src={user.profilePhotoUrl!}
                     alt={user.name}
                     width={60}
                     height={60}
                     className="rounded-full object-cover mb-2"
                   />
                 ) : (
-                  <div className="w-15 h-15 bg-gray-200 rounded-full flex items-center justify-center mb-2">
-                    <span className="text-2xl">{user.name.charAt(0)}</span>
+                  <div className="w-15 h-15 bg-amber-100 rounded-full flex items-center justify-center mb-2">
+                    <span className="text-2xl text-amber-600 font-semibold">{user.name.charAt(0)}</span>
                   </div>
                 )}
                 <span className="text-sm font-medium text-center">{user.name}</span>
