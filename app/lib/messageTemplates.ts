@@ -1,12 +1,5 @@
 import { format } from 'date-fns';
-import { generateLoginToken } from './loginTokens';
-
-/**
- * Get the base URL for the application
- */
-function getAppUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-}
+import { getLoginUrl } from './loginTokens';
 
 /**
  * Format a date for display in messages
@@ -28,7 +21,7 @@ function formatTime(date: Date): string {
  * Generate WhatsApp message for when an owner creates a new hangout
  * Sent to all friends of the pup
  */
-export function generateHangoutCreatedMessage(params: {
+export async function generateHangoutCreatedMessage(params: {
   friendUserId: string;
   friendName: string;
   ownerName: string;
@@ -38,7 +31,7 @@ export function generateHangoutCreatedMessage(params: {
   eventName: string | null;
   ownerNotes: string | null;
   hangoutId: string;
-}): string {
+}): Promise<string> {
   const {
     friendUserId,
     friendName,
@@ -48,18 +41,15 @@ export function generateHangoutCreatedMessage(params: {
     endAt,
     eventName,
     ownerNotes,
-    hangoutId,
   } = params;
 
-  // Generate personalized login token with destination
-  const destination = `/calendar?hangout=${hangoutId}`;
-  const loginToken = generateLoginToken(friendUserId, destination);
-  const deepLink = `${getAppUrl()}/login/${loginToken}`;
+  // Get static login URL for the friend
+  const loginUrl = await getLoginUrl(friendUserId);
 
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
 
-  let message = `🐕 DogCal: New Hangout Available!
+  let message = `🐕 *DogCal: New Hangout Available!*
 
 Hi ${friendName}!
 
@@ -78,7 +68,10 @@ ${ownerName} needs someone to hang out with ${pupName} 🐾
     message += `\n\n💬 Notes: ${ownerNotes}`;
   }
 
-  message += `\n\n👉 View & assign yourself here:\n${deepLink}
+  // Format URL for WhatsApp clickability - ensure it's on its own line
+  message += `\n\n👉 View & assign yourself:
+
+${loginUrl}
 
 Thanks for being a pup friend!`;
 
@@ -89,7 +82,7 @@ Thanks for being a pup friend!`;
  * Generate WhatsApp message for when a friend suggests a new hangout
  * Sent to the pup owner
  */
-export function generateSuggestionCreatedMessage(params: {
+export async function generateSuggestionCreatedMessage(params: {
   ownerUserId: string;
   ownerName: string;
   friendName: string;
@@ -99,7 +92,7 @@ export function generateSuggestionCreatedMessage(params: {
   eventName: string | null;
   friendComment: string | null;
   suggestionId: string;
-}): string {
+}): Promise<string> {
   const {
     ownerUserId,
     ownerName,
@@ -109,18 +102,15 @@ export function generateSuggestionCreatedMessage(params: {
     endAt,
     eventName,
     friendComment,
-    suggestionId,
   } = params;
 
-  // Generate personalized login token with destination
-  const destination = `/approvals?suggestion=${suggestionId}`;
-  const loginToken = generateLoginToken(ownerUserId, destination);
-  const deepLink = `${getAppUrl()}/login/${loginToken}`;
+  // Get static login URL for the owner
+  const loginUrl = await getLoginUrl(ownerUserId);
 
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
 
-  let message = `🐕 DogCal: New Hangout Suggestion!
+  let message = `🐕 *DogCal: New Hangout Suggestion!*
 
 Hi ${ownerName}!
 
@@ -139,7 +129,10 @@ ${friendName} suggested a time to hang out with ${pupName} 🐾
     message += `\n\n💬 ${friendName} says: ${friendComment}`;
   }
 
-  message += `\n\n👉 Review & approve here:\n${deepLink}
+  // Format URL for WhatsApp clickability - ensure it's on its own line
+  message += `\n\n👉 Review & approve:
+
+${loginUrl}
 
 You can approve or reject this suggestion.`;
 
@@ -150,7 +143,7 @@ You can approve or reject this suggestion.`;
  * Generate WhatsApp message for when a hangout is assigned
  * Sent to the pup owner (future enhancement)
  */
-export function generateHangoutAssignedMessage(params: {
+export async function generateHangoutAssignedMessage(params: {
   ownerUserId: string;
   ownerName: string;
   friendName: string;
@@ -159,7 +152,7 @@ export function generateHangoutAssignedMessage(params: {
   endAt: Date;
   eventName: string | null;
   hangoutId: string;
-}): string {
+}): Promise<string> {
   const {
     ownerUserId,
     ownerName,
@@ -168,18 +161,15 @@ export function generateHangoutAssignedMessage(params: {
     startAt,
     endAt,
     eventName,
-    hangoutId,
   } = params;
 
-  // Generate personalized login token with destination
-  const destination = `/calendar?hangout=${hangoutId}`;
-  const loginToken = generateLoginToken(ownerUserId, destination);
-  const deepLink = `${getAppUrl()}/login/${loginToken}`;
+  // Get static login URL for the owner
+  const loginUrl = await getLoginUrl(ownerUserId);
 
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
 
-  let message = `🐕 DogCal: Hangout Assigned!
+  let message = `🐕 *DogCal: Hangout Assigned!*
 
 Hi ${ownerName}!
 
@@ -192,7 +182,10 @@ Good news! ${friendName} will hang out with ${pupName} 🐾
     message += `\n📝 ${eventName}`;
   }
 
-  message += `\n\n👉 View details here:\n${deepLink}
+  // Format URL for WhatsApp clickability - ensure it's on its own line
+  message += `\n\n👉 View details:
+
+${loginUrl}
 
 Thanks for using DogCal!`;
 
@@ -203,7 +196,7 @@ Thanks for using DogCal!`;
  * Generate WhatsApp message for when a suggestion is approved
  * Sent to the friend who made the suggestion (future enhancement)
  */
-export function generateSuggestionApprovedMessage(params: {
+export async function generateSuggestionApprovedMessage(params: {
   friendUserId: string;
   friendName: string;
   ownerName: string;
@@ -212,7 +205,7 @@ export function generateSuggestionApprovedMessage(params: {
   endAt: Date;
   eventName: string | null;
   hangoutId: string;
-}): string {
+}): Promise<string> {
   const {
     friendUserId,
     friendName,
@@ -221,18 +214,15 @@ export function generateSuggestionApprovedMessage(params: {
     startAt,
     endAt,
     eventName,
-    hangoutId,
   } = params;
 
-  // Generate personalized login token with destination
-  const destination = `/calendar?hangout=${hangoutId}`;
-  const loginToken = generateLoginToken(friendUserId, destination);
-  const deepLink = `${getAppUrl()}/login/${loginToken}`;
+  // Get static login URL for the friend
+  const loginUrl = await getLoginUrl(friendUserId);
 
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
 
-  let message = `🐕 DogCal: Suggestion Approved!
+  let message = `🐕 *DogCal: Suggestion Approved!*
 
 Hi ${friendName}!
 
@@ -245,7 +235,10 @@ Great news! ${ownerName} approved your hangout suggestion with ${pupName} 🐾
     message += `\n📝 ${eventName}`;
   }
 
-  message += `\n\n👉 View & assign yourself here:\n${deepLink}
+  // Format URL for WhatsApp clickability - ensure it's on its own line
+  message += `\n\n👉 View & assign yourself:
+
+${loginUrl}
 
 Thanks for suggesting a time!`;
 

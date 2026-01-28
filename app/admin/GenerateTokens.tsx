@@ -54,8 +54,9 @@ export default function GenerateTokens() {
   };
 
   const sendWhatsApp = (phoneNumber: string, loginUrl: string) => {
+    // Format message with URL on its own line for better WhatsApp clickability
     const message = encodeURIComponent(
-      `Hi! Here's your personalized login link for DogCal:\n\n${loginUrl}\n\nClick the link to access your account.`
+      `🐕 *DogCal Login Link*\n\nHi! Here's your personalized login link:\n\n${loginUrl}\n\nSave this link for easy access to DogCal!\n\nThanks! 🐾`
     );
     const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${message}`;
     window.open(whatsappUrl, '_blank');

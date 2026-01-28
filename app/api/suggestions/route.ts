@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
             });
           } else {
             // Generate message using first suggestion in series
-            const message = generateSuggestionCreatedMessage({
+            const message = await generateSuggestionCreatedMessage({
               ownerUserId: owner.id,
               ownerName: owner.name,
               friendName: actingUser.name,
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
             });
           } else {
             // Generate message
-            const message = generateSuggestionCreatedMessage({
+            const message = await generateSuggestionCreatedMessage({
               ownerUserId: owner.id,
               ownerName: owner.name,
               friendName: actingUser.name,

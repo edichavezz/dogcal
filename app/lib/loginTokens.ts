@@ -1,136 +1,111 @@
 /**
  * Login Token Service
  *
- * Generates and validates encrypted login tokens for secure user authentication.
- * Uses AES-256-GCM encryption to create opaque, unguessable tokens.
+ * Generates and validates short, unique login tokens stored in the database.
+ * Tokens are static (generated once) and URL-friendly.
  */
 
 import crypto from 'crypto';
 import { prisma } from './prisma';
 
-const ALGORITHM = 'aes-256-gcm';
-const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
-const ENCODING = 'base64url';
+const TOKEN_LENGTH = 12; // Short, URL-friendly tokens (e.g., "aB3xY9kL2mN4")
 
 /**
- * Get encryption secret from environment variable
+ * Generate a short, random, URL-safe token
  */
-function getSecret(): Buffer {
-  const secret = process.env.LOGIN_TOKEN_SECRET;
-
-  if (!secret) {
-    throw new Error('LOGIN_TOKEN_SECRET environment variable is not set');
-  }
-
-  if (secret.length < 32) {
-    throw new Error('LOGIN_TOKEN_SECRET must be at least 32 characters long');
-  }
-
-  // Use first 32 bytes of secret as encryption key
-  return Buffer.from(secret.slice(0, 32), 'utf-8');
+function generateShortToken(): string {
+  // Generate random bytes and convert to base64url
+  // We need more bytes than TOKEN_LENGTH because base64 encoding expands the size
+  const bytes = crypto.randomBytes(Math.ceil(TOKEN_LENGTH * 0.75));
+  return bytes.toString('base64url').substring(0, TOKEN_LENGTH);
 }
 
 /**
- * Token payload structure
- */
-interface TokenPayload {
-  userId: string;
-  destination?: string;
-  createdAt: number;
-}
-
-/**
- * Generate encrypted login token for a user
+ * Generate or retrieve login token for a user
+ * If user already has a token, return it. Otherwise generate a new one.
  *
  * @param userId - UUID of the user
- * @param destination - Optional destination URL to redirect to after login
- * @returns Encrypted token string (URL-safe)
+ * @returns Login token string
  */
-export function generateLoginToken(userId: string, destination?: string): string {
+export async function getOrCreateLoginToken(userId: string): Promise<string> {
   try {
-    const secret = getSecret();
+    // Check if user already has a token
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { loginToken: true },
+    });
 
-    // Create payload
-    const payload: TokenPayload = {
-      userId,
-      destination,
-      createdAt: Date.now(),
-    };
+    if (!user) {
+      throw new Error('User not found');
+    }
 
-    // Convert payload to JSON
-    const plaintext = JSON.stringify(payload);
+    // Return existing token if available
+    if (user.loginToken) {
+      return user.loginToken;
+    }
 
-    // Generate random IV
-    const iv = crypto.randomBytes(IV_LENGTH);
+    // Generate new token and ensure it's unique
+    let token: string;
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    // Create cipher
-    const cipher = crypto.createCipheriv(ALGORITHM, secret, iv);
+    while (attempts < maxAttempts) {
+      token = generateShortToken();
 
-    // Encrypt
-    let encrypted = cipher.update(plaintext, 'utf8');
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
+      // Check if token already exists
+      const existing = await prisma.user.findUnique({
+        where: { loginToken: token },
+      });
 
-    // Get auth tag
-    const authTag = cipher.getAuthTag();
+      if (!existing) {
+        // Token is unique, save it
+        await prisma.user.update({
+          where: { id: userId },
+          data: { loginToken: token },
+        });
+        return token;
+      }
 
-    // Combine iv + encrypted + authTag and encode as base64url
-    const combined = Buffer.concat([iv, encrypted, authTag]);
-    const token = combined.toString(ENCODING);
+      attempts++;
+    }
 
-    return token;
+    throw new Error('Failed to generate unique token after multiple attempts');
   } catch (error) {
-    console.error('Error generating login token:', error);
-    throw new Error('Failed to generate login token');
+    console.error('Error getting/creating login token:', error);
+    throw new Error('Failed to get or create login token');
   }
 }
 
 /**
- * Validate and decrypt login token
+ * Validate login token and return user ID
  *
- * @param token - Encrypted token string
- * @returns Decrypted payload or null if invalid
+ * @param token - Login token string
+ * @returns User ID if valid, null otherwise
  */
-export function validateLoginToken(token: string): TokenPayload | null {
+export async function validateLoginToken(token: string): Promise<{ userId: string } | null> {
   try {
-    const secret = getSecret();
+    // Look up user by token
+    const user = await prisma.user.findUnique({
+      where: { loginToken: token },
+      select: { id: true },
+    });
 
-    // Decode from base64url
-    const combined = Buffer.from(token, ENCODING);
-
-    // Extract components
-    const iv = combined.subarray(0, IV_LENGTH);
-    const authTag = combined.subarray(combined.length - AUTH_TAG_LENGTH);
-    const encrypted = combined.subarray(IV_LENGTH, combined.length - AUTH_TAG_LENGTH);
-
-    // Create decipher
-    const decipher = crypto.createDecipheriv(ALGORITHM, secret, iv);
-    decipher.setAuthTag(authTag);
-
-    // Decrypt
-    let decrypted = decipher.update(encrypted);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-
-    // Parse JSON
-    const payload = JSON.parse(decrypted.toString('utf8')) as TokenPayload;
-
-    // Validate payload structure
-    if (!payload.userId || !payload.createdAt) {
+    if (!user) {
       return null;
     }
 
-    return payload;
+    return { userId: user.id };
   } catch (error) {
-    // Invalid token (wrong secret, corrupted data, etc.)
     console.error('Error validating login token:', error);
     return null;
   }
 }
 
 /**
- * Generate login tokens for all users in the database
+ * Generate login tokens for all users and return their info
+ * This ensures all users have tokens stored in the database
  *
- * @returns Array of user info with generated tokens and URLs
+ * @returns Array of user info with tokens and URLs
  */
 export async function generateAllTokens(): Promise<Array<{
   userId: string;
@@ -152,31 +127,38 @@ export async function generateAllTokens(): Promise<Array<{
     // Get app URL from environment
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    // Generate token for each user
-    const tokens = users.map((user): {
-      userId: string;
-      name: string;
-      role: string;
-      phoneNumber: string | null;
-      token: string;
-      loginUrl: string;
-    } => {
-      const token = generateLoginToken(user.id);
-      const loginUrl = `${appUrl}/login/${token}`;
+    // Generate or get token for each user
+    const tokens = await Promise.all(
+      users.map(async (user) => {
+        const token = await getOrCreateLoginToken(user.id);
+        const loginUrl = `${appUrl}/login/${token}`;
 
-      return {
-        userId: user.id,
-        name: user.name,
-        role: user.role,
-        phoneNumber: user.phoneNumber,
-        token,
-        loginUrl,
-      };
-    });
+        return {
+          userId: user.id,
+          name: user.name,
+          role: user.role,
+          phoneNumber: user.phoneNumber,
+          token,
+          loginUrl,
+        };
+      })
+    );
 
     return tokens;
   } catch (error) {
     console.error('Error generating all tokens:', error);
     throw new Error('Failed to generate tokens for all users');
   }
+}
+
+/**
+ * Get login URL for a user
+ *
+ * @param userId - UUID of the user
+ * @returns Full login URL
+ */
+export async function getLoginUrl(userId: string): Promise<string> {
+  const token = await getOrCreateLoginToken(userId);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return `${appUrl}/login/${token}`;
 }

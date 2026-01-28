@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
             }
 
             // Generate message using first hangout in series
-            const message = generateHangoutCreatedMessage({
+            const message = await generateHangoutCreatedMessage({
               friendUserId: friend.id,
               friendName: friend.name,
               ownerName: actingUser.name,
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
             }
 
             // Generate message
-            const message = generateHangoutCreatedMessage({
+            const message = await generateHangoutCreatedMessage({
               friendUserId: friend.id,
               friendName: friend.name,
               ownerName: actingUser.name,

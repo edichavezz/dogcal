@@ -19,8 +19,8 @@ interface LoginPageProps {
 export default async function LoginPage({ params }: LoginPageProps) {
   const { token } = params;
 
-  // Validate and decrypt token
-  const result = validateLoginToken(token);
+  // Validate token
+  const result = await validateLoginToken(token);
 
   if (!result) {
     // Invalid token - show error page
@@ -40,9 +40,8 @@ export default async function LoginPage({ params }: LoginPageProps) {
   // Set acting user cookie
   await setActingUserId(result.userId);
 
-  // Redirect to destination if specified, otherwise home page
-  const destination = result.destination || '/';
-  redirect(destination);
+  // Redirect to home page
+  redirect('/');
 }
 
 /**
