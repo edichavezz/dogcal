@@ -1,6 +1,7 @@
 import { getActingUserId } from './lib/cookies';
 import { prisma } from './lib/prisma';
 import WelcomeScreen from './components/WelcomeScreen';
+import PawsIcon from './components/PawsIcon';
 
 export default async function Home() {
   const actingUserId = await getActingUserId();
@@ -12,16 +13,7 @@ export default async function Home() {
         <main className="flex flex-col items-center justify-center px-6 py-12 text-center space-y-8 max-w-2xl">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <svg width="48" height="48" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="16" cy="16" r="14" fill="#f4a9a8"/>
-              <ellipse cx="11" cy="13" rx="2" ry="2.5" fill="#1a3a3a"/>
-              <ellipse cx="21" cy="13" rx="2" ry="2.5" fill="#1a3a3a"/>
-              <path d="M 10 20 Q 16 24 22 20" stroke="#1a3a3a" strokeWidth="2" fill="none" strokeLinecap="round"/>
-              <circle cx="9" cy="8" r="3" fill="#f4a9a8"/>
-              <circle cx="23" cy="8" r="3" fill="#f4a9a8"/>
-              <circle cx="6" cy="11" r="2" fill="#f4a9a8"/>
-              <circle cx="26" cy="11" r="2" fill="#f4a9a8"/>
-            </svg>
+            <PawsIcon size={64} color="teal" />
           </div>
 
           {/* Title */}
@@ -43,7 +35,7 @@ export default async function Home() {
               To access your account, please use the personalized login link sent to you.
             </p>
             <p className="text-sm text-gray-500">
-              Don't have a login link? Contact your administrator.
+              Don't have a login link? Contact Edi.
             </p>
           </div>
 
