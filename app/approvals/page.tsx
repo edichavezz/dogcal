@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
-import TopNav from '@/components/TopNav';
+import AppLayout from '@/components/AppLayout';
 import ApprovalsClient from './ApprovalsClient';
 
 export default async function ApprovalsPage() {
@@ -43,21 +43,19 @@ export default async function ApprovalsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <TopNav user={actingUser} />
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+    <AppLayout user={actingUser}>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
             Pending Suggestions
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Review and approve or reject hangout times suggested by your friends
           </p>
         </div>
 
         <ApprovalsClient suggestions={pendingSuggestions} />
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

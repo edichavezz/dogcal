@@ -31,9 +31,11 @@ export default function ApprovalsClient({ suggestions }: ApprovalsClientProps) {
 
   if (suggestions.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-        <div className="text-4xl mb-4">🎉</div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-8 sm:p-12 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-[#ffd4d4] to-[#ffe4d4] rounded-2xl flex items-center justify-center">
+          <span className="text-3xl">🎉</span>
+        </div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">
           All caught up!
         </h2>
         <p className="text-gray-600">

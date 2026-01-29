@@ -4,8 +4,10 @@ import { useEffect, useRef, useCallback } from 'react';
 
 type DogPawLoaderProps = {
   size?: number;
-  pawColor?: string;
 };
+
+// Brand colors for the paw animation
+const BRAND_COLORS = ['#1A3A3A', '#F4A9A8', '#2a4a4a', '#f5b9b8'];
 
 type PawPrint = {
   x: number;
@@ -14,12 +16,13 @@ type PawPrint = {
   opacity: number;
   isLeft: boolean;
   createdAt: number;
+  colorIndex: number;
 };
 
 export default function DogPawLoader({
   size = 200,
-  pawColor = '#1a1a1a'
 }: DogPawLoaderProps) {
+  const colorIndexRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
   const pawPrintsRef = useRef<PawPrint[]>([]);
@@ -34,6 +37,7 @@ export default function DogPawLoader({
     angle: number,
     isLeft: boolean,
     opacity: number,
+    pawColor: string,
     scale: number = 1
   ) => {
     ctx.save();
@@ -70,7 +74,7 @@ export default function DogPawLoader({
     });
 
     ctx.restore();
-  }, [pawColor]);
+  }, []);
 
   const animate = useCallback((timestamp: number) => {
     const canvas = canvasRef.current;
@@ -123,9 +127,11 @@ export default function DogPawLoader({
         opacity: 1,
         isLeft: isLeftRef.current,
         createdAt: timestamp,
+        colorIndex: colorIndexRef.current,
       });
 
       isLeftRef.current = !isLeftRef.current;
+      colorIndexRef.current = (colorIndexRef.current + 1) % BRAND_COLORS.length;
 
       // Keep only recent paw prints
       const maxPrints = 12;
@@ -140,7 +146,8 @@ export default function DogPawLoader({
       const opacity = Math.max(0, 1 - age / fadeTime);
 
       if (opacity > 0) {
-        drawPaw(ctx, paw.x, paw.y, paw.angle, paw.isLeft, opacity);
+        const pawColor = BRAND_COLORS[paw.colorIndex];
+        drawPaw(ctx, paw.x, paw.y, paw.angle, paw.isLeft, opacity, pawColor);
       }
     });
 

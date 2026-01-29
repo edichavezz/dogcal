@@ -188,7 +188,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             onChange={(e) => setStartDate(e.target.value)}
             required
             min={today}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] cursor-pointer"
             onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
@@ -202,7 +202,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] cursor-pointer"
             onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
@@ -221,7 +221,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             onChange={(e) => setEndDate(e.target.value)}
             required
             min={startDate || today}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] cursor-pointer"
             onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
@@ -235,7 +235,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] cursor-pointer"
             onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
@@ -253,7 +253,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
           onChange={(e) => setEventName(e.target.value)}
           maxLength={100}
           placeholder={placeholder}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
         />
         {pupId && (
           <p className="mt-2 text-sm text-gray-600">
@@ -275,7 +275,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
           onChange={(e) => setFriendComment(e.target.value)}
           rows={4}
           placeholder="E.g., I'm available all day, can do morning or evening, etc."
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
         />
       </div>
 
@@ -287,7 +287,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             id="repeatEnabled"
             checked={repeatEnabled}
             onChange={(e) => setRepeatEnabled(e.target.checked)}
-            className="w-4 h-4 text-yellow-400 focus:ring-yellow-400 border-gray-300 rounded"
+            className="w-4 h-4 text-yellow-400 focus:ring-[#f4a9a8] border-gray-300 rounded"
           />
           <label htmlFor="repeatEnabled" className="text-sm font-medium text-gray-700">
             Repeat this suggestion
@@ -304,7 +304,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
                 id="repeatFrequency"
                 value={repeatFrequency}
                 onChange={(e) => setRepeatFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -322,7 +322,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
                 onChange={(e) => setRepeatCount(Math.max(2, Math.min(52, parseInt(e.target.value) || 2)))}
                 min="2"
                 max="52"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
               />
             </div>
           </div>
@@ -334,14 +334,14 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium rounded-md hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="flex-1 px-6 py-3 bg-[#f4a9a8] text-[#1a3a3a] font-medium rounded-xl hover:bg-[#f5b9b8] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {loading ? 'Suggesting...' : 'Suggest This Time'}
         </button>
         <button
           type="button"
           onClick={() => router.push('/calendar')}
-          className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-all"
+          className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition-all"
         >
           Cancel
         </button>

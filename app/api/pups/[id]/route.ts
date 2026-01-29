@@ -1,4 +1,5 @@
-// API Route: Update/Delete Pup
+// API Route: Get/Update/Delete Pup
+// GET /api/pups/:id - Get pup with friendships
 // PATCH /api/pups/:id - Update pup
 // DELETE /api/pups/:id - Delete pup
 
@@ -12,6 +13,55 @@ const updatePupSchema = z.object({
   careInstructions: z.string().max(2000).optional().nullable(),
   profilePhotoUrl: z.string().url().optional().nullable(),
 });
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const actingUserId = await getActingUserId();
+
+    if (!actingUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const pup = await prisma.pup.findUnique({
+      where: { id },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        friendships: {
+          include: {
+            friend: {
+              select: {
+                id: true,
+                name: true,
+                profilePhotoUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!pup) {
+      return NextResponse.json({ error: 'Pup not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ pup });
+  } catch (error) {
+    console.error('Get pup error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(
   request: NextRequest,

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
-import TopNav from '@/components/TopNav';
+import AppLayout from '@/components/AppLayout';
 import CalendarClient from './CalendarClient';
 
 export default async function CalendarPage() {
@@ -19,6 +19,7 @@ export default async function CalendarPage() {
       role: true,
       addressText: true,
       phoneNumber: true,
+      profilePhotoUrl: true,
       ownedPups: {
         select: {
           id: true,
@@ -84,6 +85,7 @@ export default async function CalendarPage() {
             select: {
               id: true,
               name: true,
+              profilePhotoUrl: true,
             },
           },
         },
@@ -135,31 +137,27 @@ export default async function CalendarPage() {
     }));
 
     return (
-      <div className="flex flex-col h-screen overflow-hidden">
-        <TopNav user={actingUser} />
-
-        <main className="flex-1 min-h-0 overflow-hidden">
-          <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
-            <div className="flex-shrink-0 mb-4">
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">
-                Calendar
-              </h1>
-              <p className="text-sm text-slate-600">
-                View and manage hangouts for your pups
-              </p>
-            </div>
-
-            <div className="flex-1 min-h-0">
-              <CalendarClient
-                hangouts={hangoutsWithEmptyNotes}
-                suggestions={upcomingSuggestions}
-                actingUserId={actingUserId}
-                actingUserRole={actingUser.role}
-              />
-            </div>
+      <AppLayout user={actingUser}>
+        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 flex flex-col">
+          <div className="flex-shrink-0 mb-4">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
+              Calendar
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600">
+              View and manage hangouts for your pups
+            </p>
           </div>
-        </main>
-      </div>
+
+          <div className="flex-1 min-h-0">
+            <CalendarClient
+              hangouts={hangoutsWithEmptyNotes}
+              suggestions={upcomingSuggestions}
+              actingUserId={actingUserId}
+              actingUserRole={actingUser.role}
+            />
+          </div>
+        </div>
+      </AppLayout>
     );
   } else {
     // FRIEND role
@@ -212,6 +210,7 @@ export default async function CalendarPage() {
             select: {
               id: true,
               name: true,
+              profilePhotoUrl: true,
             },
           },
         },
@@ -263,31 +262,27 @@ export default async function CalendarPage() {
     }));
 
     return (
-      <div className="flex flex-col h-screen overflow-hidden">
-        <TopNav user={actingUser} />
-
-        <main className="flex-1 min-h-0 overflow-hidden">
-          <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
-            <div className="flex-shrink-0 mb-4">
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">
-                Calendar
-              </h1>
-              <p className="text-sm text-slate-600">
-                View available hangouts and your upcoming commitments
-              </p>
-            </div>
-
-            <div className="flex-1 min-h-0">
-              <CalendarClient
-                hangouts={hangoutsWithEmptyNotes}
-                suggestions={upcomingSuggestions}
-                actingUserId={actingUserId}
-                actingUserRole={actingUser.role}
-              />
-            </div>
+      <AppLayout user={actingUser}>
+        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 flex flex-col">
+          <div className="flex-shrink-0 mb-4">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
+              Calendar
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600">
+              View available hangouts and your upcoming commitments
+            </p>
           </div>
-        </main>
-      </div>
+
+          <div className="flex-1 min-h-0">
+            <CalendarClient
+              hangouts={hangoutsWithEmptyNotes}
+              suggestions={upcomingSuggestions}
+              actingUserId={actingUserId}
+              actingUserRole={actingUser.role}
+            />
+          </div>
+        </div>
+      </AppLayout>
     );
   }
 }

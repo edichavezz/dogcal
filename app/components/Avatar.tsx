@@ -5,7 +5,7 @@ import Image from 'next/image';
 type AvatarProps = {
   photoUrl?: string | null;
   name: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 };
 
@@ -16,22 +16,24 @@ export default function Avatar({
   className = '',
 }: AvatarProps) {
   const sizeClasses = {
-    xs: 'w-8 h-8 text-xs',
-    sm: 'w-12 h-12 text-sm',
-    md: 'w-16 h-16 text-xl',
-    lg: 'w-24 h-24 text-3xl',
+    xs: 'w-6 h-6 text-xs',
+    sm: 'w-10 h-10 text-sm',
+    md: 'w-12 h-12 text-base',
+    lg: 'w-16 h-16 text-xl',
+    xl: 'w-20 h-20 text-2xl',
   };
 
   const sizePixels = {
-    xs: 32,
-    sm: 48,
-    md: 64,
-    lg: 96,
+    xs: 24,
+    sm: 40,
+    md: 48,
+    lg: 64,
+    xl: 80,
   };
 
   return (
     <div
-      className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-yellow-200 to-orange-200 border-2 border-gray-200 flex items-center justify-center flex-shrink-0 ${className}`}
+      className={`${sizeClasses[size]} rounded-full overflow-hidden bg-[#f4a9a8] flex items-center justify-center flex-shrink-0 ${className}`}
     >
       {photoUrl ? (
         <Image
@@ -42,7 +44,7 @@ export default function Avatar({
           className="w-full h-full object-cover"
         />
       ) : (
-        <span className="font-bold text-gray-600">
+        <span className="font-semibold text-[#1a3a3a]">
           {name.charAt(0).toUpperCase()}
         </span>
       )}

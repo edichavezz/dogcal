@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { UserRole } from '@prisma/client';
 import Image from 'next/image';
+import { Phone, Camera, UserPlus } from 'lucide-react';
+import Avatar from '@/components/Avatar';
+import { getEventGradient } from '@/lib/colorUtils';
 
 type Friend = {
   id: string;
@@ -111,7 +114,6 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
-      // Refresh the page to get updated data
       window.location.reload();
     } catch (error) {
       console.error('Upload error:', error);
@@ -192,7 +194,6 @@ export default function ManageClient({ user, allFriends }: Props) {
 
     setLoading(true);
     try {
-      // First, create the new friend user
       const createRes = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -211,7 +212,6 @@ export default function ManageClient({ user, allFriends }: Props) {
 
       const { user: newFriend } = await createRes.json();
 
-      // Then, create the friendship
       const friendshipRes = await fetch('/api/friendships', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,7 +228,6 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
-      // Reset form and refresh
       setNewFriendName('');
       setNewFriendAddress('');
       setNewFriendPhone('');
@@ -263,7 +262,6 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
-      // Refresh the page to get updated data
       window.location.reload();
     } catch (error) {
       console.error('Add friend error:', error);
@@ -290,7 +288,6 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
-      // Refresh the page to get updated data
       window.location.reload();
     } catch (error) {
       console.error('Update friendship error:', error);
@@ -315,7 +312,6 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
-      // Refresh the page to get updated data
       window.location.reload();
     } catch (error) {
       console.error('Delete friendship error:', error);
@@ -327,33 +323,25 @@ export default function ManageClient({ user, allFriends }: Props) {
 
   if (user.role === 'OWNER') {
     return (
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Pups & Friends</h1>
-          <p className="text-gray-600">Manage your profile, pups, and friendships</p>
+      <div className="space-y-6">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">Pups and friends</h1>
+          <p className="text-sm sm:text-base text-gray-600">Manage your profile, pups, and friendships</p>
         </div>
 
         {/* Owner Profile Section */}
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Profile</h2>
-          <div className="flex items-start gap-6">
-            {/* Profile Photo */}
-            <div className="flex flex-col items-center">
-              {userData.profilePhotoUrl ? (
-                <Image
-                  src={userData.profilePhotoUrl}
-                  alt={userData.name}
-                  width={120}
-                  height={120}
-                  className="rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-30 h-30 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center text-3xl font-bold text-amber-700">
-                  {userData.name.charAt(0)}
-                </div>
-              )}
-              <label className="mt-3 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-lg cursor-pointer hover:from-yellow-500 hover:to-orange-500 text-sm font-medium transition-all">
-                Change Photo
+        <div className="bg-[#1a3a3a] rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white">
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Your Profile</h2>
+
+          <div className="flex items-start gap-4 sm:gap-6">
+            <div className="relative group flex-shrink-0">
+              <Avatar
+                photoUrl={userData.profilePhotoUrl}
+                name={userData.name}
+                size="xl"
+              />
+              <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                <Camera className="w-4 sm:w-5 h-4 sm:h-5 text-white" />
                 <input
                   type="file"
                   accept="image/*"
@@ -366,48 +354,38 @@ export default function ManageClient({ user, allFriends }: Props) {
               </label>
             </div>
 
-            {/* Profile Details */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               {editingUser ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
                     <input
                       type="text"
                       value={userName}
                       onChange={(e) => setUserName(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      className="w-full border border-[#2a4a4a] bg-[#2a4a4a] text-white rounded-lg sm:rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                    <input
-                      type="text"
-                      value={userAddress}
-                      onChange={(e) => setUserAddress(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
                     <input
                       type="tel"
                       value={userPhone}
                       onChange={(e) => setUserPhone(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      className="w-full border border-[#2a4a4a] bg-[#2a4a4a] text-white rounded-lg sm:rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                     />
                   </div>
                   <div className="flex gap-3">
                     <button
                       onClick={handleUpdateUser}
                       disabled={loading}
-                      className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors"
+                      className="px-4 sm:px-5 py-2 sm:py-2.5 bg-[#f4a9a8] text-[#1a3a3a] rounded-lg sm:rounded-xl font-medium hover:bg-[#f5b9b8] disabled:opacity-50 text-sm"
                     >
                       Save
                     </button>
                     <button
                       onClick={() => setEditingUser(false)}
-                      className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+                      className="px-4 sm:px-5 py-2 sm:py-2.5 bg-[#2a4a4a] text-white rounded-lg sm:rounded-xl font-medium hover:bg-[#3a5a5a] text-sm"
                     >
                       Cancel
                     </button>
@@ -415,12 +393,18 @@ export default function ManageClient({ user, allFriends }: Props) {
                 </div>
               ) : (
                 <div>
-                  <p className="text-2xl font-bold text-gray-800 mb-2">{userData.name}</p>
-                  {userData.addressText && <p className="text-gray-600 mb-1">📍 {userData.addressText}</p>}
-                  {userData.phoneNumber && <p className="text-gray-600 mb-3">📞 {userData.phoneNumber}</p>}
+                  <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">{userData.name}</h3>
+                  <div className="space-y-2 mb-3 sm:mb-4">
+                    {userData.phoneNumber && (
+                      <div className="flex items-center gap-2 text-gray-300">
+                        <Phone className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm truncate">{userData.phoneNumber}</span>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => setEditingUser(true)}
-                    className="px-6 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-lg hover:from-yellow-500 hover:to-orange-500 font-medium transition-all"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#f4a9a8] text-[#1a3a3a] font-medium hover:bg-[#f5b9b8] transition-colors text-sm"
                   >
                     Edit Profile
                   </button>
@@ -431,32 +415,24 @@ export default function ManageClient({ user, allFriends }: Props) {
         </div>
 
         {/* Pups Section */}
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Pups</h2>
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Your Pups</h2>
+
           {userData.ownedPups.length === 0 ? (
             <p className="text-gray-500">No pups yet</p>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {userData.ownedPups.map((pup) => (
-                <div key={pup.id} className="border-b border-gray-200 last:border-b-0 pb-8 last:pb-0">
-                  <div className="flex items-start gap-6">
-                    {/* Pup Photo */}
-                    <div className="flex flex-col items-center">
-                      {pup.profilePhotoUrl ? (
-                        <Image
-                          src={pup.profilePhotoUrl}
-                          alt={pup.name}
-                          width={100}
-                          height={100}
-                          className="rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-25 h-25 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center text-3xl">
-                          🐕
-                        </div>
-                      )}
-                      <label className="mt-3 px-3 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-lg cursor-pointer hover:from-yellow-500 hover:to-orange-500 text-xs font-medium transition-all">
-                        Change Photo
+                <div key={pup.id} className="bg-gradient-to-br from-[#ffd4d4] to-[#ffe4d4] rounded-xl sm:rounded-2xl p-5 sm:p-6 border border-[#f4a9a8]/20">
+                  <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-5">
+                    <div className="relative group flex-shrink-0">
+                      <Avatar
+                        photoUrl={pup.profilePhotoUrl}
+                        name={pup.name}
+                        size="lg"
+                      />
+                      <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                        <Camera className="w-4 h-4 text-white" />
                         <input
                           type="file"
                           accept="image/*"
@@ -469,8 +445,7 @@ export default function ManageClient({ user, allFriends }: Props) {
                       </label>
                     </div>
 
-                    {/* Pup Details */}
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       {editingPup === pup.id ? (
                         <div className="space-y-4">
                           <div>
@@ -479,35 +454,29 @@ export default function ManageClient({ user, allFriends }: Props) {
                               type="text"
                               value={pupName}
                               onChange={(e) => setPupName(e.target.value)}
-                              className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                              className="w-full border border-gray-300 rounded-lg sm:rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Care Instructions
-                              <span className="block text-xs text-gray-500 font-normal mt-1">
-                                Share details about your pup&apos;s routine: walk schedules, feeding times, favorite treats,
-                                how many poos are normal, play preferences, known tricks, training tips, special needs, etc.
-                              </span>
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Care Instructions</label>
                             <textarea
                               value={pupInstructions}
                               onChange={(e) => setPupInstructions(e.target.value)}
-                              className="w-full border border-gray-300 rounded-md px-4 py-2 h-32 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                              placeholder="e.g., Walks at 8am and 6pm, eats 2 cups of kibble twice daily, loves fetch, knows sit/stay/down, usually poos 2x per day..."
+                              className="w-full border border-gray-300 rounded-lg sm:rounded-xl px-4 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
+                              placeholder="e.g., Walks at 8am and 6pm, eats 2 cups of kibble twice daily..."
                             />
                           </div>
                           <div className="flex gap-3">
                             <button
                               onClick={() => handleUpdatePup(pup.id)}
                               disabled={loading}
-                              className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors"
+                              className="px-4 sm:px-5 py-2 sm:py-2.5 bg-[#1a3a3a] text-white rounded-lg sm:rounded-xl font-medium hover:bg-[#2a4a4a] disabled:opacity-50 text-sm"
                             >
                               Save
                             </button>
                             <button
                               onClick={() => setEditingPup(null)}
-                              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+                              className="px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-200 text-gray-700 rounded-lg sm:rounded-xl font-medium hover:bg-gray-300 text-sm"
                             >
                               Cancel
                             </button>
@@ -515,11 +484,11 @@ export default function ManageClient({ user, allFriends }: Props) {
                         </div>
                       ) : (
                         <div>
-                          <h3 className="text-xl font-bold text-gray-800 mb-2">{pup.name}</h3>
+                          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">{pup.name}</h3>
                           {pup.careInstructions && (
-                            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4">
-                              <p className="text-sm font-medium text-gray-700 mb-1">Care Instructions:</p>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{pup.careInstructions}</p>
+                            <div className="mb-3">
+                              <p className="text-xs sm:text-sm text-gray-700 font-medium mb-1">Care Instructions:</p>
+                              <p className="text-xs sm:text-sm text-gray-600 italic">{pup.careInstructions}</p>
                             </div>
                           )}
                           <button
@@ -528,240 +497,217 @@ export default function ManageClient({ user, allFriends }: Props) {
                               setPupName(pup.name);
                               setPupInstructions(pup.careInstructions || '');
                             }}
-                            className="px-6 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-lg hover:from-yellow-500 hover:to-orange-500 font-medium transition-all"
+                            className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#1a3a3a] text-white font-medium hover:bg-[#2a4a4a] transition-colors text-sm"
                           >
                             Edit Pup
                           </button>
-
-                          {/* Friends for this pup */}
-                          <div className="mt-6">
-                            <h4 className="font-semibold text-gray-800 mb-3">Friends with {pup.name}</h4>
-                            {pup.friendships.length === 0 ? (
-                              <p className="text-gray-500 text-sm mb-4">No friends yet</p>
-                            ) : (
-                              <div className="space-y-3 mb-4">
-                                {pup.friendships.map((friendship) => (
-                                  <div key={friendship.id} className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-                                    <div className="flex items-start gap-3">
-                                      {friendship.friend.profilePhotoUrl ? (
-                                        <Image
-                                          src={friendship.friend.profilePhotoUrl}
-                                          alt={friendship.friend.name}
-                                          width={40}
-                                          height={40}
-                                          className="rounded-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center text-sm font-bold text-amber-700">
-                                          {friendship.friend.name.charAt(0)}
-                                        </div>
-                                      )}
-                                      <div className="flex-1">
-                                        <p className="font-semibold text-gray-800">{friendship.friend.name}</p>
-                                        {editingFriendship === friendship.id ? (
-                                          <div className="mt-2 space-y-2">
-                                            <textarea
-                                              value={friendHistory}
-                                              onChange={(e) => setFriendHistory(e.target.value)}
-                                              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                              placeholder="History with this pup..."
-                                            />
-                                            <div className="flex gap-2">
-                                              <button
-                                                onClick={() => handleUpdateFriendship(friendship.id)}
-                                                disabled={loading}
-                                                className="px-3 py-1.5 bg-green-500 text-white rounded-md text-sm hover:bg-green-600 font-medium transition-colors"
-                                              >
-                                                Save
-                                              </button>
-                                              <button
-                                                onClick={() => setEditingFriendship(null)}
-                                                className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 font-medium transition-colors"
-                                              >
-                                                Cancel
-                                              </button>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <>
-                                            {friendship.historyWithPup && (
-                                              <p className="text-sm text-gray-600 mt-1">{friendship.historyWithPup}</p>
-                                            )}
-                                            <div className="flex gap-3 mt-2">
-                                              <button
-                                                onClick={() => {
-                                                  setEditingFriendship(friendship.id);
-                                                  setFriendHistory(friendship.historyWithPup || '');
-                                                }}
-                                                className="text-sm text-amber-600 hover:text-amber-700 font-medium"
-                                              >
-                                                Edit
-                                              </button>
-                                              <button
-                                                onClick={() => handleDeleteFriendship(friendship.id)}
-                                                className="text-sm text-red-600 hover:text-red-700 font-medium"
-                                              >
-                                                Remove
-                                              </button>
-                                            </div>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Add Friend Button */}
-                            {showAddFriend === pup.id ? (
-                              <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-                                <div className="flex gap-2 mb-4">
-                                  <button
-                                    onClick={() => setShowNewFriendForm(false)}
-                                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                                      !showNewFriendForm
-                                        ? 'bg-amber-100 text-amber-900 border-2 border-amber-500'
-                                        : 'bg-white text-gray-700 border border-gray-300'
-                                    }`}
-                                  >
-                                    Select Existing
-                                  </button>
-                                  <button
-                                    onClick={() => setShowNewFriendForm(true)}
-                                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                                      showNewFriendForm
-                                        ? 'bg-amber-100 text-amber-900 border-2 border-amber-500'
-                                        : 'bg-white text-gray-700 border border-gray-300'
-                                    }`}
-                                  >
-                                    Create New
-                                  </button>
-                                </div>
-
-                                {showNewFriendForm ? (
-                                  <div className="space-y-3">
-                                    <h5 className="font-semibold text-gray-800">Create New Friend</h5>
-                                    <div>
-                                      <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                                      <input
-                                        type="text"
-                                        value={newFriendName}
-                                        onChange={(e) => setNewFriendName(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        placeholder="Friend's name"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="block text-sm font-medium text-gray-700 mb-1">Address (optional)</label>
-                                      <input
-                                        type="text"
-                                        value={newFriendAddress}
-                                        onChange={(e) => setNewFriendAddress(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        placeholder="Friend's address"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
-                                      <input
-                                        type="tel"
-                                        value={newFriendPhone}
-                                        onChange={(e) => setNewFriendPhone(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        placeholder="Friend's phone"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="block text-sm font-medium text-gray-700 mb-1">History with pup (optional)</label>
-                                      <textarea
-                                        value={friendHistory}
-                                        onChange={(e) => setFriendHistory(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                        placeholder="History with this pup..."
-                                      />
-                                    </div>
-                                    <div className="flex gap-3">
-                                      <button
-                                        onClick={() => handleCreateNewFriend(pup.id)}
-                                        disabled={loading || !newFriendName.trim()}
-                                        className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors"
-                                      >
-                                        Create & Add Friend
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setShowAddFriend(null);
-                                          setShowNewFriendForm(false);
-                                          setNewFriendName('');
-                                          setNewFriendAddress('');
-                                          setNewFriendPhone('');
-                                          setSelectedFriend('');
-                                          setFriendHistory('');
-                                        }}
-                                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-3">
-                                    <h5 className="font-semibold text-gray-800">Select Existing Friend</h5>
-                                    <select
-                                      value={selectedFriend}
-                                      onChange={(e) => setSelectedFriend(e.target.value)}
-                                      className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                    >
-                                      <option value="">Select a friend...</option>
-                                      {allFriends
-                                        .filter((f) => !pup.friendships.some((fs) => fs.friend.id === f.id))
-                                        .map((friend) => (
-                                          <option key={friend.id} value={friend.id}>
-                                            {friend.name}
-                                          </option>
-                                        ))}
-                                    </select>
-                                    <textarea
-                                      value={friendHistory}
-                                      onChange={(e) => setFriendHistory(e.target.value)}
-                                      className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                                      placeholder="History with this pup (optional)..."
-                                    />
-                                    <div className="flex gap-3">
-                                      <button
-                                        onClick={() => handleAddFriend(pup.id)}
-                                        disabled={loading || !selectedFriend}
-                                        className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors"
-                                      >
-                                        Add Friend
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setShowAddFriend(null);
-                                          setSelectedFriend('');
-                                          setFriendHistory('');
-                                        }}
-                                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setShowAddFriend(pup.id)}
-                                className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-colors"
-                              >
-                                + Add Friend
-                              </button>
-                            )}
-                          </div>
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {/* Friends with this pup */}
+                  <div className="pt-4 sm:pt-5 border-t border-[#f4a9a8]/30">
+                    <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Friends with {pup.name}</h4>
+
+                    {pup.friendships.length === 0 ? (
+                      <p className="text-gray-500 text-sm mb-4">No friends yet</p>
+                    ) : (
+                      <div className="space-y-2 sm:space-y-3 mb-4">
+                        {pup.friendships.map((friendship) => {
+                          const gradient = getEventGradient(friendship.friend.id);
+                          return (
+                            <div key={friendship.id} className="flex items-center justify-between bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 shadow-sm">
+                              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                <div
+                                  className="w-10 sm:w-12 h-10 sm:h-12 rounded-full flex items-center justify-center font-bold shadow-sm flex-shrink-0 text-sm sm:text-base"
+                                  style={{
+                                    background: `linear-gradient(to bottom right, ${gradient.from}, ${gradient.to})`,
+                                    color: gradient.text,
+                                  }}
+                                >
+                                  {friendship.friend.name.charAt(0)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{friendship.friend.name}</h5>
+                                  {editingFriendship === friendship.id ? (
+                                    <div className="mt-2 space-y-2">
+                                      <textarea
+                                        value={friendHistory}
+                                        onChange={(e) => setFriendHistory(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
+                                        placeholder="History with this pup..."
+                                      />
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => handleUpdateFriendship(friendship.id)}
+                                          disabled={loading}
+                                          className="px-3 py-1.5 bg-[#1a3a3a] text-white rounded-lg text-xs sm:text-sm hover:bg-[#2a4a4a] font-medium"
+                                        >
+                                          Save
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingFriendship(null)}
+                                          className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm hover:bg-gray-300 font-medium"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-[10px] sm:text-xs text-gray-600 truncate">{friendship.historyWithPup || 'No history added'}</p>
+                                  )}
+                                </div>
+                              </div>
+                              {editingFriendship !== friendship.id && (
+                                <div className="flex gap-2 sm:gap-3 ml-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingFriendship(friendship.id);
+                                      setFriendHistory(friendship.historyWithPup || '');
+                                    }}
+                                    className="text-[#1a3a3a] hover:text-gray-700 font-medium text-xs sm:text-sm"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteFriendship(friendship.id)}
+                                    className="text-red-600 hover:text-red-700 font-medium text-xs sm:text-sm"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Add Friend Section */}
+                    {showAddFriend === pup.id ? (
+                      <div className="bg-white rounded-lg sm:rounded-xl p-4 border border-gray-200">
+                        <div className="flex gap-2 mb-4">
+                          <button
+                            onClick={() => setShowNewFriendForm(false)}
+                            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                              !showNewFriendForm
+                                ? 'bg-[#1a3a3a] text-white'
+                                : 'bg-gray-100 text-gray-700 border border-gray-300'
+                            }`}
+                          >
+                            Select Existing
+                          </button>
+                          <button
+                            onClick={() => setShowNewFriendForm(true)}
+                            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                              showNewFriendForm
+                                ? 'bg-[#1a3a3a] text-white'
+                                : 'bg-gray-100 text-gray-700 border border-gray-300'
+                            }`}
+                          >
+                            Create New
+                          </button>
+                        </div>
+
+                        {showNewFriendForm ? (
+                          <div className="space-y-3">
+                            <h5 className="font-semibold text-gray-800 text-sm">Create New Friend</h5>
+                            <input
+                              type="text"
+                              value={newFriendName}
+                              onChange={(e) => setNewFriendName(e.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] text-sm"
+                              placeholder="Friend's name *"
+                            />
+                            <input
+                              type="tel"
+                              value={newFriendPhone}
+                              onChange={(e) => setNewFriendPhone(e.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] text-sm"
+                              placeholder="Friend's phone (optional)"
+                            />
+                            <textarea
+                              value={friendHistory}
+                              onChange={(e) => setFriendHistory(e.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] text-sm"
+                              placeholder="History with pup (optional)"
+                            />
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => handleCreateNewFriend(pup.id)}
+                                disabled={loading || !newFriendName.trim()}
+                                className="px-4 py-2 bg-[#f4a9a8] text-[#1a3a3a] rounded-lg hover:bg-[#f5b9b8] disabled:opacity-50 font-medium text-sm"
+                              >
+                                Create & Add
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setShowAddFriend(null);
+                                  setShowNewFriendForm(false);
+                                  setNewFriendName('');
+                                  setNewFriendPhone('');
+                                  setFriendHistory('');
+                                }}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium text-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <select
+                              value={selectedFriend}
+                              onChange={(e) => setSelectedFriend(e.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] text-sm"
+                            >
+                              <option value="">Select a friend...</option>
+                              {allFriends
+                                .filter((f) => !pup.friendships.some((fs) => fs.friend.id === f.id))
+                                .map((friend) => (
+                                  <option key={friend.id} value={friend.id}>
+                                    {friend.name}
+                                  </option>
+                                ))}
+                            </select>
+                            <textarea
+                              value={friendHistory}
+                              onChange={(e) => setFriendHistory(e.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] text-sm"
+                              placeholder="History with this pup (optional)..."
+                            />
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => handleAddFriend(pup.id)}
+                                disabled={loading || !selectedFriend}
+                                className="px-4 py-2 bg-[#f4a9a8] text-[#1a3a3a] rounded-lg hover:bg-[#f5b9b8] disabled:opacity-50 font-medium text-sm"
+                              >
+                                Add Friend
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setShowAddFriend(null);
+                                  setSelectedFriend('');
+                                  setFriendHistory('');
+                                }}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium text-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowAddFriend(pup.id)}
+                        className="w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg sm:rounded-xl bg-white text-gray-900 font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2 border border-gray-300 text-sm"
+                      >
+                        <UserPlus className="w-4 sm:w-5 h-4 sm:h-5" />
+                        Add Friend
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -774,33 +720,25 @@ export default function ManageClient({ user, allFriends }: Props) {
 
   // FRIEND VIEW
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Pups</h1>
-        <p className="text-gray-600">Manage your profile and the pups you care for</p>
+    <div className="space-y-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">Pups</h1>
+        <p className="text-sm sm:text-base text-gray-600">Manage your profile and the pups you care for</p>
       </div>
 
       {/* Friend Profile Section */}
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Profile</h2>
-        <div className="flex items-start gap-6">
-          {/* Profile Photo */}
-          <div className="flex flex-col items-center">
-            {userData.profilePhotoUrl ? (
-              <Image
-                src={userData.profilePhotoUrl}
-                alt={userData.name}
-                width={120}
-                height={120}
-                className="rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-30 h-30 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center text-3xl font-bold text-amber-700">
-                {userData.name.charAt(0)}
-              </div>
-            )}
-            <label className="mt-3 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-lg cursor-pointer hover:from-yellow-500 hover:to-orange-500 text-sm font-medium transition-all">
-              Change Photo
+      <div className="bg-[#1a3a3a] rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white">
+        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Your Profile</h2>
+
+        <div className="flex items-start gap-4 sm:gap-6">
+          <div className="relative group flex-shrink-0">
+            <Avatar
+              photoUrl={userData.profilePhotoUrl}
+              name={userData.name}
+              size="xl"
+            />
+            <label className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+              <Camera className="w-4 sm:w-5 h-4 sm:h-5 text-white" />
               <input
                 type="file"
                 accept="image/*"
@@ -813,48 +751,38 @@ export default function ManageClient({ user, allFriends }: Props) {
             </label>
           </div>
 
-          {/* Profile Details */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {editingUser ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
                   <input
                     type="text"
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full border border-[#2a4a4a] bg-[#2a4a4a] text-white rounded-lg sm:rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                  <input
-                    type="text"
-                    value={userAddress}
-                    onChange={(e) => setUserAddress(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
                   <input
                     type="tel"
                     value={userPhone}
                     onChange={(e) => setUserPhone(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full border border-[#2a4a4a] bg-[#2a4a4a] text-white rounded-lg sm:rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                 </div>
                 <div className="flex gap-3">
                   <button
                     onClick={handleUpdateUser}
                     disabled={loading}
-                    className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 bg-[#f4a9a8] text-[#1a3a3a] rounded-lg sm:rounded-xl font-medium hover:bg-[#f5b9b8] disabled:opacity-50 text-sm"
                   >
                     Save
                   </button>
                   <button
                     onClick={() => setEditingUser(false)}
-                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 bg-[#2a4a4a] text-white rounded-lg sm:rounded-xl font-medium hover:bg-[#3a5a5a] text-sm"
                   >
                     Cancel
                   </button>
@@ -862,12 +790,18 @@ export default function ManageClient({ user, allFriends }: Props) {
               </div>
             ) : (
               <div>
-                <p className="text-2xl font-bold text-gray-800 mb-2">{userData.name}</p>
-                {userData.addressText && <p className="text-gray-600 mb-1">📍 {userData.addressText}</p>}
-                {userData.phoneNumber && <p className="text-gray-600 mb-3">📞 {userData.phoneNumber}</p>}
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">{userData.name}</h3>
+                <div className="space-y-2 mb-3 sm:mb-4">
+                  {userData.phoneNumber && (
+                    <div className="flex items-center gap-2 text-gray-300">
+                      <Phone className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm truncate">{userData.phoneNumber}</span>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => setEditingUser(true)}
-                  className="px-6 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-lg hover:from-yellow-500 hover:to-orange-500 font-medium transition-all"
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#f4a9a8] text-[#1a3a3a] font-medium hover:bg-[#f5b9b8] transition-colors text-sm"
                 >
                   Edit Profile
                 </button>
@@ -878,70 +812,56 @@ export default function ManageClient({ user, allFriends }: Props) {
       </div>
 
       {/* Pups Section */}
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Pups You Know</h2>
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-6">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Pups You Know</h2>
+
         {userData.pupFriendships.length === 0 ? (
           <p className="text-gray-500">No pups yet</p>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-4">
             {userData.pupFriendships.map((friendship) => (
-              <div key={friendship.id} className="border-b border-gray-200 last:border-b-0 pb-8 last:pb-0">
-                <div className="flex items-start gap-6">
-                  {/* Pup Photo */}
-                  {friendship.pup.profilePhotoUrl ? (
-                    <Image
-                      src={friendship.pup.profilePhotoUrl}
-                      alt={friendship.pup.name}
-                      width={100}
-                      height={100}
-                      className="rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-25 h-25 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center text-3xl">
-                      🐕
-                    </div>
-                  )}
+              <div key={friendship.id} className="bg-gradient-to-br from-[#ffd4d4] to-[#ffe4d4] rounded-xl sm:rounded-2xl p-5 sm:p-6 border border-[#f4a9a8]/20">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <Avatar
+                    photoUrl={friendship.pup.profilePhotoUrl}
+                    name={friendship.pup.name}
+                    size="lg"
+                  />
 
-                  {/* Pup Details */}
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">{friendship.pup.name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">{friendship.pup.name}</h3>
                     <p className="text-sm text-gray-600 mb-2">
                       Owner: {friendship.pup.owner.name}
-                      {friendship.pup.owner.phoneNumber && ` • ${friendship.pup.owner.phoneNumber}`}
+                      {friendship.pup.owner.phoneNumber && ` - ${friendship.pup.owner.phoneNumber}`}
                     </p>
-                    {friendship.pup.owner.addressText && (
-                      <p className="text-sm text-gray-600 mb-3">📍 {friendship.pup.owner.addressText}</p>
-                    )}
+
                     {friendship.pup.careInstructions && (
-                      <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4">
+                      <div className="bg-white/60 backdrop-blur-sm border border-white/40 p-4 rounded-lg mb-4">
                         <p className="text-sm font-semibold text-gray-700 mb-1">Care Instructions:</p>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                          {friendship.pup.careInstructions}
-                        </p>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{friendship.pup.careInstructions}</p>
                       </div>
                     )}
 
-                    {/* History */}
                     {editingFriendship === friendship.id ? (
-                      <div className="mt-4 space-y-3">
+                      <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-700">Your history with {friendship.pup.name}</label>
                         <textarea
                           value={friendHistory}
                           onChange={(e) => setFriendHistory(e.target.value)}
-                          className="w-full border border-gray-300 rounded-md px-4 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2 h-24 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                           placeholder="Share your experience with this pup..."
                         />
                         <div className="flex gap-3">
                           <button
                             onClick={() => handleUpdateFriendship(friendship.id)}
                             disabled={loading}
-                            className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 font-medium transition-colors"
+                            className="px-4 py-2 bg-[#1a3a3a] text-white rounded-lg hover:bg-[#2a4a4a] disabled:opacity-50 font-medium text-sm"
                           >
                             Save
                           </button>
                           <button
                             onClick={() => setEditingFriendship(null)}
-                            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium text-sm"
                           >
                             Cancel
                           </button>
@@ -950,7 +870,7 @@ export default function ManageClient({ user, allFriends }: Props) {
                     ) : (
                       <>
                         {friendship.historyWithPup && (
-                          <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg mb-4">
+                          <div className="bg-white/60 backdrop-blur-sm border border-white/40 p-4 rounded-lg mb-4">
                             <p className="text-sm font-semibold text-gray-700 mb-1">Your history:</p>
                             <p className="text-sm text-gray-700">{friendship.historyWithPup}</p>
                           </div>
@@ -960,7 +880,7 @@ export default function ManageClient({ user, allFriends }: Props) {
                             setEditingFriendship(friendship.id);
                             setFriendHistory(friendship.historyWithPup || '');
                           }}
-                          className="px-6 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-lg hover:from-yellow-500 hover:to-orange-500 font-medium transition-all"
+                          className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-[#1a3a3a] text-white font-medium hover:bg-[#2a4a4a] transition-colors text-sm"
                         >
                           Edit History
                         </button>

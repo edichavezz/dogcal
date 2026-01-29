@@ -57,9 +57,9 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white border border-gray-200 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4">
           {error}
         </div>
       )}
@@ -73,7 +73,7 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
             size="md"
           />
           <div>
-            <h3 className="text-lg font-semibold text-gray-800">
+            <h3 className="text-lg font-semibold text-gray-900">
               {suggestion.pup.name}
             </h3>
             <p className="text-sm text-gray-600">
@@ -83,7 +83,7 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
         </div>
 
         {/* Date & Time */}
-        <div className="bg-gray-50 p-4 rounded-md">
+        <div className="bg-gray-50 p-4 rounded-xl">
           <p className="text-sm text-gray-700">
             <strong>Start:</strong> {format(new Date(suggestion.startAt), 'MMM d, yyyy h:mm a')}
           </p>
@@ -94,7 +94,7 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
 
         {/* Friend Comment */}
         {suggestion.friendComment && (
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md">
+          <div className="bg-gradient-to-br from-[#ffd4d4]/30 to-[#ffe4d4]/30 border border-[#f4a9a8]/20 p-4 rounded-xl">
             <p className="text-sm font-medium text-gray-700 mb-1">Friend&apos;s Note:</p>
             <p className="text-gray-800">{suggestion.friendComment}</p>
           </div>
@@ -112,7 +112,7 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
               onChange={(e) => setOwnerComment(e.target.value)}
               rows={2}
               placeholder="E.g., Thanks! or Sorry, we already have plans..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
             />
           </div>
         )}
@@ -122,7 +122,7 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
           {!showCommentInput && (
             <button
               onClick={() => setShowCommentInput(true)}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition"
+              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 transition"
             >
               Add Comment
             </button>
@@ -130,14 +130,14 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
           <button
             onClick={() => handleDecision('APPROVE')}
             disabled={loading}
-            className="flex-1 px-6 py-2 bg-green-500 text-white font-medium rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="flex-1 px-6 py-2 bg-[#1a3a3a] text-white font-medium rounded-xl hover:bg-[#2a4a4a] disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {loading ? 'Processing...' : 'Approve'}
           </button>
           <button
             onClick={() => handleDecision('REJECT')}
             disabled={loading}
-            className="flex-1 px-6 py-2 bg-red-500 text-white font-medium rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="flex-1 px-6 py-2 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {loading ? 'Processing...' : 'Reject'}
           </button>

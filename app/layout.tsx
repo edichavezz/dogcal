@@ -15,7 +15,7 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "DogCal - Dog Care Scheduling",
+  title: "dogcal - Dog Care Scheduling",
   description: "Coordinate care time for your pups with friends",
 };
 

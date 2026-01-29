@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import LoadingSpinner from './LoadingSpinner';
 
 type User = {
   id: string;
@@ -140,7 +141,9 @@ export default function UserSelector() {
       )}
 
       {loading && (
-        <div className="text-center text-gray-600">Loading...</div>
+        <div className="flex justify-center py-4">
+          <LoadingSpinner size={32} message="Signing in..." />
+        </div>
       )}
     </div>
   );

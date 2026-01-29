@@ -8,7 +8,7 @@ import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 
 const updateHangoutSchema = z.object({
-  eventName: z.string().max(100).optional(),
+  eventName: z.string().max(100).optional().nullable(),
   startAt: z.string().datetime().optional(),
   endAt: z.string().datetime().optional(),
   ownerNotes: z.string().optional().nullable(),

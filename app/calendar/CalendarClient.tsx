@@ -23,6 +23,7 @@ type Hangout = {
   assignedFriend?: {
     id: string;
     name: string;
+    profilePhotoUrl?: string | null;
   } | null;
   notes: Array<{
     id: string;

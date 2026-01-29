@@ -23,10 +23,14 @@ export const PHOTO_BUCKET = 'dogcal-photos';
  * @returns The public URL of the uploaded file
  */
 export async function uploadPhoto(file: File, path: string): Promise<string> {
+  // Convert File to ArrayBuffer for Node.js compatibility
+  const arrayBuffer = await file.arrayBuffer();
+
   const { data, error } = await supabase.storage
     .from(PHOTO_BUCKET)
-    .upload(path, file, {
+    .upload(path, arrayBuffer, {
       cacheControl: '3600',
+      contentType: file.type,
       upsert: true, // Replace existing file
     });
 

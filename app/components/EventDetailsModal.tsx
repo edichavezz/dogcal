@@ -24,6 +24,7 @@ type Hangout = {
   assignedFriend?: {
     id: string;
     name: string;
+    profilePhotoUrl?: string | null;
   } | null;
   notes: Array<{
     id: string;
@@ -259,8 +260,8 @@ export default function EventDetailsModal({
   const canEdit = isOwner || isAssignedToMe;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="border-b border-gray-200 p-6">
           <div className="flex items-start justify-between">
@@ -275,20 +276,20 @@ export default function EventDetailsModal({
                     placeholder={`${hangout.pup.name}${
                       hangout.assignedFriend ? ` - ${hangout.assignedFriend.name}` : ' (Open)'
                     }`}
-                    className="w-full text-2xl font-bold px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full text-2xl font-bold px-3 py-1 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={handleSaveEventName}
                       disabled={loading}
-                      className="px-4 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-sm font-medium rounded-md hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50"
+                      className="px-4 py-1 bg-[#f4a9a8] text-[#1a3a3a] text-sm font-medium rounded-xl hover:bg-[#f5b9b8] disabled:opacity-50"
                     >
                       {loading ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={handleCancelEditName}
                       disabled={loading}
-                      className="px-4 py-1 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300"
+                      className="px-4 py-1 bg-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-300"
                     >
                       Cancel
                     </button>
@@ -340,7 +341,7 @@ export default function EventDetailsModal({
         {/* Content */}
         <div className="p-6 space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
               {error}
             </div>
           )}
@@ -360,7 +361,7 @@ export default function EventDetailsModal({
                     onChange={(e) => setEditedEventName(e.target.value)}
                     maxLength={100}
                     placeholder={`${hangout.pup.name}${hangout.assignedFriend ? ` - ${hangout.assignedFriend.name}` : ' (Open)'}`}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                 </div>
               )}
@@ -376,7 +377,7 @@ export default function EventDetailsModal({
                     value={editedStartDate}
                     onChange={(e) => setEditedStartDate(e.target.value)}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                 </div>
                 <div>
@@ -388,7 +389,7 @@ export default function EventDetailsModal({
                     value={editedStartTime}
                     onChange={(e) => setEditedStartTime(e.target.value)}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                 </div>
               </div>
@@ -404,7 +405,7 @@ export default function EventDetailsModal({
                     onChange={(e) => setEditedEndDate(e.target.value)}
                     required
                     min={editedStartDate}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                 </div>
                 <div>
@@ -416,7 +417,7 @@ export default function EventDetailsModal({
                     value={editedEndTime}
                     onChange={(e) => setEditedEndTime(e.target.value)}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                 </div>
               </div>
@@ -432,7 +433,7 @@ export default function EventDetailsModal({
                     onChange={(e) => setEditedOwnerNotes(e.target.value)}
                     rows={4}
                     placeholder="E.g., Feed at noon, needs medication, etc."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                 </div>
               )}
@@ -446,7 +447,7 @@ export default function EventDetailsModal({
                   <select
                     value={editedAssignedFriend}
                     onChange={(e) => setEditedAssignedFriend(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   >
                     <option value="">Leave open for any friend...</option>
                     {friends.map((friend) => (
@@ -463,14 +464,14 @@ export default function EventDetailsModal({
                 <button
                   onClick={handleSaveFullEdit}
                   disabled={loading}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium rounded-md hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50"
+                  className="flex-1 px-6 py-3 bg-[#f4a9a8] text-[#1a3a3a] font-medium rounded-xl hover:bg-[#f5b9b8] disabled:opacity-50"
                 >
                   {loading ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button
                   onClick={handleCancelFullEdit}
                   disabled={loading}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300"
+                  className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300"
                 >
                   Cancel
                 </button>
@@ -481,7 +482,7 @@ export default function EventDetailsModal({
               {/* Date & Time */}
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Date & Time</h3>
-                <div className="bg-gray-50 p-4 rounded-md">
+                <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-gray-800">
                     <strong>Start:</strong> {format(new Date(hangout.startAt), 'MMM d, yyyy h:mm a')}
                   </p>
@@ -497,18 +498,26 @@ export default function EventDetailsModal({
             <span
               className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
                 hangout.status === 'OPEN'
-                  ? 'bg-yellow-100 text-yellow-800'
+                  ? 'bg-[#ffd4d4] text-[#1a3a3a]'
                   : hangout.status === 'ASSIGNED'
-                  ? 'bg-orange-100 text-orange-800'
+                  ? 'bg-[#1a3a3a] text-white'
                   : 'bg-gray-100 text-gray-800'
               }`}
             >
               {hangout.status}
             </span>
             {hangout.assignedFriend && (
-              <p className="text-sm text-gray-600 mt-2">
-                Assigned to: <strong>{hangout.assignedFriend.name}</strong>
-              </p>
+              <div className="flex items-center gap-2 mt-3">
+                <Avatar
+                  photoUrl={hangout.assignedFriend.profilePhotoUrl}
+                  name={hangout.assignedFriend.name}
+                  size="sm"
+                />
+                <div>
+                  <p className="text-sm text-gray-600">Assigned to:</p>
+                  <p className="text-sm font-semibold text-gray-900">{hangout.assignedFriend.name}</p>
+                </div>
+              </div>
             )}
           </div>
 
@@ -518,7 +527,7 @@ export default function EventDetailsModal({
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 Care Instructions from Owner
               </h3>
-              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md">
+              <div className="bg-gradient-to-br from-[#ffd4d4]/30 to-[#ffe4d4]/30 border border-[#f4a9a8]/20 p-4 rounded-xl">
                 <p className="text-gray-800 whitespace-pre-wrap">{hangout.ownerNotes}</p>
               </div>
             </div>
@@ -530,7 +539,7 @@ export default function EventDetailsModal({
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 General Care Instructions for {hangout.pup.name}
               </h3>
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-md">
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
                 <p className="text-gray-800 whitespace-pre-wrap">
                   {hangout.pup.careInstructions}
                 </p>
@@ -544,7 +553,7 @@ export default function EventDetailsModal({
               <h3 className="text-sm font-medium text-gray-700 mb-3">Notes</h3>
               <div className="space-y-3">
                 {hangout.notes.map((note) => (
-                  <div key={note.id} className="bg-gray-50 p-4 rounded-md">
+                  <div key={note.id} className="bg-gray-50 p-4 rounded-xl">
                     <div className="flex items-start justify-between mb-2">
                       <span className="text-sm font-medium text-gray-800">
                         {note.author.name}
@@ -566,12 +575,12 @@ export default function EventDetailsModal({
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
                     placeholder="Add a note..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
                   />
                   <button
                     type="submit"
                     disabled={!noteText.trim() || submittingNote}
-                    className="px-6 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium rounded-md hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="px-6 py-2 bg-[#f4a9a8] text-[#1a3a3a] font-medium rounded-xl hover:bg-[#f5b9b8] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     {submittingNote ? 'Adding...' : 'Add Note'}
                   </button>
@@ -587,7 +596,7 @@ export default function EventDetailsModal({
                     <button
                       onClick={handleStartFullEdit}
                       disabled={loading}
-                      className="flex-1 px-6 py-3 bg-blue-500 text-white font-medium rounded-md hover:bg-blue-600 disabled:opacity-50 transition-all"
+                      className="flex-1 px-6 py-3 bg-[#1a3a3a] text-white font-medium rounded-xl hover:bg-[#2a4a4a] disabled:opacity-50 transition-all"
                     >
                       Edit Hangout
                     </button>
@@ -596,7 +605,7 @@ export default function EventDetailsModal({
                     <button
                       onClick={handleAssign}
                       disabled={loading}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium rounded-md hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      className="flex-1 px-6 py-3 bg-[#f4a9a8] text-[#1a3a3a] font-medium rounded-xl hover:bg-[#f5b9b8] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {loading ? 'Assigning...' : "I'll take this!"}
                     </button>
@@ -605,14 +614,14 @@ export default function EventDetailsModal({
                     <button
                       onClick={handleUnassign}
                       disabled={loading}
-                      className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                      className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {loading ? 'Unassigning...' : 'Unassign Myself'}
                     </button>
                   )}
                   <button
                     onClick={onClose}
-                    className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-all"
+                    className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition-all"
                   >
                     Close
                   </button>

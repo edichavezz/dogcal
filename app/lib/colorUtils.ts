@@ -2,7 +2,16 @@
 
 import type { HangoutStatus } from '@prisma/client';
 
-// Color palette for friend assignment (12 distinct colors)
+// New gradient color palette for events (matching Figma design)
+const EVENT_GRADIENTS = [
+  { name: 'blue', from: '#b8d4ff', to: '#c8e0ff', border: '#93c5fd', text: '#1e40af' },
+  { name: 'orange', from: '#ffd4a9', to: '#ffe4c4', border: '#fdba74', text: '#9a3412' },
+  { name: 'purple', from: '#e4c4f1', to: '#f0daf5', border: '#d8b4fe', text: '#6b21a8' },
+  { name: 'green', from: '#c4f1be', to: '#daf5d7', border: '#86efac', text: '#166534' },
+  { name: 'pink', from: '#ffd4d4', to: '#ffe4d4', border: '#fca5a5', text: '#9f1239' },
+];
+
+// Legacy color palette for FullCalendar (12 distinct colors)
 const FRIEND_COLOR_PALETTE = [
   '#3B82F6', // Blue
   '#10B981', // Green
@@ -21,6 +30,27 @@ const FRIEND_COLOR_PALETTE = [
 // Color constants for different hangout states
 export const OPEN_HANGOUT_COLOR = '#FDE68A'; // Yellow - unassigned
 export const SUGGESTED_HANGOUT_COLOR = '#BFDBFE'; // Light blue - suggestions
+
+/**
+ * Get gradient colors for an event based on an ID (friend or pup).
+ * Returns consistent colors per ID.
+ */
+export function getEventGradient(id: string): typeof EVENT_GRADIENTS[0] {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % EVENT_GRADIENTS.length;
+  return EVENT_GRADIENTS[index];
+}
+
+/**
+ * Get gradient class name for an event (for custom calendar)
+ */
+export function getEventGradientClass(id: string): string {
+  const gradient = getEventGradient(id);
+  return `event-${gradient.name}`;
+}
 
 /**
  * Generate a consistent color for a friend based on their user ID.
