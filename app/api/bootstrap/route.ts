@@ -20,16 +20,30 @@ export async function GET() {
       });
     }
 
-    // Get acting user
+    // Get acting user with optimized select - only fetch what we need
     const actingUser = await prisma.user.findUnique({
       where: { id: actingUserId },
-      include: {
-        ownedPups: true,
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        addressText: true,
+        ownedPups: {
+          select: {
+            id: true,
+            name: true,
+            profilePhotoUrl: true,
+          },
+        },
         pupFriendships: {
-          include: {
+          select: {
+            pupId: true,
             pup: {
-              include: {
-                owner: true,
+              select: {
+                id: true,
+                name: true,
+                profilePhotoUrl: true,
+                ownerUserId: true,
               },
             },
           },
@@ -50,97 +64,154 @@ export async function GET() {
       accessiblePups = actingUser.ownedPups;
     } else {
       // FRIEND - get pups they have friendships with
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      accessiblePups = actingUser.pupFriendships.map((friendship: any) => friendship.pup);
+      accessiblePups = actingUser.pupFriendships.map((friendship) => friendship.pup);
     }
 
-    // Get upcoming hangouts
     const now = new Date();
-    let upcomingHangouts;
 
+    // Build queries based on role and execute in parallel
     if (actingUser.role === 'OWNER') {
-      // Owners see all hangouts for their pups
-      upcomingHangouts = await prisma.hangout.findMany({
-        where: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pupId: { in: actingUser.ownedPups.map((p: any) => p.id) },
-          endAt: { gte: now },
-          status: { in: ['OPEN', 'ASSIGNED'] },
+      const pupIds = actingUser.ownedPups.map((p) => p.id);
+
+      // Parallel fetch: hangouts and suggestions count
+      const [upcomingHangouts, pendingSuggestionsCount] = await Promise.all([
+        prisma.hangout.findMany({
+          where: {
+            pupId: { in: pupIds },
+            endAt: { gte: now },
+            status: { in: ['OPEN', 'ASSIGNED'] },
+          },
+          select: {
+            id: true,
+            startAt: true,
+            endAt: true,
+            status: true,
+            ownerNotes: true,
+            eventName: true,
+            pup: {
+              select: {
+                id: true,
+                name: true,
+                profilePhotoUrl: true,
+              },
+            },
+            assignedFriend: {
+              select: {
+                id: true,
+                name: true,
+                profilePhotoUrl: true,
+              },
+            },
+            createdByOwner: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: { startAt: 'asc' },
+          take: 20,
+        }),
+        prisma.hangoutSuggestion.count({
+          where: {
+            pupId: { in: pupIds },
+            status: 'PENDING',
+          },
+        }),
+      ]);
+
+      const response = NextResponse.json({
+        actingUser: {
+          id: actingUser.id,
+          name: actingUser.name,
+          role: actingUser.role,
+          addressText: actingUser.addressText,
         },
-        include: {
-          pup: true,
-          assignedFriend: true,
-          createdByOwner: true,
-        },
-        orderBy: { startAt: 'asc' },
-        take: 20,
+        accessiblePups,
+        upcomingHangouts,
+        pendingSuggestionsCount,
       });
+
+      response.headers.set(
+        'Cache-Control',
+        'private, max-age=60, stale-while-revalidate=120'
+      );
+
+      return response;
     } else {
-      // Friends see OPEN hangouts for their pups + assigned hangouts
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const friendPupIds = actingUser.pupFriendships.map((f: any) => f.pupId);
-      upcomingHangouts = await prisma.hangout.findMany({
+      // FRIEND role - no suggestions count needed
+      const friendPupIds = actingUser.pupFriendships.map((f) => f.pupId);
+
+      const upcomingHangouts = await prisma.hangout.findMany({
         where: {
           AND: [
             { endAt: { gte: now } },
             {
               OR: [
                 {
-                  // OPEN hangouts for pups they're friends with
                   AND: [
                     { pupId: { in: friendPupIds } },
                     { status: 'OPEN' },
                   ],
                 },
                 {
-                  // Hangouts assigned to them
                   assignedFriendUserId: actingUserId,
                 },
               ],
             },
           ],
         },
-        include: {
-          pup: true,
-          assignedFriend: true,
-          createdByOwner: true,
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          ownerNotes: true,
+          eventName: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
+          assignedFriend: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
+          createdByOwner: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
         orderBy: { startAt: 'asc' },
         take: 20,
       });
-    }
 
-    // Get pending suggestions count (owners only)
-    let pendingSuggestionsCount = 0;
-    if (actingUser.role === 'OWNER') {
-      pendingSuggestionsCount = await prisma.hangoutSuggestion.count({
-        where: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pupId: { in: actingUser.ownedPups.map((p: any) => p.id) },
-          status: 'PENDING',
+      const response = NextResponse.json({
+        actingUser: {
+          id: actingUser.id,
+          name: actingUser.name,
+          role: actingUser.role,
+          addressText: actingUser.addressText,
         },
+        accessiblePups,
+        upcomingHangouts,
+        pendingSuggestionsCount: 0,
       });
+
+      response.headers.set(
+        'Cache-Control',
+        'private, max-age=60, stale-while-revalidate=120'
+      );
+
+      return response;
     }
-
-    const response = NextResponse.json({
-      actingUser: {
-        id: actingUser.id,
-        name: actingUser.name,
-        role: actingUser.role,
-        addressText: actingUser.addressText,
-      },
-      accessiblePups,
-      upcomingHangouts,
-      pendingSuggestionsCount,
-    });
-
-    // Add cache headers for browser caching
-    response.headers.set(
-      'Cache-Control',
-      'private, max-age=60, stale-while-revalidate=120'
-    );
-
-    return response;
   } catch (error) {
     console.error('Error in bootstrap:', error);
     return NextResponse.json(

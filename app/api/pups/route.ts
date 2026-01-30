@@ -16,18 +16,37 @@ const createPupSchema = z.object({
   ownerUserId: z.string().uuid().optional(), // Allow admin to specify owner
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const pups = await prisma.pup.findMany({
-      include: {
-        owner: true,
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    const { searchParams } = new URL(request.url);
+    const take = Math.min(parseInt(searchParams.get('take') || '50'), 100); // Default 50, max 100
+    const skip = parseInt(searchParams.get('skip') || '0');
 
-    return NextResponse.json({ pups });
+    const [pups, total] = await Promise.all([
+      prisma.pup.findMany({
+        select: {
+          id: true,
+          name: true,
+          profilePhotoUrl: true,
+          breed: true,
+          ownerUserId: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          name: 'asc',
+        },
+        take,
+        skip,
+      }),
+      prisma.pup.count(),
+    ]);
+
+    return NextResponse.json({ pups, total, take, skip });
   } catch (error) {
     console.error('Get pups error:', error);
     return NextResponse.json(

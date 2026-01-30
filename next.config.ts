@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable compression for better performance
+  compress: true,
+  // Remove X-Powered-By header for security
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {

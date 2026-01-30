@@ -39,6 +39,8 @@ model Pup {
   suggestions      HangoutSuggestion[]
   owner            User                @relation("PupOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
   friendships      PupFriendship[]
+
+  @@index([ownerUserId])
 }
 
 model PupFriendship {
@@ -51,6 +53,8 @@ model PupFriendship {
   pup            Pup      @relation(fields: [pupId], references: [id], onDelete: Cascade)
 
   @@unique([pupId, friendUserId])
+  @@index([pupId])
+  @@index([friendUserId])
 }
 
 model Hangout {
@@ -71,6 +75,12 @@ model Hangout {
   createdByOwner       User          @relation("HangoutCreator", fields: [createdByOwnerUserId], references: [id], onDelete: Cascade)
   pup                  Pup           @relation(fields: [pupId], references: [id], onDelete: Cascade)
   notes                HangoutNote[]
+
+  @@index([pupId])
+  @@index([status])
+  @@index([assignedFriendUserId])
+  @@index([pupId, status])
+  @@index([startAt])
 }
 
 model HangoutNote {
@@ -81,6 +91,8 @@ model HangoutNote {
   createdAt    DateTime @default(now())
   author       User     @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
   hangout      Hangout  @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
+
+  @@index([hangoutId])
 }
 
 model HangoutSuggestion {
@@ -101,6 +113,10 @@ model HangoutSuggestion {
   ownerDecisionBy         User?            @relation("SuggestionOwnerDecision", fields: [ownerDecisionByUserId], references: [id])
   pup                     Pup              @relation(fields: [pupId], references: [id], onDelete: Cascade)
   suggestedByFriend       User             @relation("SuggestionFriend", fields: [suggestedByFriendUserId], references: [id], onDelete: Cascade)
+
+  @@index([pupId])
+  @@index([status])
+  @@index([pupId, status])
 }
 
 enum UserRole {

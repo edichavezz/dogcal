@@ -143,62 +143,69 @@ export async function PATCH(
       );
     }
 
-    // Check for time conflicts with other hangouts (only if times are changing)
-    if (updates.startAt || updates.endAt) {
-      const conflictingHangout = await prisma.hangout.findFirst({
-        where: {
-          pupId: existingHangout.pupId,
-          id: { not: id },
-          status: { in: ['OPEN', 'ASSIGNED'] },
-          OR: [
-            // New hangout starts during existing hangout
-            {
-              AND: [
-                { startAt: { lte: newStartAt } },
-                { endAt: { gt: newStartAt } },
-              ],
-            },
-            // New hangout ends during existing hangout
-            {
-              AND: [
-                { startAt: { lt: newEndAt } },
-                { endAt: { gte: newEndAt } },
-              ],
-            },
-            // New hangout completely contains existing hangout
-            {
-              AND: [
-                { startAt: { gte: newStartAt } },
-                { endAt: { lte: newEndAt } },
-              ],
-            },
-          ],
-        },
-      });
+    // Run validation queries in parallel for better performance
+    const needsConflictCheck = updates.startAt || updates.endAt;
+    const needsFriendshipCheck = updates.assignedFriendUserId !== undefined && updates.assignedFriendUserId;
 
-      if (conflictingHangout) {
-        return NextResponse.json(
-          { error: 'This time slot conflicts with another hangout for this pup' },
-          { status: 400 }
-        );
-      }
+    const [conflictingHangout, friendship] = await Promise.all([
+      // Check for time conflicts (only if times are changing)
+      needsConflictCheck
+        ? prisma.hangout.findFirst({
+            where: {
+              pupId: existingHangout.pupId,
+              id: { not: id },
+              status: { in: ['OPEN', 'ASSIGNED'] },
+              OR: [
+                // New hangout starts during existing hangout
+                {
+                  AND: [
+                    { startAt: { lte: newStartAt } },
+                    { endAt: { gt: newStartAt } },
+                  ],
+                },
+                // New hangout ends during existing hangout
+                {
+                  AND: [
+                    { startAt: { lt: newEndAt } },
+                    { endAt: { gte: newEndAt } },
+                  ],
+                },
+                // New hangout completely contains existing hangout
+                {
+                  AND: [
+                    { startAt: { gte: newStartAt } },
+                    { endAt: { lte: newEndAt } },
+                  ],
+                },
+              ],
+            },
+            select: { id: true },
+          })
+        : null,
+      // Validate friendship (only if changing assignment)
+      needsFriendshipCheck
+        ? prisma.pupFriendship.findFirst({
+            where: {
+              pupId: existingHangout.pupId,
+              friendUserId: updates.assignedFriendUserId!,
+            },
+            select: { id: true },
+          })
+        : null,
+    ]);
+
+    if (needsConflictCheck && conflictingHangout) {
+      return NextResponse.json(
+        { error: 'This time slot conflicts with another hangout for this pup' },
+        { status: 400 }
+      );
     }
 
-    // Validate new friendship if changing assignment
-    if (updates.assignedFriendUserId !== undefined && updates.assignedFriendUserId) {
-      const friendship = await prisma.pupFriendship.findFirst({
-        where: {
-          pupId: existingHangout.pupId,
-          friendUserId: updates.assignedFriendUserId,
-        },
-      });
-
-      if (!friendship) {
-        return NextResponse.json(
-          { error: 'Cannot assign to this friend - no friendship exists' },
-          { status: 400 }
-        );
-      }
+    if (needsFriendshipCheck && !friendship) {
+      return NextResponse.json(
+        { error: 'Cannot assign to this friend - no friendship exists' },
+        { status: 400 }
+      );
     }
 
     // Build update data

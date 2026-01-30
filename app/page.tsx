@@ -48,16 +48,33 @@ export default async function Home() {
     );
   }
 
-  // Fetch user with their pups and friendships
+  // Fetch user with their pups and friendships - limit to what's displayed on welcome screen
   const user = await prisma.user.findUnique({
     where: { id: actingUserId },
     include: {
-      ownedPups: true,
+      ownedPups: {
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          profilePhotoUrl: true,
+        },
+      },
       pupFriendships: {
+        take: 5,
         include: {
           pup: {
-            include: {
-              owner: true,
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+              ownerUserId: true,
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },

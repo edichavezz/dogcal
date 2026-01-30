@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { UserRole } from '@prisma/client';
 import Image from 'next/image';
 import { Phone, Camera, UserPlus } from 'lucide-react';
@@ -65,6 +66,7 @@ type Props = {
 };
 
 export default function ManageClient({ user, allFriends }: Props) {
+  const router = useRouter();
   const [userData, setUserData] = useState(user);
   const [editingUser, setEditingUser] = useState(false);
   const [editingPup, setEditingPup] = useState<string | null>(null);
@@ -114,7 +116,7 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
-      window.location.reload();
+      router.refresh();
     } catch (error) {
       console.error('Upload error:', error);
       alert('Failed to upload photo');
@@ -232,7 +234,7 @@ export default function ManageClient({ user, allFriends }: Props) {
       setNewFriendAddress('');
       setNewFriendPhone('');
       setShowNewFriendForm(false);
-      window.location.reload();
+      router.refresh();
     } catch (error) {
       console.error('Create friend error:', error);
       alert('Failed to create friend');
@@ -262,7 +264,7 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
-      window.location.reload();
+      router.refresh();
     } catch (error) {
       console.error('Add friend error:', error);
       alert('Failed to add friend');
@@ -288,7 +290,7 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
-      window.location.reload();
+      router.refresh();
     } catch (error) {
       console.error('Update friendship error:', error);
       alert('Failed to update friendship');
@@ -312,7 +314,7 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
-      window.location.reload();
+      router.refresh();
     } catch (error) {
       console.error('Delete friendship error:', error);
       alert('Failed to remove friend');

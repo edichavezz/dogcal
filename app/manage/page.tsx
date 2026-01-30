@@ -14,68 +14,71 @@ export default async function ManagePage() {
     redirect('/');
   }
 
-  // Fetch user with full details
-  const user = await prisma.user.findUnique({
-    where: { id: actingUserId },
-    include: {
-      ownedPups: {
-        include: {
-          friendships: {
-            include: {
-              friend: {
-                select: {
-                  id: true,
-                  name: true,
-                  profilePhotoUrl: true,
-                  calendarColor: true,
+  // Parallel fetch: user data and all friends (for dropdown)
+  // allFriends doesn't depend on user data, so we can fetch both at once
+  const [user, allFriends] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: actingUserId },
+      include: {
+        ownedPups: {
+          include: {
+            friendships: {
+              include: {
+                friend: {
+                  select: {
+                    id: true,
+                    name: true,
+                    profilePhotoUrl: true,
+                    calendarColor: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        pupFriendships: {
+          include: {
+            pup: {
+              include: {
+                owner: {
+                  select: {
+                    id: true,
+                    name: true,
+                    addressText: true,
+                    phoneNumber: true,
+                    profilePhotoUrl: true,
+                  },
                 },
               },
             },
           },
         },
       },
-      pupFriendships: {
-        include: {
-          pup: {
-            include: {
-              owner: {
-                select: {
-                  id: true,
-                  name: true,
-                  addressText: true,
-                  phoneNumber: true,
-                  profilePhotoUrl: true,
-                },
-              },
-            },
-          },
-        },
+    }),
+    // Fetch all friends - only used for owners but query is cheap
+    prisma.user.findMany({
+      where: { role: 'FRIEND' },
+      select: {
+        id: true,
+        name: true,
+        profilePhotoUrl: true,
+        calendarColor: true,
       },
-    },
-  });
+      orderBy: { name: 'asc' },
+    }),
+  ]);
 
   if (!user) {
     redirect('/');
   }
 
-  // Fetch all friend users for the "add friend" dropdown (owners only)
-  const allFriends = user.role === 'OWNER'
-    ? await prisma.user.findMany({
-        where: { role: 'FRIEND' },
-        select: {
-          id: true,
-          name: true,
-          profilePhotoUrl: true,
-          calendarColor: true,
-        },
-        orderBy: { name: 'asc' },
-      })
-    : [];
+  // Only pass allFriends to client if user is OWNER
+  const friendsForDropdown = user.role === 'OWNER' ? allFriends : [];
 
   return (
     <AppLayout user={user}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <ManageClient user={user} allFriends={allFriends} />
+        <ManageClient user={user} allFriends={friendsForDropdown} />
       </div>
     </AppLayout>
   );
