@@ -48,12 +48,13 @@ export default async function Home() {
     );
   }
 
-  // Fetch user with their pups and friendships - limit to what's displayed on welcome screen
+  const now = new Date();
+
+  // Fetch user first to determine role
   const user = await prisma.user.findUnique({
     where: { id: actingUserId },
     include: {
       ownedPups: {
-        take: 5,
         select: {
           id: true,
           name: true,
@@ -61,7 +62,6 @@ export default async function Home() {
         },
       },
       pupFriendships: {
-        take: 5,
         include: {
           pup: {
             select: {
@@ -94,5 +94,289 @@ export default async function Home() {
     );
   }
 
-  return <WelcomeScreen user={user} />;
+  const isOwner = user.role === 'OWNER';
+
+  // Get pup IDs based on role
+  const pupIds = isOwner
+    ? user.ownedPups.map(p => p.id)
+    : user.pupFriendships.map(f => f.pup.id);
+
+  // Fetch hangouts and suggestions in parallel based on role
+  if (isOwner) {
+    // OWNER: Upcoming hangouts for their pups + pending suggestions
+    const [upcomingHangouts, pendingSuggestions] = await Promise.all([
+      prisma.hangout.findMany({
+        where: {
+          pupId: { in: pupIds },
+          endAt: { gte: now },
+          status: { in: ['OPEN', 'ASSIGNED'] },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 10,
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          eventName: true,
+          ownerNotes: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+              careInstructions: true,
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          assignedFriend: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
+          notes: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              noteText: true,
+              createdAt: true,
+              author: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.hangoutSuggestion.findMany({
+        where: {
+          pupId: { in: pupIds },
+          status: 'PENDING',
+          endAt: { gte: now },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 5,
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          eventName: true,
+          friendComment: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
+          suggestedByFriend: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return (
+      <WelcomeScreen
+        user={user}
+        upcomingHangouts={upcomingHangouts.map(h => ({
+          ...h,
+          startAt: h.startAt.toISOString(),
+          endAt: h.endAt.toISOString(),
+          notes: h.notes.map(n => ({
+            ...n,
+            createdAt: n.createdAt.toISOString(),
+          })),
+        }))}
+        pendingSuggestions={pendingSuggestions.map(s => ({
+          ...s,
+          startAt: s.startAt.toISOString(),
+          endAt: s.endAt.toISOString(),
+        }))}
+        availableHangouts={[]}
+        myHangoutsAndSuggestions={[]}
+      />
+    );
+  } else {
+    // FRIEND: Available (OPEN) hangouts they can claim + their assigned hangouts + their suggestions
+    const [availableHangouts, myAssignedHangouts, mySuggestions] = await Promise.all([
+      prisma.hangout.findMany({
+        where: {
+          pupId: { in: pupIds },
+          endAt: { gte: now },
+          status: 'OPEN',
+        },
+        orderBy: { startAt: 'asc' },
+        take: 10,
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          eventName: true,
+          ownerNotes: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+              careInstructions: true,
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          assignedFriend: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
+          notes: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              noteText: true,
+              createdAt: true,
+              author: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.hangout.findMany({
+        where: {
+          assignedFriendUserId: actingUserId,
+          endAt: { gte: now },
+          status: 'ASSIGNED',
+        },
+        orderBy: { startAt: 'asc' },
+        take: 10,
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          eventName: true,
+          ownerNotes: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+              careInstructions: true,
+              owner: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          assignedFriend: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
+          notes: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              noteText: true,
+              createdAt: true,
+              author: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.hangoutSuggestion.findMany({
+        where: {
+          suggestedByFriendUserId: actingUserId,
+          status: 'PENDING',
+          endAt: { gte: now },
+        },
+        orderBy: { startAt: 'asc' },
+        take: 5,
+        select: {
+          id: true,
+          startAt: true,
+          endAt: true,
+          eventName: true,
+          friendComment: true,
+          pup: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
+          suggestedByFriend: {
+            select: {
+              id: true,
+              name: true,
+              profilePhotoUrl: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return (
+      <WelcomeScreen
+        user={user}
+        upcomingHangouts={[]}
+        pendingSuggestions={[]}
+        availableHangouts={availableHangouts.map(h => ({
+          ...h,
+          startAt: h.startAt.toISOString(),
+          endAt: h.endAt.toISOString(),
+          notes: h.notes.map(n => ({
+            ...n,
+            createdAt: n.createdAt.toISOString(),
+          })),
+        }))}
+        myHangoutsAndSuggestions={{
+          hangouts: myAssignedHangouts.map(h => ({
+            ...h,
+            startAt: h.startAt.toISOString(),
+            endAt: h.endAt.toISOString(),
+            notes: h.notes.map(n => ({
+              ...n,
+              createdAt: n.createdAt.toISOString(),
+            })),
+          })),
+          suggestions: mySuggestions.map(s => ({
+            ...s,
+            startAt: s.startAt.toISOString(),
+            endAt: s.endAt.toISOString(),
+          })),
+        }}
+      />
+    );
+  }
 }

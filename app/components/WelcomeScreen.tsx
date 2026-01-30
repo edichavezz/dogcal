@@ -1,219 +1,278 @@
+'use client';
+
 /**
  * Welcome Screen Component
  *
- * Personalized home page showing user info, their pups, and quick actions.
- * Uses new dark teal/coral design system.
+ * Action-focused home page with different layouts for owners and friends.
+ * Features rotating fun messages, clickable hangout cards, and pup action cards.
  */
 
+import { useState, useCallback } from 'react';
 import { User, Pup, PupFriendship } from '@prisma/client';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Calendar, Plus, CheckSquare, Users, Lightbulb } from 'lucide-react';
 import AppLayout from './AppLayout';
 import Avatar from './Avatar';
+import EventDetailsModal from './EventDetailsModal';
+import { useFunMessage } from './home/FunMessage';
+import HangoutListCard, { HangoutCardData } from './home/HangoutListCard';
+import SuggestionPreviewCard, { SuggestionCardData } from './home/SuggestionPreviewCard';
+import PupActionCard, { PupCardData } from './home/PupActionCard';
+
+// Hangout type with notes for modal
+type HangoutWithNotes = HangoutCardData & {
+  ownerNotes?: string | null;
+  pup: {
+    id: string;
+    name: string;
+    profilePhotoUrl?: string | null;
+    careInstructions?: string | null;
+    owner: {
+      id: string;
+      name: string;
+    };
+  };
+  notes: Array<{
+    id: string;
+    noteText: string;
+    createdAt: string;
+    author: {
+      name: string;
+    };
+  }>;
+};
 
 interface WelcomeScreenProps {
   user: User & {
-    ownedPups: Pup[];
+    ownedPups: Pick<Pup, 'id' | 'name' | 'profilePhotoUrl'>[];
     pupFriendships: (PupFriendship & {
-      pup: Pup & {
-        owner: User;
+      pup: Pick<Pup, 'id' | 'name' | 'profilePhotoUrl' | 'ownerUserId'> & {
+        owner: Pick<User, 'id' | 'name'>;
       };
     })[];
   };
+  // For owners
+  upcomingHangouts: HangoutWithNotes[];
+  pendingSuggestions: SuggestionCardData[];
+  // For friends
+  availableHangouts: HangoutWithNotes[];
+  myHangoutsAndSuggestions: {
+    hangouts: HangoutWithNotes[];
+    suggestions: SuggestionCardData[];
+  } | [];
 }
 
-export default function WelcomeScreen({ user }: WelcomeScreenProps) {
+export default function WelcomeScreen({
+  user,
+  upcomingHangouts,
+  pendingSuggestions,
+  availableHangouts,
+  myHangoutsAndSuggestions,
+}: WelcomeScreenProps) {
   const isOwner = user.role === 'OWNER';
-  const pups = isOwner
+  const pups: PupCardData[] = isOwner
     ? user.ownedPups
-    : user.pupFriendships.map(friendship => friendship.pup);
+    : user.pupFriendships.map(friendship => ({
+        ...friendship.pup,
+        owner: friendship.pup.owner,
+      }));
+
+  const pupNames = pups.map(p => p.name);
+  const funMessage = useFunMessage(isOwner ? 'OWNER' : 'FRIEND', pupNames);
+
+  // Modal state
+  const [selectedHangout, setSelectedHangout] = useState<HangoutWithNotes | null>(null);
+
+  const handleHangoutClick = useCallback((hangout: HangoutWithNotes) => {
+    setSelectedHangout(hangout);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setSelectedHangout(null);
+  }, []);
+
+  const handleModalUpdate = useCallback(() => {
+    // Refresh the page to get updated data
+    window.location.reload();
+  }, []);
+
+  // Get friend hangouts and suggestions
+  const friendHangouts = Array.isArray(myHangoutsAndSuggestions) ? [] : myHangoutsAndSuggestions.hangouts;
+  const friendSuggestions = Array.isArray(myHangoutsAndSuggestions) ? [] : myHangoutsAndSuggestions.suggestions;
 
   return (
     <AppLayout user={user}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Welcome Message */}
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
-            Welcome back, {user.name}!
-          </h1>
-          <p className="text-sm sm:text-base text-gray-600">
-            {isOwner
-              ? "Manage your pups' hangouts and care schedules"
-              : 'View and manage the pups you care for'}
-          </p>
+        {/* Header with small avatar and fun message */}
+        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+          <Avatar
+            photoUrl={user.profilePhotoUrl}
+            name={user.name}
+            size="md"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-gray-500">Welcome back, {user.name}!</p>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 truncate">
+              {funMessage || "Ready for today's adventures?"}
+            </h1>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {/* User Profile Card */}
-          <div className="lg:col-span-1 bg-[#1a3a3a] rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white">
-            <div className="flex flex-col items-center text-center">
-              <Avatar
-                photoUrl={user.profilePhotoUrl}
-                name={user.name}
-                size="xl"
-                className="mb-3 sm:mb-4"
-              />
-              <h2 className="text-base sm:text-lg font-semibold mb-1">{user.name}</h2>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2a4a4a] text-xs sm:text-sm mb-3 sm:mb-4">
-                <div className="w-2 h-2 rounded-full bg-[#f4a9a8]"></div>
-                {isOwner ? 'Owner' : 'Friend'}
-              </div>
-              {user.phoneNumber && (
-                <p className="text-gray-300 text-xs sm:text-sm mb-1">{user.phoneNumber}</p>
-              )}
-              {user.address && (
-                <p className="text-gray-400 text-xs sm:text-sm">{user.address}</p>
-              )}
-            </div>
-          </div>
+        {/* Owner Layout */}
+        {isOwner && (
+          <div className="space-y-6 sm:space-y-8">
+            {/* Pending Suggestions */}
+            {pendingSuggestions.length > 0 && (
+              <section>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Pending Suggestions
+                </h2>
+                <div className="space-y-3">
+                  {pendingSuggestions.map(suggestion => (
+                    <SuggestionPreviewCard
+                      key={suggestion.id}
+                      suggestion={suggestion}
+                      showFriend={true}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
 
-          {/* Your Pups Card */}
-          <div className="lg:col-span-2 bg-gradient-to-br from-[#ffd4d4] to-[#ffe4d4] rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-[#f4a9a8]/20">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-              {isOwner ? 'Your Pups' : 'Pups You Care For'}
-            </h2>
+            {/* Upcoming Hangouts */}
+            <section>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                Upcoming Hangouts
+              </h2>
+              {upcomingHangouts.length > 0 ? (
+                <div className="space-y-3">
+                  {upcomingHangouts.map(hangout => (
+                    <HangoutListCard
+                      key={hangout.id}
+                      hangout={hangout}
+                      onClick={() => handleHangoutClick(hangout)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
+                  <p className="text-gray-600">No upcoming hangouts scheduled.</p>
+                  <p className="text-sm text-gray-500 mt-1">Create a hangout for one of your pups below!</p>
+                </div>
+              )}
+            </section>
 
-            {pups.length === 0 ? (
-              <div className="bg-white/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-white/40 text-center">
-                <p className="text-gray-600">
-                  {isOwner
-                    ? 'You haven\'t added any pups yet.'
-                    : 'You\'re not assigned to care for any pups yet.'}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {pups.slice(0, 3).map(pup => {
-                  const pupOwner = isOwner ? user : (pup as any).owner;
-                  return (
-                    <div
+            {/* Your Pups */}
+            <section>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                Your Pups
+              </h2>
+              {pups.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {pups.map(pup => (
+                    <PupActionCard
                       key={pup.id}
-                      className="bg-white/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-white/40"
-                    >
-                      <div className="flex items-start gap-3 sm:gap-4">
-                        <div className="w-12 sm:w-16 h-12 sm:h-16 rounded-xl sm:rounded-2xl overflow-hidden bg-white shadow-lg flex-shrink-0">
-                          {pup.profilePhotoUrl ? (
-                            <Image
-                              src={pup.profilePhotoUrl}
-                              alt={pup.name}
-                              width={64}
-                              height={64}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-2xl sm:text-3xl">
-                              🐕
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-0.5 sm:mb-1">{pup.name}</h3>
-                          {pup.breed && (
-                            <p className="text-xs sm:text-sm text-gray-700 mb-1 sm:mb-2">{pup.breed}</p>
-                          )}
-                          {!isOwner && pupOwner && (
-                            <p className="text-xs sm:text-sm text-gray-600">Owner: {pupOwner.name}</p>
-                          )}
-                          {pup.careInstructions && (
-                            <p className="text-xs sm:text-sm text-gray-600 italic line-clamp-2">
-                              {pup.careInstructions}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {pups.length > 3 && (
-                  <Link
-                    href="/manage"
-                    className="block text-center text-sm text-[#1a3a3a] font-medium hover:underline"
-                  >
-                    View all {pups.length} pups
-                  </Link>
-                )}
-              </div>
-            )}
+                      pup={pup}
+                      isOwner={true}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
+                  <p className="text-gray-600">You haven't added any pups yet.</p>
+                </div>
+              )}
+            </section>
           </div>
-        </div>
+        )}
 
-        {/* Quick Actions */}
-        <div className="mb-6">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <ActionButton
-              href="/calendar"
-              icon={Calendar}
-              title="View Calendar"
-              description="See all scheduled hangouts"
-            />
+        {/* Friend Layout */}
+        {!isOwner && (
+          <div className="space-y-6 sm:space-y-8">
+            {/* Available Hangouts (OPEN) */}
+            <section>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                Available Hangouts
+              </h2>
+              {availableHangouts.length > 0 ? (
+                <div className="space-y-3">
+                  {availableHangouts.map(hangout => (
+                    <HangoutListCard
+                      key={hangout.id}
+                      hangout={hangout}
+                      onClick={() => handleHangoutClick(hangout)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
+                  <p className="text-gray-600">No available hangouts at the moment.</p>
+                  <p className="text-sm text-gray-500 mt-1">Suggest a time for one of the pups below!</p>
+                </div>
+              )}
+            </section>
 
-            {isOwner ? (
-              <>
-                <ActionButton
-                  href="/hangouts/new"
-                  icon={Plus}
-                  title="Create Hangout"
-                  description="Schedule a time for your pup"
-                />
-                <ActionButton
-                  href="/approvals"
-                  icon={CheckSquare}
-                  title="Review Suggestions"
-                  description="Approve or reject suggestions"
-                />
-                <ActionButton
-                  href="/manage"
-                  icon={Users}
-                  title="Pups & Friends"
-                  description="Edit pups and friendships"
-                />
-              </>
-            ) : (
-              <>
-                <ActionButton
-                  href="/suggest"
-                  icon={Lightbulb}
-                  title="Suggest Time"
-                  description="Propose a hangout time"
-                />
-                <ActionButton
-                  href="/manage"
-                  icon={Users}
-                  title="Pups"
-                  description="View pups you care for"
-                />
-              </>
+            {/* Your Hangouts & Suggestions */}
+            {(friendHangouts.length > 0 || friendSuggestions.length > 0) && (
+              <section>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                  Your Hangouts & Suggestions
+                </h2>
+                <div className="space-y-3">
+                  {friendHangouts.map(hangout => (
+                    <HangoutListCard
+                      key={hangout.id}
+                      hangout={hangout}
+                      onClick={() => handleHangoutClick(hangout)}
+                    />
+                  ))}
+                  {friendSuggestions.map(suggestion => (
+                    <SuggestionPreviewCard
+                      key={suggestion.id}
+                      suggestion={suggestion}
+                      showFriend={false}
+                    />
+                  ))}
+                </div>
+              </section>
             )}
+
+            {/* Pups You Care For */}
+            <section>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                Pups You Care For
+              </h2>
+              {pups.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {pups.map(pup => (
+                    <PupActionCard
+                      key={pup.id}
+                      pup={pup}
+                      isOwner={false}
+                      ownerName={pup.owner?.name}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
+                  <p className="text-gray-600">You're not assigned to care for any pups yet.</p>
+                </div>
+              )}
+            </section>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Event Details Modal */}
+      {selectedHangout && (
+        <EventDetailsModal
+          hangout={selectedHangout}
+          actingUserId={user.id}
+          actingUserRole={isOwner ? 'OWNER' : 'FRIEND'}
+          onClose={handleModalClose}
+          onUpdate={handleModalUpdate}
+        />
+      )}
     </AppLayout>
-  );
-}
-
-/**
- * Action Button Component
- */
-interface ActionButtonProps {
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-}
-
-function ActionButton({ href, icon: Icon, title, description }: ActionButtonProps) {
-  return (
-    <Link
-      href={href}
-      className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:shadow-lg transition-all text-left group border border-gray-200"
-    >
-      <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gray-100 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-gray-200 transition-colors">
-        <Icon className="w-5 sm:w-6 h-5 sm:h-6 text-gray-700" />
-      </div>
-      <h3 className="font-semibold text-gray-900 mb-0.5 sm:mb-1 text-sm sm:text-base">{title}</h3>
-      <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">{description}</p>
-    </Link>
   );
 }
