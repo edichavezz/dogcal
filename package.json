@@ -36,6 +36,7 @@
     "@prisma/client": "^6.19.2",
     "@supabase/supabase-js": "^2.91.1",
     "date-fns": "^4.1.0",
+    "lottie-react": "^2.4.0",
     "lucide-react": "^0.563.0",
     "next": "16.1.4",
     "react": "19.2.3",

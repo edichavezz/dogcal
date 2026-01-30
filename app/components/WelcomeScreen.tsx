@@ -18,6 +18,7 @@ import HangoutListCard, { HangoutCardData } from './home/HangoutListCard';
 import SuggestionPreviewCard, { SuggestionCardData } from './home/SuggestionPreviewCard';
 import PupActionCard, { PupCardData } from './home/PupActionCard';
 import HangoutFilters, { HangoutFiltersState, TimeFilter, StatusFilter } from './home/HangoutFilters';
+import PawsLoader from './ui/PawsLoader';
 
 // Hangout type with notes for modal
 type HangoutWithNotes = HangoutCardData & {
@@ -306,8 +307,8 @@ export default function WelcomeScreen({
                 showStatusFilter={true}
               />
               {upcomingLoading && upcomingHangouts.length === 0 ? (
-                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
-                  <p className="text-gray-600">Loading...</p>
+                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 flex justify-center">
+                  <PawsLoader size="sm" />
                 </div>
               ) : upcomingHangouts.length > 0 ? (
                 <div className="space-y-3">
@@ -375,8 +376,8 @@ export default function WelcomeScreen({
                 showStatusFilter={false}
               />
               {availableLoading && availableHangouts.length === 0 ? (
-                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
-                  <p className="text-gray-600">Loading...</p>
+                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 flex justify-center">
+                  <PawsLoader size="sm" />
                 </div>
               ) : availableHangouts.length > 0 ? (
                 <div className="space-y-3">

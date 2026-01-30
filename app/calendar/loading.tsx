@@ -1,4 +1,4 @@
-import DogPawLoader from '@/components/ui/DogPawLoader';
+import PawsLoader from '@/components/ui/PawsLoader';
 
 export default function CalendarLoading() {
   return (
@@ -17,10 +17,7 @@ export default function CalendarLoading() {
             <div className="h-full flex flex-col">
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
                 <div className="flex-1 min-h-0 p-4 flex items-center justify-center">
-                  <div className="text-center">
-                    <DogPawLoader size={200} />
-                    <p className="mt-4 text-slate-600 font-medium">Loading calendar...</p>
-                  </div>
+                  <PawsLoader size="lg" message="Loading calendar..." />
                 </div>
               </div>
             </div>

@@ -3,9 +3,9 @@
 import { forwardRef, useCallback, useMemo, useState, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 import { EventClickArg, EventInput, EventMountArg } from '@fullcalendar/core';
+import PawsLoader from './ui/PawsLoader';
 
 type Hangout = {
   id: string;
@@ -124,14 +124,14 @@ const FullCalendarWrapper = forwardRef<FullCalendar, FullCalendarWrapperProps>(
       );
     }, []);
 
-    const plugins = useMemo(() => [timeGridPlugin, listPlugin, interactionPlugin], []);
+    const plugins = useMemo(() => [timeGridPlugin, interactionPlugin], []);
 
     const effectiveIsMobile = isMobile ?? false;
 
     const headerToolbar = useMemo(() => ({
       left: 'prev,next today',
       center: 'title',
-      right: effectiveIsMobile ? 'timeGrid3Day,listWeek' : 'timeGridWeek,listWeek',
+      right: effectiveIsMobile ? 'timeGrid3Day' : 'timeGridWeek',
     }), [effectiveIsMobile]);
 
     const views = useMemo(() => ({
@@ -146,7 +146,7 @@ const FullCalendarWrapper = forwardRef<FullCalendar, FullCalendarWrapperProps>(
     if (isMobile === null) {
       return (
         <div className="h-full flex items-center justify-center">
-          <div className="text-gray-500">Loading calendar...</div>
+          <PawsLoader size="lg" message="Loading calendar..." />
         </div>
       );
     }

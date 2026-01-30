@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { User, Pup } from '@prisma/client';
+import PawsLoader from '@/components/ui/PawsLoader';
 
 type UserWithPups = User & { ownedPups?: Pup[] };
 
@@ -54,7 +55,7 @@ export default function ManageUsers() {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-500">Loading...</div>
+        <PawsLoader size="lg" message="Loading..." />
       </div>
     );
   }
