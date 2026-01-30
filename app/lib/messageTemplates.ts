@@ -193,6 +193,58 @@ Thanks for using DogCal!`;
 }
 
 /**
+ * Generate WhatsApp message for when a friend unassigns from a hangout
+ * Sent to the pup owner
+ */
+export async function generateHangoutUnassignedMessage(params: {
+  ownerUserId: string;
+  ownerName: string;
+  friendName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+  eventName: string | null;
+  hangoutId: string;
+}): Promise<string> {
+  const {
+    ownerUserId,
+    ownerName,
+    friendName,
+    pupName,
+    startAt,
+    endAt,
+    eventName,
+  } = params;
+
+  // Get static login URL for the owner
+  const loginUrl = await getLoginUrl(ownerUserId);
+
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  let message = `🐕 *DogCal: Hangout Cancelled*
+
+Hi ${ownerName},
+
+${friendName} can no longer hang out with ${pupName} 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}`;
+
+  if (eventName) {
+    message += `\n📝 ${eventName}`;
+  }
+
+  message += `\n\nThis hangout is now *open* again for other friends to pick up.
+
+👉 View details:
+
+${loginUrl}`;
+
+  return message;
+}
+
+/**
  * Generate WhatsApp message for when a suggestion is approved
  * Sent to the friend who made the suggestion (future enhancement)
  */

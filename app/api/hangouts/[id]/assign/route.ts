@@ -4,6 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
+import { sendWhatsAppMessage, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
+import { generateHangoutAssignedMessage } from '@/lib/messageTemplates';
 
 export async function POST(
   request: NextRequest,
@@ -83,7 +85,50 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ hangout: updatedHangout });
+    // Send WhatsApp notification to owner
+    const notificationResults: NotificationResult[] = [];
+
+    if (process.env.WHATSAPP_ENABLED === 'true') {
+      try {
+        const owner = updatedHangout.createdByOwner;
+
+        if (!isValidPhoneNumber(owner.phoneNumber)) {
+          notificationResults.push({
+            userId: owner.id,
+            userName: owner.name,
+            phoneNumber: owner.phoneNumber,
+            status: 'skipped',
+            reason: 'No valid phone number',
+          });
+        } else {
+          const message = await generateHangoutAssignedMessage({
+            ownerUserId: owner.id,
+            ownerName: owner.name,
+            friendName: actingUser.name,
+            pupName: updatedHangout.pup.name,
+            startAt: updatedHangout.startAt,
+            endAt: updatedHangout.endAt,
+            eventName: updatedHangout.eventName,
+            hangoutId: updatedHangout.id,
+          });
+
+          const result = await sendWhatsAppMessage(owner.phoneNumber!, message);
+
+          notificationResults.push({
+            userId: owner.id,
+            userName: owner.name,
+            phoneNumber: owner.phoneNumber,
+            status: result.success ? 'sent' : 'failed',
+            reason: result.error,
+            twilioSid: result.sid,
+          });
+        }
+      } catch (error) {
+        console.error('Error sending WhatsApp notification:', error);
+      }
+    }
+
+    return NextResponse.json({ hangout: updatedHangout, notifications: notificationResults });
   } catch (error) {
     console.error('Error assigning hangout:', error);
     return NextResponse.json(
