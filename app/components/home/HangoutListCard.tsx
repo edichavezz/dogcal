@@ -1,6 +1,6 @@
 'use client';
 
-import { format, isToday, isTomorrow, isThisWeek, isNextWeek, startOfWeek, addWeeks, differenceInDays } from 'date-fns';
+import { format, isToday, isTomorrow, isThisWeek, startOfWeek, addWeeks, differenceInDays, isSameWeek } from 'date-fns';
 import Avatar from '../Avatar';
 import { getEventGradient } from '@/lib/colorUtils';
 import { Repeat } from 'lucide-react';
@@ -48,7 +48,8 @@ function formatRelativeDate(date: Date): string {
   }
 
   // Next week (use "Next Monday", etc.)
-  if (isNextWeek(date, { weekStartsOn: 1 })) {
+  const nextWeekStart = addWeeks(startOfWeek(now, { weekStartsOn: 1 }), 1);
+  if (isSameWeek(date, nextWeekStart, { weekStartsOn: 1 })) {
     return `Next ${format(date, 'EEEE')}`;
   }
 
