@@ -10,6 +10,8 @@ type Hangout = {
   status: 'OPEN' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
   ownerNotes?: string | null;
   eventName: string | null;
+  seriesId?: string | null;
+  seriesIndex?: number | null;
   pup: {
     id: string;
     name: string;

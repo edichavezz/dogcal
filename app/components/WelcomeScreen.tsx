@@ -4,7 +4,8 @@
  * Welcome Screen Component
  *
  * Action-focused home page with different layouts for owners and friends.
- * Features rotating fun messages, clickable hangout cards, and pup action cards.
+ * Features rotating fun messages, clickable hangout cards, pup action cards,
+ * filters (time range, status, hide repeats), and pagination.
  */
 
 import { useState, useCallback } from 'react';
@@ -16,6 +17,7 @@ import { useFunMessage } from './home/FunMessage';
 import HangoutListCard, { HangoutCardData } from './home/HangoutListCard';
 import SuggestionPreviewCard, { SuggestionCardData } from './home/SuggestionPreviewCard';
 import PupActionCard, { PupCardData } from './home/PupActionCard';
+import HangoutFilters, { HangoutFiltersState, TimeFilter, StatusFilter } from './home/HangoutFilters';
 
 // Hangout type with notes for modal
 type HangoutWithNotes = HangoutCardData & {
@@ -51,21 +53,29 @@ interface WelcomeScreenProps {
   };
   // For owners
   upcomingHangouts: HangoutWithNotes[];
+  upcomingHangoutsTotal: number;
   pendingSuggestions: SuggestionCardData[];
   // For friends
   availableHangouts: HangoutWithNotes[];
+  availableHangoutsTotal: number;
   myHangoutsAndSuggestions: {
     hangouts: HangoutWithNotes[];
     suggestions: SuggestionCardData[];
   } | [];
+  myHangoutsTotal: number;
 }
+
+const ITEMS_PER_PAGE = 5;
 
 export default function WelcomeScreen({
   user,
-  upcomingHangouts,
+  upcomingHangouts: initialUpcomingHangouts,
+  upcomingHangoutsTotal: initialUpcomingTotal,
   pendingSuggestions,
-  availableHangouts,
+  availableHangouts: initialAvailableHangouts,
+  availableHangoutsTotal: initialAvailableTotal,
   myHangoutsAndSuggestions,
+  myHangoutsTotal: initialMyTotal,
 }: WelcomeScreenProps) {
   const isOwner = user.role === 'OWNER';
   const pups: PupCardData[] = isOwner
@@ -81,6 +91,44 @@ export default function WelcomeScreen({
   // Modal state
   const [selectedHangout, setSelectedHangout] = useState<HangoutWithNotes | null>(null);
 
+  // Filter state for owners
+  const [ownerFilters, setOwnerFilters] = useState<HangoutFiltersState>({
+    timeRange: 'all',
+    status: 'all',
+    hideRepeats: false,
+  });
+
+  // Filter state for friends (available hangouts)
+  const [friendAvailableFilters, setFriendAvailableFilters] = useState<HangoutFiltersState>({
+    timeRange: 'all',
+    status: 'all', // Not used for available
+    hideRepeats: false,
+  });
+
+  // Filter state for friends (my hangouts)
+  const [friendMyFilters, setFriendMyFilters] = useState<HangoutFiltersState>({
+    timeRange: 'all',
+    status: 'all', // Not used for my hangouts
+    hideRepeats: false,
+  });
+
+  // Hangout lists with loading states
+  const [upcomingHangouts, setUpcomingHangouts] = useState(initialUpcomingHangouts);
+  const [upcomingTotal, setUpcomingTotal] = useState(initialUpcomingTotal);
+  const [upcomingLoading, setUpcomingLoading] = useState(false);
+
+  const [availableHangouts, setAvailableHangouts] = useState(initialAvailableHangouts);
+  const [availableTotal, setAvailableTotal] = useState(initialAvailableTotal);
+  const [availableLoading, setAvailableLoading] = useState(false);
+
+  const [myHangouts, setMyHangouts] = useState(
+    Array.isArray(myHangoutsAndSuggestions) ? [] : myHangoutsAndSuggestions.hangouts
+  );
+  const [myTotal, setMyTotal] = useState(initialMyTotal);
+  const [myLoading, setMyLoading] = useState(false);
+
+  const friendSuggestions = Array.isArray(myHangoutsAndSuggestions) ? [] : myHangoutsAndSuggestions.suggestions;
+
   const handleHangoutClick = useCallback((hangout: HangoutWithNotes) => {
     setSelectedHangout(hangout);
   }, []);
@@ -90,13 +138,116 @@ export default function WelcomeScreen({
   }, []);
 
   const handleModalUpdate = useCallback(() => {
-    // Refresh the page to get updated data
     window.location.reload();
   }, []);
 
-  // Get friend hangouts and suggestions
-  const friendHangouts = Array.isArray(myHangoutsAndSuggestions) ? [] : myHangoutsAndSuggestions.hangouts;
-  const friendSuggestions = Array.isArray(myHangoutsAndSuggestions) ? [] : myHangoutsAndSuggestions.suggestions;
+  // Fetch hangouts with filters
+  const fetchHangouts = useCallback(async (
+    context: 'owner' | 'friend-available' | 'friend-assigned',
+    filters: HangoutFiltersState,
+    offset: number = 0,
+    append: boolean = false
+  ) => {
+    const params = new URLSearchParams({
+      context,
+      timeRange: filters.timeRange,
+      status: filters.status,
+      hideRepeats: String(filters.hideRepeats),
+      limit: String(ITEMS_PER_PAGE),
+      offset: String(offset),
+    });
+
+    const response = await fetch(`/api/hangouts/list?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch hangouts');
+
+    const data = await response.json();
+    return { hangouts: data.hangouts as HangoutWithNotes[], total: data.total as number };
+  }, []);
+
+  // Handle filter change for owners
+  const handleOwnerFilterChange = useCallback(async (newFilters: HangoutFiltersState) => {
+    setOwnerFilters(newFilters);
+    setUpcomingLoading(true);
+    try {
+      const { hangouts, total } = await fetchHangouts('owner', newFilters);
+      setUpcomingHangouts(hangouts);
+      setUpcomingTotal(total);
+    } catch (error) {
+      console.error('Error fetching hangouts:', error);
+    } finally {
+      setUpcomingLoading(false);
+    }
+  }, [fetchHangouts]);
+
+  // Handle filter change for friend available
+  const handleFriendAvailableFilterChange = useCallback(async (newFilters: HangoutFiltersState) => {
+    setFriendAvailableFilters(newFilters);
+    setAvailableLoading(true);
+    try {
+      const { hangouts, total } = await fetchHangouts('friend-available', newFilters);
+      setAvailableHangouts(hangouts);
+      setAvailableTotal(total);
+    } catch (error) {
+      console.error('Error fetching hangouts:', error);
+    } finally {
+      setAvailableLoading(false);
+    }
+  }, [fetchHangouts]);
+
+  // Handle filter change for friend my hangouts
+  const handleFriendMyFilterChange = useCallback(async (newFilters: HangoutFiltersState) => {
+    setFriendMyFilters(newFilters);
+    setMyLoading(true);
+    try {
+      const { hangouts, total } = await fetchHangouts('friend-assigned', newFilters);
+      setMyHangouts(hangouts);
+      setMyTotal(total);
+    } catch (error) {
+      console.error('Error fetching hangouts:', error);
+    } finally {
+      setMyLoading(false);
+    }
+  }, [fetchHangouts]);
+
+  // Load more handlers
+  const handleLoadMoreUpcoming = useCallback(async () => {
+    setUpcomingLoading(true);
+    try {
+      const { hangouts, total } = await fetchHangouts('owner', ownerFilters, upcomingHangouts.length, true);
+      setUpcomingHangouts(prev => [...prev, ...hangouts]);
+      setUpcomingTotal(total);
+    } catch (error) {
+      console.error('Error loading more hangouts:', error);
+    } finally {
+      setUpcomingLoading(false);
+    }
+  }, [fetchHangouts, ownerFilters, upcomingHangouts.length]);
+
+  const handleLoadMoreAvailable = useCallback(async () => {
+    setAvailableLoading(true);
+    try {
+      const { hangouts, total } = await fetchHangouts('friend-available', friendAvailableFilters, availableHangouts.length, true);
+      setAvailableHangouts(prev => [...prev, ...hangouts]);
+      setAvailableTotal(total);
+    } catch (error) {
+      console.error('Error loading more hangouts:', error);
+    } finally {
+      setAvailableLoading(false);
+    }
+  }, [fetchHangouts, friendAvailableFilters, availableHangouts.length]);
+
+  const handleLoadMoreMy = useCallback(async () => {
+    setMyLoading(true);
+    try {
+      const { hangouts, total } = await fetchHangouts('friend-assigned', friendMyFilters, myHangouts.length, true);
+      setMyHangouts(prev => [...prev, ...hangouts]);
+      setMyTotal(total);
+    } catch (error) {
+      console.error('Error loading more hangouts:', error);
+    } finally {
+      setMyLoading(false);
+    }
+  }, [fetchHangouts, friendMyFilters, myHangouts.length]);
 
   return (
     <AppLayout user={user}>
@@ -143,7 +294,16 @@ export default function WelcomeScreen({
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                 Upcoming hangouts
               </h2>
-              {upcomingHangouts.length > 0 ? (
+              <HangoutFilters
+                filters={ownerFilters}
+                onChange={handleOwnerFilterChange}
+                showStatusFilter={true}
+              />
+              {upcomingLoading && upcomingHangouts.length === 0 ? (
+                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
+                  <p className="text-gray-600">Loading...</p>
+                </div>
+              ) : upcomingHangouts.length > 0 ? (
                 <div className="space-y-3">
                   {upcomingHangouts.map(hangout => (
                     <HangoutListCard
@@ -152,6 +312,15 @@ export default function WelcomeScreen({
                       onClick={() => handleHangoutClick(hangout)}
                     />
                   ))}
+                  {upcomingHangouts.length < upcomingTotal && (
+                    <button
+                      onClick={handleLoadMoreUpcoming}
+                      disabled={upcomingLoading}
+                      className="w-full py-2 text-sm font-medium text-teal-600 hover:text-teal-700 disabled:opacity-50"
+                    >
+                      {upcomingLoading ? 'Loading...' : `Show more (${upcomingTotal - upcomingHangouts.length} remaining)`}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
@@ -194,7 +363,16 @@ export default function WelcomeScreen({
                 <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                 Looking for a pup hangout? Available slots:
               </h2>
-              {availableHangouts.length > 0 ? (
+              <HangoutFilters
+                filters={friendAvailableFilters}
+                onChange={handleFriendAvailableFilterChange}
+                showStatusFilter={false}
+              />
+              {availableLoading && availableHangouts.length === 0 ? (
+                <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
+                  <p className="text-gray-600">Loading...</p>
+                </div>
+              ) : availableHangouts.length > 0 ? (
                 <div className="space-y-3">
                   {availableHangouts.map(hangout => (
                     <HangoutListCard
@@ -203,6 +381,15 @@ export default function WelcomeScreen({
                       onClick={() => handleHangoutClick(hangout)}
                     />
                   ))}
+                  {availableHangouts.length < availableTotal && (
+                    <button
+                      onClick={handleLoadMoreAvailable}
+                      disabled={availableLoading}
+                      className="w-full py-2 text-sm font-medium text-teal-600 hover:text-teal-700 disabled:opacity-50"
+                    >
+                      {availableLoading ? 'Loading...' : `Show more (${availableTotal - availableHangouts.length} remaining)`}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
@@ -213,26 +400,48 @@ export default function WelcomeScreen({
             </section>
 
             {/* Your Hangouts & Suggestions */}
-            {(friendHangouts.length > 0 || friendSuggestions.length > 0) && (
+            {(myHangouts.length > 0 || friendSuggestions.length > 0 || myTotal > 0) && (
               <section>
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                   Your upcoming hangouts and suggestions
                 </h2>
+                <HangoutFilters
+                  filters={friendMyFilters}
+                  onChange={handleFriendMyFilterChange}
+                  showStatusFilter={false}
+                />
                 <div className="space-y-3">
-                  {friendHangouts.map(hangout => (
-                    <HangoutListCard
-                      key={hangout.id}
-                      hangout={hangout}
-                      onClick={() => handleHangoutClick(hangout)}
-                    />
-                  ))}
-                  {friendSuggestions.map(suggestion => (
-                    <SuggestionPreviewCard
-                      key={suggestion.id}
-                      suggestion={suggestion}
-                      showFriend={false}
-                    />
-                  ))}
+                  {myLoading && myHangouts.length === 0 ? (
+                    <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
+                      <p className="text-gray-600">Loading...</p>
+                    </div>
+                  ) : (
+                    <>
+                      {myHangouts.map(hangout => (
+                        <HangoutListCard
+                          key={hangout.id}
+                          hangout={hangout}
+                          onClick={() => handleHangoutClick(hangout)}
+                        />
+                      ))}
+                      {friendSuggestions.map(suggestion => (
+                        <SuggestionPreviewCard
+                          key={suggestion.id}
+                          suggestion={suggestion}
+                          showFriend={false}
+                        />
+                      ))}
+                      {myHangouts.length < myTotal && (
+                        <button
+                          onClick={handleLoadMoreMy}
+                          disabled={myLoading}
+                          className="w-full py-2 text-sm font-medium text-teal-600 hover:text-teal-700 disabled:opacity-50"
+                        >
+                          {myLoading ? 'Loading...' : `Show more (${myTotal - myHangouts.length} remaining)`}
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               </section>
             )}

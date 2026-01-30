@@ -67,6 +67,8 @@ export default async function CalendarPage() {
           status: true,
           ownerNotes: true,
           eventName: true,
+          seriesId: true,
+          seriesIndex: true,
           pup: {
             select: {
               id: true,
@@ -192,6 +194,8 @@ export default async function CalendarPage() {
           status: true,
           ownerNotes: true,
           eventName: true,
+          seriesId: true,
+          seriesIndex: true,
           pup: {
             select: {
               id: true,

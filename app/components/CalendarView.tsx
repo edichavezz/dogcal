@@ -6,6 +6,9 @@ import type FullCalendar from '@fullcalendar/react';
 import { EventClickArg, EventInput, EventMountArg } from '@fullcalendar/core';
 import EventDetailsModal from './EventDetailsModal';
 import CalendarSkeleton from './ui/CalendarSkeleton';
+import HangoutListCard from './home/HangoutListCard';
+import HangoutFilters, { HangoutFiltersState, getTimeFilterRange } from './home/HangoutFilters';
+import { Calendar, List, Repeat } from 'lucide-react';
 import {
   getFriendColor,
   getPupColor,
@@ -33,6 +36,8 @@ type Hangout = {
   status: 'OPEN' | 'ASSIGNED' | 'COMPLETED' | 'CANCELLED';
   ownerNotes?: string | null;
   eventName: string | null;
+  seriesId?: string | null;
+  seriesIndex?: number | null;
   pup: {
     id: string;
     name: string;
@@ -87,6 +92,8 @@ type CalendarViewProps = {
   onUpdate: () => void;
 };
 
+type ViewMode = 'calendar' | 'list';
+
 function CalendarView({
   hangouts,
   suggestions,
@@ -96,11 +103,57 @@ function CalendarView({
 }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
   const [selectedHangout, setSelectedHangout] = useState<Hangout | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
-  // Memoize hangout events transformation
+  // Filters state - default to "week" for calendar list
+  const [filters, setFilters] = useState<HangoutFiltersState>({
+    timeRange: 'week',
+    status: 'all',
+    hideRepeats: false,
+  });
+
+  // Filter hangouts for list view
+  const filteredHangouts = useMemo(() => {
+    let filtered = [...hangouts];
+
+    // Apply time filter
+    const timeRange = getTimeFilterRange(filters.timeRange);
+    if (timeRange) {
+      filtered = filtered.filter(h => {
+        const start = new Date(h.startAt);
+        return start >= timeRange.start && start <= timeRange.end;
+      });
+    }
+
+    // Apply status filter
+    if (filters.status === 'open') {
+      filtered = filtered.filter(h => h.status === 'OPEN');
+    } else if (filters.status === 'confirmed') {
+      filtered = filtered.filter(h => h.status === 'ASSIGNED');
+    }
+
+    // Apply hide repeats filter
+    if (filters.hideRepeats) {
+      const seenSeries = new Set<string>();
+      filtered = filtered.filter(h => {
+        if (!h.seriesId) return true;
+        if (seenSeries.has(h.seriesId)) return false;
+        seenSeries.add(h.seriesId);
+        return true;
+      });
+    }
+
+    // Sort by start date
+    filtered.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+
+    return filtered;
+  }, [hangouts, filters]);
+
+  // Memoize hangout events transformation for calendar
   const hangoutEvents = useMemo((): EventInput[] => {
     return hangouts.map((hangout) => {
       const isAssigned = hangout.status === 'ASSIGNED' && hangout.assignedFriend;
+      const isRecurring = !!hangout.seriesId;
 
       let backgroundColor: string;
       if (isAssigned) {
@@ -113,9 +166,14 @@ function CalendarView({
 
       const styles = getHangoutStyles(hangout.status);
 
+      // Add repeat indicator to title if recurring
+      const title = isRecurring
+        ? `🔄 ${generateHangoutTitle(hangout)}`
+        : generateHangoutTitle(hangout);
+
       return {
         id: hangout.id,
-        title: generateHangoutTitle(hangout),
+        title,
         start: hangout.startAt,
         end: hangout.endAt,
         backgroundColor,
@@ -125,6 +183,7 @@ function CalendarView({
           hangout,
           borderStyle: styles.borderStyle,
           opacity: styles.opacity,
+          isRecurring,
         },
       };
     });
@@ -177,6 +236,17 @@ function CalendarView({
     }
   }, []);
 
+  // Handle list item click
+  const handleListItemClick = useCallback(async (hangout: Hangout) => {
+    try {
+      const response = await fetch(`/api/hangouts/${hangout.id}`);
+      const data = await response.json();
+      setSelectedHangout(data.hangout);
+    } catch (error) {
+      console.error('Error fetching hangout details:', error);
+    }
+  }, []);
+
   const handleCloseModal = useCallback(() => {
     setSelectedHangout(null);
   }, []);
@@ -201,15 +271,85 @@ function CalendarView({
 
   return (
     <div className="h-full flex flex-col min-h-0">
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
-        <div className="flex-1 min-h-0 p-4">
-          <FullCalendarWrapper
-            ref={calendarRef}
-            events={allEvents}
-            onEventClick={handleEventClick}
-            onEventDidMount={handleEventDidMount}
-          />
+      {/* View Toggle and Filters */}
+      <div className="flex-shrink-0 mb-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          {/* View Mode Toggle */}
+          <div className="flex rounded-lg bg-gray-100 p-0.5">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              List
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewMode === 'calendar'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              Calendar
+            </button>
+          </div>
+
+          {/* Filters - only show for list view */}
+          {viewMode === 'list' && (
+            <HangoutFilters
+              filters={filters}
+              onChange={setFilters}
+              showStatusFilter={actingUserRole === 'OWNER'}
+            />
+          )}
         </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-h-0">
+        {viewMode === 'calendar' ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 p-4">
+              <FullCalendarWrapper
+                ref={calendarRef}
+                events={allEvents}
+                onEventClick={handleEventClick}
+                onEventDidMount={handleEventDidMount}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full overflow-y-auto p-4">
+            {filteredHangouts.length > 0 ? (
+              <div className="space-y-3">
+                {filteredHangouts.map((hangout) => (
+                  <HangoutListCard
+                    key={hangout.id}
+                    hangout={{
+                      ...hangout,
+                      startAt: hangout.startAt.toString(),
+                      endAt: hangout.endAt.toString(),
+                    }}
+                    onClick={() => handleListItemClick(hangout)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center py-12">
+                  <p className="text-gray-600">No hangouts found for the selected filters.</p>
+                  <p className="text-sm text-gray-500 mt-1">Try adjusting your filters or check back later.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {selectedHangout && (

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import Avatar from './Avatar';
+import { Repeat } from 'lucide-react';
 
 type Hangout = {
   id: string;
@@ -11,6 +12,8 @@ type Hangout = {
   status: string;
   ownerNotes?: string | null;
   eventName: string | null;
+  seriesId?: string | null;
+  seriesIndex?: number | null;
   pup: {
     id: string;
     name: string;
@@ -495,17 +498,25 @@ export default function EventDetailsModal({
           {/* Status */}
           <div>
             <h3 className="text-sm font-medium text-gray-700 mb-2">Status</h3>
-            <span
-              className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                hangout.status === 'OPEN'
-                  ? 'bg-[#ffd4d4] text-[#1a3a3a]'
-                  : hangout.status === 'ASSIGNED'
-                  ? 'bg-[#1a3a3a] text-white'
-                  : 'bg-gray-100 text-gray-800'
-              }`}
-            >
-              {hangout.status}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                  hangout.status === 'OPEN'
+                    ? 'bg-[#ffd4d4] text-[#1a3a3a]'
+                    : hangout.status === 'ASSIGNED'
+                    ? 'bg-[#1a3a3a] text-white'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {hangout.status}
+              </span>
+              {hangout.seriesId && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                  <Repeat className="w-3.5 h-3.5" />
+                  Repeats weekly
+                </span>
+              )}
+            </div>
             {hangout.assignedFriend && (
               <div className="flex items-center gap-2 mt-3">
                 <Avatar
