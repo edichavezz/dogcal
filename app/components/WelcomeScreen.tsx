@@ -124,7 +124,7 @@ export default function WelcomeScreen({
               <section>
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                  Pending Suggestions
+                  Pending suggestions
                 </h2>
                 <div className="space-y-3">
                   {pendingSuggestions.map(suggestion => (
@@ -141,7 +141,7 @@ export default function WelcomeScreen({
             {/* Upcoming Hangouts */}
             <section>
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-                Upcoming Hangouts
+                Upcoming hangouts
               </h2>
               {upcomingHangouts.length > 0 ? (
                 <div className="space-y-3">
@@ -164,7 +164,7 @@ export default function WelcomeScreen({
             {/* Your Pups */}
             <section>
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-                Your Pups
+                Your pups
               </h2>
               {pups.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -192,7 +192,7 @@ export default function WelcomeScreen({
             <section>
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                Available Hangouts
+                Looking for a pup hangout? Available slots:
               </h2>
               {availableHangouts.length > 0 ? (
                 <div className="space-y-3">
@@ -216,7 +216,7 @@ export default function WelcomeScreen({
             {(friendHangouts.length > 0 || friendSuggestions.length > 0) && (
               <section>
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-                  Your Hangouts & Suggestions
+                  Your upcoming hangouts and suggestions
                 </h2>
                 <div className="space-y-3">
                   {friendHangouts.map(hangout => (
@@ -240,7 +240,7 @@ export default function WelcomeScreen({
             {/* Pups You Care For */}
             <section>
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-                Pups You Care For
+                Pups you care for
               </h2>
               {pups.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">

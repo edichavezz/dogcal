@@ -76,25 +76,25 @@ export default function ManageUsers() {
 
       {/* Add New Owner */}
       <section className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-100">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">🏠 Add New Owner</h3>
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">🏠 Add new owner</h3>
         <AddOwnerForm onSuccess={() => { fetchData(); showMessage('success', 'Owner added successfully!'); }} />
       </section>
 
       {/* Add New Pup */}
       <section className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-6 border border-amber-100">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">🐕 Add New Pup</h3>
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">🐕 Add new pup</h3>
         <AddPupForm owners={users.filter(u => u.role === 'OWNER')} onSuccess={() => { fetchData(); showMessage('success', 'Pup added successfully!'); }} />
       </section>
 
       {/* Add New Friend */}
       <section className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-6 border border-yellow-100">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">🤝 Add New Friend</h3>
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">🤝 Add new friend</h3>
         <AddFriendForm pups={pups} onSuccess={() => { fetchData(); showMessage('success', 'Friend added successfully!'); }} />
       </section>
 
       {/* View All Users */}
       <section>
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">👥 All Users</h3>
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">👥 All users</h3>
         <UsersTable users={users} />
       </section>
     </div>
@@ -413,7 +413,7 @@ function AddFriendForm({ pups, onSuccess }: { pups: Pup[]; onSuccess: () => void
 
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-2">
-          Pups to Care For
+          Pups to care for
         </label>
         <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-300 rounded-lg p-3">
           {pups.length === 0 ? (

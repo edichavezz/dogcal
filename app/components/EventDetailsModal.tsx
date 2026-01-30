@@ -481,7 +481,7 @@ export default function EventDetailsModal({
             <>
               {/* Date & Time */}
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Date & Time</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Date & time</h3>
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-gray-800">
                     <strong>Start:</strong> {format(new Date(hangout.startAt), 'MMM d, yyyy h:mm a')}
@@ -525,7 +525,7 @@ export default function EventDetailsModal({
           {hangout.ownerNotes && (
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Care Instructions from Owner
+                Care instructions from owner
               </h3>
               <div className="bg-gradient-to-br from-[#ffd4d4]/30 to-[#ffe4d4]/30 border border-[#f4a9a8]/20 p-4 rounded-xl">
                 <p className="text-gray-800 whitespace-pre-wrap">{hangout.ownerNotes}</p>
@@ -537,7 +537,7 @@ export default function EventDetailsModal({
           {hangout.pup.careInstructions && (
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2">
-                General Care Instructions for {hangout.pup.name}
+                General care instructions for {hangout.pup.name}
               </h3>
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
                 <p className="text-gray-800 whitespace-pre-wrap">

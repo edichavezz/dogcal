@@ -44,7 +44,7 @@ export default async function SuggestPage() {
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-6 sm:p-8">
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
-              Suggest a Hangout Time
+              Suggest a hangout time
             </h1>
             <p className="text-sm sm:text-base text-gray-600">
               Propose a time when you&apos;re available to hang out with a pup

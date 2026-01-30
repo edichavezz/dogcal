@@ -333,7 +333,7 @@ export default function ManageClient({ user, allFriends }: Props) {
 
         {/* Owner Profile Section */}
         <div className="bg-[#1a3a3a] rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white">
-          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Your Profile</h2>
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Your profile</h2>
 
           <div className="flex items-start gap-4 sm:gap-6">
             <div className="relative group flex-shrink-0">
@@ -418,7 +418,7 @@ export default function ManageClient({ user, allFriends }: Props) {
 
         {/* Pups Section */}
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Your Pups</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Your pups</h2>
 
           {userData.ownedPups.length === 0 ? (
             <p className="text-gray-500">No pups yet</p>
@@ -730,7 +730,7 @@ export default function ManageClient({ user, allFriends }: Props) {
 
       {/* Friend Profile Section */}
       <div className="bg-[#1a3a3a] rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white">
-        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Your Profile</h2>
+        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Your profile</h2>
 
         <div className="flex items-start gap-4 sm:gap-6">
           <div className="relative group flex-shrink-0">
@@ -815,7 +815,7 @@ export default function ManageClient({ user, allFriends }: Props) {
 
       {/* Pups Section */}
       <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-6">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Pups You Know</h2>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Pups you know</h2>
 
         {userData.pupFriendships.length === 0 ? (
           <p className="text-gray-500">No pups yet</p>

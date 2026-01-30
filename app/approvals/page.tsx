@@ -76,7 +76,7 @@ export default async function ApprovalsPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
-            Pending Suggestions
+            Pending suggestions
           </h1>
           <p className="text-sm sm:text-base text-gray-600">
             Review and approve or reject hangout times suggested by your friends

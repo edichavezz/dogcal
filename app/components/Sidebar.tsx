@@ -25,7 +25,7 @@ export default function Sidebar({ user }: SidebarProps) {
   const ownerTabs = [
     { id: 'home', path: '/', label: 'Home', icon: Home },
     { id: 'calendar', path: '/calendar', label: 'Calendar', icon: Calendar },
-    { id: 'create', path: '/hangouts/new', label: 'Create Hangout', icon: Plus },
+    { id: 'create', path: '/hangouts/new', label: 'Create hangout', icon: Plus },
     { id: 'approvals', path: '/approvals', label: 'Approvals', icon: CheckSquare },
     { id: 'pups', path: '/manage', label: 'Pups and friends', icon: Users },
   ];
@@ -33,7 +33,7 @@ export default function Sidebar({ user }: SidebarProps) {
   const friendTabs = [
     { id: 'home', path: '/', label: 'Home', icon: Home },
     { id: 'calendar', path: '/calendar', label: 'Calendar', icon: Calendar },
-    { id: 'suggest', path: '/suggest', label: 'Suggest Time', icon: Lightbulb },
+    { id: 'suggest', path: '/suggest', label: 'Suggest time', icon: Lightbulb },
     { id: 'pups', path: '/manage', label: 'Pups', icon: Users },
   ];
 

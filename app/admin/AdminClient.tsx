@@ -25,7 +25,7 @@ export default function AdminClient() {
           <div className="flex items-center space-x-3 mb-4">
             <PawsIcon size={48} color="teal" />
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-display)' }}>
-              DogCal Admin
+              DogCal admin
             </h1>
           </div>
           <p className="text-gray-600 text-lg">
@@ -45,7 +45,7 @@ export default function AdminClient() {
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                 }`}
               >
-                Login as User
+                Login as user
               </button>
               <button
                 onClick={() => setActiveTab('manage')}
@@ -55,7 +55,7 @@ export default function AdminClient() {
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                 }`}
               >
-                Manage Users
+                Manage users
               </button>
               <button
                 onClick={() => setActiveTab('tokens')}
@@ -65,7 +65,7 @@ export default function AdminClient() {
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                 }`}
               >
-                Generate Tokens
+                Generate tokens
               </button>
             </nav>
           </div>

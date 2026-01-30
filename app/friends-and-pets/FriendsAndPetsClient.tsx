@@ -232,7 +232,7 @@ export default function FriendsAndPetsClient({
     <div className="space-y-8">
       {/* Profile Section */}
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">My Profile</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">My profile</h2>
 
         {editingProfile ? (
           <div className="space-y-4">
@@ -316,7 +316,7 @@ export default function FriendsAndPetsClient({
       {user.role === 'OWNER' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-800">My Pups</h2>
+            <h2 className="text-2xl font-bold text-gray-800">My pups</h2>
             <button
               onClick={() => setAddingPup(true)}
               className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-medium rounded-md hover:from-yellow-500 hover:to-orange-500"
@@ -327,7 +327,7 @@ export default function FriendsAndPetsClient({
 
           {addingPup && (
             <div className="bg-white rounded-lg shadow-sm p-6 border-2 border-yellow-400">
-              <h3 className="text-lg font-semibold mb-4">Add New Pup</h3>
+              <h3 className="text-lg font-semibold mb-4">Add new pup</h3>
               <div className="space-y-4">
                 <PhotoUploader
                   currentPhotoUrl={newPupData.profilePhotoUrl}
@@ -655,7 +655,7 @@ export default function FriendsAndPetsClient({
       {user.role === 'FRIEND' && (
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-gray-800">
-            Pups I Care For
+            Pups I care for
           </h2>
 
           {user.pupFriendships?.length === 0 ? (

@@ -55,7 +55,7 @@ export default async function NewHangoutPage() {
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-6 sm:p-8">
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-2">
-              Create New Hangout
+              Create new hangout
             </h1>
             <p className="text-sm sm:text-base text-gray-600">
               Schedule a time for one of your pups to hang out with a friend
