@@ -72,6 +72,12 @@
    - New template: `generateHangoutUnassignedMessage()`
    - Updated: `app/api/hangouts/[id]/assign/route.ts`
    - Updated: `app/api/hangouts/[id]/unassign/route.ts`
+3. Created production seed script (`prisma/seed-production.ts`)
+   - Clears photos from Supabase storage
+   - Creates real users: 5 owners, 4 friends, 5 pups
+   - Sets up friendships and 16 recurring hangouts (8 weeks)
+   - Fixed tsx execution issue (`node --import tsx` instead of `npx tsx`)
+4. Seeded development database with production data
 
 ### Previous
 - Home page redesign with action-focused layout

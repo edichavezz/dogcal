@@ -16,13 +16,15 @@
     "ci:check": "npm run lint && npm run typecheck && npm run test && npm run test:e2e",
     "postinstall": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed": "node --import tsx prisma/seed.ts",
     "prisma:studio": "prisma studio",
-    "db:reset": "tsx prisma/reset-dev-db.ts",
+    "db:seed": "node --import tsx prisma/seed-production.ts",
+    "db:seed:prod": "node --import tsx prisma/seed-production.ts",
+    "db:reset": "node --import tsx prisma/seed-production.ts",
     "db:reset-and-test": "npm run db:reset && npm run test"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "node --import tsx prisma/seed.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
