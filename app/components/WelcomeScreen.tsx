@@ -8,7 +8,7 @@
  * filters (time range, status, hide repeats), and pagination.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { User, Pup, PupFriendship } from '@prisma/client';
 import AppLayout from './AppLayout';
 import Avatar from './Avatar';
@@ -78,14 +78,20 @@ export default function WelcomeScreen({
   myHangoutsTotal: initialMyTotal,
 }: WelcomeScreenProps) {
   const isOwner = user.role === 'OWNER';
-  const pups: PupCardData[] = isOwner
-    ? user.ownedPups
-    : user.pupFriendships.map(friendship => ({
-        ...friendship.pup,
-        owner: friendship.pup.owner,
-      }));
 
-  const pupNames = pups.map(p => p.name);
+  // Memoize pups to prevent recreation on every render
+  const pups: PupCardData[] = useMemo(() =>
+    isOwner
+      ? user.ownedPups
+      : user.pupFriendships.map(friendship => ({
+          ...friendship.pup,
+          owner: friendship.pup.owner,
+        })),
+    [isOwner, user.ownedPups, user.pupFriendships]
+  );
+
+  // Memoize pupNames to prevent fun message from changing on filter updates
+  const pupNames = useMemo(() => pups.map(p => p.name), [pups]);
   const funMessage = useFunMessage(isOwner ? 'OWNER' : 'FRIEND', pupNames);
 
   // Modal state
