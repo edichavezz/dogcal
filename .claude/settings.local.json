@@ -34,7 +34,9 @@
       "Bash(npm --version)",
       "Bash(test:*)",
       "Bash(where npm)",
-      "Bash(\"C:\\\\Program Files\\\\nodejs\\\\npm.cmd\" install)"
+      "Bash(\"C:\\\\Program Files\\\\nodejs\\\\npm.cmd\" install)",
+      "Bash(git push:*)",
+      "Bash(gh api:*)"
     ]
   }
 }

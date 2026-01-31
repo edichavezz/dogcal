@@ -3,6 +3,17 @@ import { prisma } from './lib/prisma';
 import WelcomeScreen from './components/WelcomeScreen';
 import TokenLoginForm from './admin/TokenLoginForm';
 
+// Helper to filter recurring hangouts, keeping only the first of each series
+function filterFirstOfSeries<T extends { seriesId: string | null }>(hangouts: T[]): T[] {
+  const seenSeries = new Set<string>();
+  return hangouts.filter(h => {
+    if (!h.seriesId) return true; // Non-recurring events always shown
+    if (seenSeries.has(h.seriesId)) return false;
+    seenSeries.add(h.seriesId);
+    return true;
+  });
+}
+
 export default async function Home() {
   const actingUserId = await getActingUserId();
 
@@ -73,10 +84,9 @@ export default async function Home() {
           pupId: { in: pupIds },
           endAt: { gte: now },
           status: { in: ['OPEN', 'ASSIGNED'] },
-          seriesId: null, // Hide recurring hangouts by default
         },
         orderBy: { startAt: 'asc' },
-        take: 5, // Initial page load - fetch only 5
+        // Fetch more to account for filtering recurring hangouts
         select: {
           id: true,
           startAt: true,
@@ -122,15 +132,7 @@ export default async function Home() {
           },
         },
       }),
-      // Also get total count for pagination
-      prisma.hangout.count({
-        where: {
-          pupId: { in: pupIds },
-          endAt: { gte: now },
-          status: { in: ['OPEN', 'ASSIGNED'] },
-          seriesId: null, // Hide recurring hangouts by default
-        },
-      }),
+      // Note: Total count is calculated after filtering below
       prisma.hangoutSuggestion.findMany({
         where: {
           pupId: { in: pupIds },
