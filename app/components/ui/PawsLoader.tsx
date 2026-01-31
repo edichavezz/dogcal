@@ -10,9 +10,9 @@ type PawsLoaderProps = {
 };
 
 const sizeMap = {
-  sm: 'w-8 h-8',
-  md: 'w-16 h-16',
-  lg: 'w-24 h-24',
+  sm: 'w-16 h-16',
+  md: 'w-32 h-32',
+  lg: 'w-48 h-48',
 };
 
 export default function PawsLoader({ size = 'md', message, className = '' }: PawsLoaderProps) {
