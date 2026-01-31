@@ -25,6 +25,7 @@ interface TokenData {
   role: string;
   phoneNumber: string | null;
   token: string;
+  password: string;
   loginUrl: string;
 }
 
@@ -41,6 +42,7 @@ export default function AdminClient() {
   const [showAddOwner, setShowAddOwner] = useState(false);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [showAddPup, setShowAddPup] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const router = useRouter();
 
@@ -112,11 +114,31 @@ export default function AdminClient() {
     }
   };
 
-  const sendWhatsApp = (phoneNumber: string, loginUrl: string) => {
+  const sendWhatsApp = (phoneNumber: string, loginUrl: string, password: string) => {
     const message = encodeURIComponent(
-      `🐕 *DogCal Login Link*\n\nHi! Here's your personalized login link:\n\n${loginUrl}\n\nSave this link for easy access to DogCal!\n\nThanks! 🐾`
+      `Welcome to DogCal! You can log in using this link:\n\n${loginUrl}\n\nIf you're asked for a password, yours is: ${password}\n\nEnjoy, and reach out to Edi with any questions!`
     );
     window.open(`https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+  };
+
+  const regenerateAllPasswords = async () => {
+    if (!confirm('This will regenerate memorable passwords for ALL users. Their old login links will stop working. Continue?')) {
+      return;
+    }
+    setRegenerating(true);
+    try {
+      const response = await fetch('/api/admin/regenerate-passwords', {
+        method: 'POST',
+      });
+      if (!response.ok) throw new Error('Failed');
+      const data = await response.json();
+      showMessage('success', `Regenerated ${data.count} passwords!`);
+      fetchData(); // Refresh the table
+    } catch {
+      showMessage('error', 'Failed to regenerate passwords');
+    } finally {
+      setRegenerating(false);
+    }
   };
 
   const isValidImageUrl = (url: string | null | undefined): boolean => {
@@ -243,7 +265,16 @@ export default function AdminClient() {
 
           {/* Users Table with Tokens */}
           <div className="p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">All Users & Login Links</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">All Users & Login Links</h2>
+              <button
+                onClick={regenerateAllPasswords}
+                disabled={regenerating}
+                className="px-3 py-1.5 text-sm bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:bg-gray-300 font-medium transition-colors"
+              >
+                {regenerating ? 'Regenerating...' : 'Regenerate All Passwords'}
+              </button>
+            </div>
 
             <div className="overflow-x-auto rounded-xl border border-gray-200">
               <table className="min-w-full bg-white">
@@ -251,6 +282,7 @@ export default function AdminClient() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Password</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Login URL</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -273,6 +305,23 @@ export default function AdminClient() {
                           {token.role === 'OWNER' ? 'Owner' : 'Friend'}
                         </span>
                       </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs bg-amber-50 px-2 py-1 rounded text-amber-800 font-medium">
+                            {token.password}
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard(token.password)}
+                            className={`px-2 py-0.5 text-xs rounded font-medium transition-colors ${
+                              copiedUrl === token.password
+                                ? 'bg-green-500 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            {copiedUrl === token.password ? '!' : 'Copy'}
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <code className="text-xs bg-gray-100 px-2 py-1 rounded break-all text-gray-700">
                           {token.loginUrl}
@@ -288,11 +337,11 @@ export default function AdminClient() {
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                           >
-                            {copiedUrl === token.loginUrl ? 'Copied!' : 'Copy'}
+                            {copiedUrl === token.loginUrl ? 'Copied!' : 'Copy URL'}
                           </button>
                           {token.phoneNumber && (
                             <button
-                              onClick={() => sendWhatsApp(token.phoneNumber!, token.loginUrl)}
+                              onClick={() => sendWhatsApp(token.phoneNumber!, token.loginUrl, token.password)}
                               className="px-2.5 py-1 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-colors"
                             >
                               WhatsApp

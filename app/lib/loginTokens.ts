@@ -1,31 +1,88 @@
 /**
  * Login Token Service
  *
- * Generates and validates short, unique login tokens stored in the database.
- * Tokens are static (generated once) and URL-friendly.
+ * Generates and validates memorable login passwords stored in the database.
+ * Passwords are static (generated once) and human-readable.
+ * Format: <pet name><fun verb><user name> all lowercase, no spaces
  */
 
-import crypto from 'crypto';
 import { prisma } from './prisma';
 
-const TOKEN_LENGTH = 12; // Short, URL-friendly tokens (e.g., "aB3xY9kL2mN4")
+// Fun verbs for memorable passwords
+const FUN_VERBS = [
+  'cuddles',
+  'playswith',
+  'runswith',
+  'snuggles',
+  'walkswith',
+  'napswith',
+  'fetcheswith',
+  'adventureswith',
+  'chillswith',
+  'hangswith',
+];
 
 /**
- * Generate a short, random, URL-safe token
+ * Get a random fun verb
  */
-function generateShortToken(): string {
-  // Generate random bytes and convert to base64url
-  // We need more bytes than TOKEN_LENGTH because base64 encoding expands the size
-  const bytes = crypto.randomBytes(Math.ceil(TOKEN_LENGTH * 0.75));
-  return bytes.toString('base64url').substring(0, TOKEN_LENGTH);
+function getRandomVerb(): string {
+  return FUN_VERBS[Math.floor(Math.random() * FUN_VERBS.length)];
 }
 
 /**
- * Generate or retrieve login token for a user
- * If user already has a token, return it. Otherwise generate a new one.
+ * Clean a name for use in password (lowercase, no spaces, alphanumeric only)
+ */
+function cleanName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Generate a memorable password for a user based on their pets
+ */
+async function generateMemorablePassword(userId: string): Promise<string> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      ownedPups: true,
+      pupFriendships: {
+        include: {
+          pup: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const userName = cleanName(user.name.split(' ')[0]); // First name only
+  const verb = getRandomVerb();
+
+  let petName = '';
+
+  if (user.role === 'OWNER' && user.ownedPups.length > 0) {
+    // For owners, use their first pup's name
+    petName = cleanName(user.ownedPups[0].name);
+  } else if (user.role === 'FRIEND' && user.pupFriendships.length > 0) {
+    // For friends, use the first pup they care for
+    petName = cleanName(user.pupFriendships[0].pup.name);
+  }
+
+  // If no pet found, use a fallback
+  if (!petName) {
+    petName = 'dogcal';
+  }
+
+  return `${petName}${verb}${userName}`;
+}
+
+/**
+ * Generate or retrieve login token/password for a user
+ * If user already has a token, return it. Otherwise generate a new memorable password.
  *
  * @param userId - UUID of the user
- * @returns Login token string
+ * @returns Login token/password string
  */
 export async function getOrCreateLoginToken(userId: string): Promise<string> {
   try {
@@ -44,32 +101,32 @@ export async function getOrCreateLoginToken(userId: string): Promise<string> {
       return user.loginToken;
     }
 
-    // Generate new token and ensure it's unique
-    let token: string;
+    // Generate new memorable password and ensure it's unique
+    let password: string;
     let attempts = 0;
     const maxAttempts = 10;
 
     while (attempts < maxAttempts) {
-      token = generateShortToken();
+      password = await generateMemorablePassword(userId);
 
-      // Check if token already exists
+      // Check if password already exists
       const existing = await prisma.user.findUnique({
-        where: { loginToken: token },
+        where: { loginToken: password },
       });
 
       if (!existing) {
-        // Token is unique, save it
+        // Password is unique, save it
         await prisma.user.update({
           where: { id: userId },
-          data: { loginToken: token },
+          data: { loginToken: password },
         });
-        return token;
+        return password;
       }
 
       attempts++;
     }
 
-    throw new Error('Failed to generate unique token after multiple attempts');
+    throw new Error('Failed to generate unique password after multiple attempts');
   } catch (error) {
     console.error('Error getting/creating login token:', error);
     throw new Error('Failed to get or create login token');
@@ -102,10 +159,10 @@ export async function validateLoginToken(token: string): Promise<{ userId: strin
 }
 
 /**
- * Generate login tokens for all users and return their info
- * This ensures all users have tokens stored in the database
+ * Generate login passwords for all users and return their info
+ * This ensures all users have passwords stored in the database
  *
- * @returns Array of user info with tokens and URLs
+ * @returns Array of user info with passwords and URLs
  */
 export async function generateAllTokens(): Promise<Array<{
   userId: string;
@@ -113,6 +170,7 @@ export async function generateAllTokens(): Promise<Array<{
   role: string;
   phoneNumber: string | null;
   token: string;
+  password: string;
   loginUrl: string;
 }>> {
   try {
@@ -127,18 +185,19 @@ export async function generateAllTokens(): Promise<Array<{
     // Get app URL from environment
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://mydogcal.vercel.app';
 
-    // Generate or get token for each user
+    // Generate or get password for each user
     const tokens = await Promise.all(
       users.map(async (user) => {
-        const token = await getOrCreateLoginToken(user.id);
-        const loginUrl = `${appUrl}/api/login/${token}`;
+        const password = await getOrCreateLoginToken(user.id);
+        const loginUrl = `${appUrl}/api/login/${password}`;
 
         return {
           userId: user.id,
           name: user.name,
           role: user.role,
           phoneNumber: user.phoneNumber,
-          token,
+          token: password, // Keep for backwards compatibility
+          password, // New explicit field
           loginUrl,
         };
       })
@@ -161,4 +220,50 @@ export async function getLoginUrl(userId: string): Promise<string> {
   const token = await getOrCreateLoginToken(userId);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://mydogcal.vercel.app';
   return `${appUrl}/api/login/${token}`;
+}
+
+/**
+ * Regenerate a memorable password for a user
+ * Clears existing token and creates a new memorable password
+ *
+ * @param userId - UUID of the user
+ * @returns New password string
+ */
+export async function regeneratePassword(userId: string): Promise<string> {
+  try {
+    // Clear existing token first
+    await prisma.user.update({
+      where: { id: userId },
+      data: { loginToken: null },
+    });
+
+    // Generate new memorable password
+    return await getOrCreateLoginToken(userId);
+  } catch (error) {
+    console.error('Error regenerating password:', error);
+    throw new Error('Failed to regenerate password');
+  }
+}
+
+/**
+ * Regenerate memorable passwords for all users
+ * Replaces any random tokens with human-readable passwords
+ *
+ * @returns Number of passwords regenerated
+ */
+export async function regenerateAllPasswords(): Promise<number> {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true },
+    });
+
+    for (const user of users) {
+      await regeneratePassword(user.id);
+    }
+
+    return users.length;
+  } catch (error) {
+    console.error('Error regenerating all passwords:', error);
+    throw new Error('Failed to regenerate all passwords');
+  }
 }
