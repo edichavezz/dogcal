@@ -102,21 +102,21 @@ export default function WelcomeScreen({
   const [ownerFilters, setOwnerFilters] = useState<HangoutFiltersState>({
     timeRange: 'all',
     status: 'all',
-    hideRepeats: false,
+    hideRepeats: true, // Hide recurring hangouts by default
   });
 
   // Filter state for friends (available hangouts)
   const [friendAvailableFilters, setFriendAvailableFilters] = useState<HangoutFiltersState>({
     timeRange: 'all',
     status: 'all', // Not used for available
-    hideRepeats: false,
+    hideRepeats: true, // Hide recurring hangouts by default
   });
 
   // Filter state for friends (my hangouts)
   const [friendMyFilters, setFriendMyFilters] = useState<HangoutFiltersState>({
     timeRange: 'all',
     status: 'all', // Not used for my hangouts
-    hideRepeats: false,
+    hideRepeats: true, // Hide recurring hangouts by default
   });
 
   // Hangout lists with loading states

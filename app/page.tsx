@@ -73,6 +73,7 @@ export default async function Home() {
           pupId: { in: pupIds },
           endAt: { gte: now },
           status: { in: ['OPEN', 'ASSIGNED'] },
+          seriesId: null, // Hide recurring hangouts by default
         },
         orderBy: { startAt: 'asc' },
         take: 5, // Initial page load - fetch only 5
@@ -127,6 +128,7 @@ export default async function Home() {
           pupId: { in: pupIds },
           endAt: { gte: now },
           status: { in: ['OPEN', 'ASSIGNED'] },
+          seriesId: null, // Hide recurring hangouts by default
         },
       }),
       prisma.hangoutSuggestion.findMany({
@@ -195,6 +197,7 @@ export default async function Home() {
           pupId: { in: pupIds },
           endAt: { gte: now },
           status: 'OPEN',
+          seriesId: null, // Hide recurring hangouts by default
         },
         orderBy: { startAt: 'asc' },
         take: 5, // Initial page load - fetch only 5
@@ -248,6 +251,7 @@ export default async function Home() {
           pupId: { in: pupIds },
           endAt: { gte: now },
           status: 'OPEN',
+          seriesId: null, // Hide recurring hangouts by default
         },
       }),
       prisma.hangout.findMany({
@@ -255,6 +259,7 @@ export default async function Home() {
           assignedFriendUserId: actingUserId,
           endAt: { gte: now },
           status: 'ASSIGNED',
+          seriesId: null, // Hide recurring hangouts by default
         },
         orderBy: { startAt: 'asc' },
         take: 5, // Initial page load - fetch only 5
@@ -308,6 +313,7 @@ export default async function Home() {
           assignedFriendUserId: actingUserId,
           endAt: { gte: now },
           status: 'ASSIGNED',
+          seriesId: null, // Hide recurring hangouts by default
         },
       }),
       prisma.hangoutSuggestion.findMany({
