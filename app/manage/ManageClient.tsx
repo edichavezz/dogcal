@@ -6,7 +6,6 @@ import { UserRole } from '@prisma/client';
 import Image from 'next/image';
 import { Phone, Camera, UserPlus } from 'lucide-react';
 import Avatar from '@/components/Avatar';
-import { getEventGradient } from '@/lib/colorUtils';
 
 type Friend = {
   id: string;
@@ -533,20 +532,14 @@ export default function ManageClient({ user, allFriends }: Props) {
                       <p className="text-gray-500 text-sm mb-4">No friends yet</p>
                     ) : (
                       <div className="space-y-2 sm:space-y-3 mb-4">
-                        {pup.friendships.map((friendship) => {
-                          const gradient = getEventGradient(friendship.friend.id);
-                          return (
+                        {pup.friendships.map((friendship) => (
                             <div key={friendship.id} className="flex items-center justify-between bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 shadow-sm">
                               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                                <div
-                                  className="w-10 sm:w-12 h-10 sm:h-12 rounded-full flex items-center justify-center font-bold shadow-sm flex-shrink-0 text-sm sm:text-base"
-                                  style={{
-                                    background: `linear-gradient(to bottom right, ${gradient.from}, ${gradient.to})`,
-                                    color: gradient.text,
-                                  }}
-                                >
-                                  {friendship.friend.name.charAt(0)}
-                                </div>
+                                <Avatar
+                                  photoUrl={friendship.friend.profilePhotoUrl}
+                                  name={friendship.friend.name}
+                                  size="md"
+                                />
                                 <div className="flex-1 min-w-0">
                                   <h5 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{friendship.friend.name}</h5>
                                   {editingFriendship === friendship.id ? (
@@ -598,8 +591,7 @@ export default function ManageClient({ user, allFriends }: Props) {
                                 </div>
                               )}
                             </div>
-                          );
-                        })}
+                          ))}
                       </div>
                     )}
 
