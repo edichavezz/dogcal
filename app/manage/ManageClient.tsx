@@ -290,6 +290,23 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
+      // Update local state immediately for both owner and friend views
+      const newHistory = friendHistory || null;
+      setUserData({
+        ...userData,
+        // Update for owner view (friendships on owned pups)
+        ownedPups: userData.ownedPups.map((pup) => ({
+          ...pup,
+          friendships: pup.friendships.map((f) =>
+            f.id === friendshipId ? { ...f, historyWithPup: newHistory } : f
+          ),
+        })),
+        // Update for friend view (pupFriendships)
+        pupFriendships: userData.pupFriendships.map((f) =>
+          f.id === friendshipId ? { ...f, historyWithPup: newHistory } : f
+        ),
+      });
+      setEditingFriendship(null);
       router.refresh();
     } catch (error) {
       console.error('Update friendship error:', error);
