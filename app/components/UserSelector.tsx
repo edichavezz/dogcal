@@ -65,38 +65,37 @@ export default function UserSelector() {
   };
 
   return (
-    <div className="w-full max-w-2xl space-y-6">
+    <div className="w-full space-y-4">
       {/* Owners Section */}
       {owners.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-700">Pup Owners</h3>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Pup Owners</h3>
+          <div className="flex flex-wrap gap-2">
             {owners.map((user) => (
               <button
                 key={user.id}
                 onClick={() => handleUserSelect(user.id)}
                 disabled={loading}
-                className={`flex flex-col items-center p-4 border-2 rounded-lg transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all ${
                   selectedUserId === user.id
                     ? 'border-orange-400 bg-orange-50'
-                    : 'border-gray-200 hover:border-orange-200 bg-white'
+                    : 'border-gray-200 hover:border-orange-200 bg-white hover:bg-orange-50/50'
                 } disabled:opacity-50`}
               >
                 {isValidImageUrl(user.profilePhotoUrl) ? (
                   <Image
                     src={user.profilePhotoUrl!}
                     alt={user.name}
-                    width={60}
-                    height={60}
-                    className="rounded-full object-cover mb-2"
+                    width={28}
+                    height={28}
+                    className="rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-15 h-15 bg-orange-100 rounded-full flex items-center justify-center mb-2">
-                    <span className="text-2xl text-orange-600 font-semibold">{user.name.charAt(0)}</span>
+                  <div className="w-7 h-7 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm text-orange-600 font-semibold">{user.name.charAt(0)}</span>
                   </div>
                 )}
-                <span className="text-sm font-medium text-center">{user.name}</span>
-                <span className="text-xs text-gray-500">Owner</span>
+                <span className="text-sm font-medium whitespace-nowrap">{user.name}</span>
               </button>
             ))}
           </div>
@@ -105,35 +104,34 @@ export default function UserSelector() {
 
       {/* Friends Section */}
       {friends.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-700">Pup Friends</h3>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Pup Friends</h3>
+          <div className="flex flex-wrap gap-2">
             {friends.map((user) => (
               <button
                 key={user.id}
                 onClick={() => handleUserSelect(user.id)}
                 disabled={loading}
-                className={`flex flex-col items-center p-4 border-2 rounded-lg transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all ${
                   selectedUserId === user.id
-                    ? 'border-yellow-400 bg-yellow-50'
-                    : 'border-gray-200 hover:border-yellow-200 bg-white'
+                    ? 'border-amber-400 bg-amber-50'
+                    : 'border-gray-200 hover:border-amber-200 bg-white hover:bg-amber-50/50'
                 } disabled:opacity-50`}
               >
                 {isValidImageUrl(user.profilePhotoUrl) ? (
                   <Image
                     src={user.profilePhotoUrl!}
                     alt={user.name}
-                    width={60}
-                    height={60}
-                    className="rounded-full object-cover mb-2"
+                    width={28}
+                    height={28}
+                    className="rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-15 h-15 bg-amber-100 rounded-full flex items-center justify-center mb-2">
-                    <span className="text-2xl text-amber-600 font-semibold">{user.name.charAt(0)}</span>
+                  <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm text-amber-600 font-semibold">{user.name.charAt(0)}</span>
                   </div>
                 )}
-                <span className="text-sm font-medium text-center">{user.name}</span>
-                <span className="text-xs text-gray-500">Friend</span>
+                <span className="text-sm font-medium whitespace-nowrap">{user.name}</span>
               </button>
             ))}
           </div>

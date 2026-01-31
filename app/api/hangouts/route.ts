@@ -7,8 +7,8 @@ import { z } from 'zod';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import { addDays, addWeeks, addMonths } from 'date-fns';
-import { sendWhatsAppMessage, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
-import { generateHangoutCreatedMessage } from '@/lib/messageTemplates';
+import { sendWhatsAppTemplate, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
+import { getHangoutCreatedTemplateVars } from '@/lib/messageTemplates';
 
 const createHangoutSchema = z.object({
   pupId: z.string().uuid(),
@@ -168,21 +168,18 @@ export async function POST(request: NextRequest) {
               continue;
             }
 
-            // Generate message using first hangout in series
-            const message = await generateHangoutCreatedMessage({
+            // Generate template variables using first hangout in series
+            const templateVars = await getHangoutCreatedTemplateVars({
               friendUserId: friend.id,
               friendName: friend.name,
               ownerName: actingUser.name,
               pupName: pup.name,
               startAt: hangouts[0].startAt,
               endAt: hangouts[0].endAt,
-              eventName: hangouts[0].eventName,
-              ownerNotes: hangouts[0].ownerNotes,
-              hangoutId: hangouts[0].id,
             });
 
-            // Send WhatsApp message
-            const result = await sendWhatsAppMessage(friend.phoneNumber!, message);
+            // Send WhatsApp template message
+            const result = await sendWhatsAppTemplate(friend.phoneNumber!, 'hangout_created', templateVars);
 
             notificationResults.push({
               userId: friend.id,
@@ -247,21 +244,18 @@ export async function POST(request: NextRequest) {
               continue;
             }
 
-            // Generate message
-            const message = await generateHangoutCreatedMessage({
+            // Generate template variables
+            const templateVars = await getHangoutCreatedTemplateVars({
               friendUserId: friend.id,
               friendName: friend.name,
               ownerName: actingUser.name,
               pupName: pup.name,
               startAt: hangout.startAt,
               endAt: hangout.endAt,
-              eventName: hangout.eventName,
-              ownerNotes: hangout.ownerNotes,
-              hangoutId: hangout.id,
             });
 
-            // Send WhatsApp message
-            const result = await sendWhatsAppMessage(friend.phoneNumber!, message);
+            // Send WhatsApp template message
+            const result = await sendWhatsAppTemplate(friend.phoneNumber!, 'hangout_created', templateVars);
 
             notificationResults.push({
               userId: friend.id,

@@ -4,8 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
-import { sendWhatsAppMessage, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
-import { generateHangoutUnassignedMessage } from '@/lib/messageTemplates';
+import { sendWhatsAppTemplate, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
+import { getHangoutUnassignedTemplateVars } from '@/lib/messageTemplates';
 
 export async function POST(
   request: NextRequest,
@@ -77,18 +77,16 @@ export async function POST(
             reason: 'No valid phone number',
           });
         } else {
-          const message = await generateHangoutUnassignedMessage({
+          const templateVars = await getHangoutUnassignedTemplateVars({
             ownerUserId: owner.id,
             ownerName: owner.name,
             friendName: friendUser?.name || 'A friend',
             pupName: updatedHangout.pup.name,
             startAt: updatedHangout.startAt,
             endAt: updatedHangout.endAt,
-            eventName: updatedHangout.eventName,
-            hangoutId: updatedHangout.id,
           });
 
-          const result = await sendWhatsAppMessage(owner.phoneNumber!, message);
+          const result = await sendWhatsAppTemplate(owner.phoneNumber!, 'hangout_unassigned', templateVars);
 
           notificationResults.push({
             userId: owner.id,

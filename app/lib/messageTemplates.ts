@@ -296,3 +296,109 @@ Thanks for suggesting a time!`;
 
   return message;
 }
+
+// =============================================================================
+// TEMPLATE VARIABLE GENERATORS
+// These functions return variables for WhatsApp message templates
+// Template format: {{1}} = recipient, {{2}} = other person, {{3}} = pup, {{4}} = datetime, {{5}} = URL
+// =============================================================================
+
+/**
+ * Generate template variables for hangout_created template
+ * Sent to friends when owner creates a new hangout
+ */
+export async function getHangoutCreatedTemplateVars(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<Record<string, string>> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+
+  return {
+    '1': friendName,
+    '2': ownerName,
+    '3': pupName,
+    '4': dateTime,
+    '5': loginUrl,
+  };
+}
+
+/**
+ * Generate template variables for hangout_assigned template
+ * Sent to owner when a friend assigns themselves
+ */
+export async function getHangoutAssignedTemplateVars(params: {
+  ownerUserId: string;
+  ownerName: string;
+  friendName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<Record<string, string>> {
+  const { ownerUserId, ownerName, friendName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(ownerUserId);
+  const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+
+  return {
+    '1': ownerName,
+    '2': friendName,
+    '3': pupName,
+    '4': dateTime,
+    '5': loginUrl,
+  };
+}
+
+/**
+ * Generate template variables for hangout_unassigned template
+ * Sent to owner when a friend unassigns themselves
+ */
+export async function getHangoutUnassignedTemplateVars(params: {
+  ownerUserId: string;
+  ownerName: string;
+  friendName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<Record<string, string>> {
+  const { ownerUserId, ownerName, friendName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(ownerUserId);
+  const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+
+  return {
+    '1': ownerName,
+    '2': friendName,
+    '3': pupName,
+    '4': dateTime,
+    '5': loginUrl,
+  };
+}
+
+/**
+ * Generate template variables for suggestion_created template
+ * Sent to owner when a friend suggests a hangout
+ */
+export async function getSuggestionCreatedTemplateVars(params: {
+  ownerUserId: string;
+  ownerName: string;
+  friendName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<Record<string, string>> {
+  const { ownerUserId, ownerName, friendName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(ownerUserId);
+  const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+
+  return {
+    '1': ownerName,
+    '2': friendName,
+    '3': pupName,
+    '4': dateTime,
+    '5': loginUrl,
+  };
+}

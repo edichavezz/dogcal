@@ -2,7 +2,39 @@
   "permissions": {
     "allow": [
       "Bash(npm run typecheck:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npm run lint)",
+      "Bash(npx prisma generate)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npm run dev)",
+      "Bash(curl:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nPerformance optimizations: indexes, parallel queries, and reduced data fetching\n\n- Added database indexes to Hangout, HangoutSuggestion, PupFriendship, Pup, and HangoutNote models\n- Optimized bootstrap API with parallel queries and select statements\n- Optimized approvals page with select statements to reduce data fetched\n- Optimized manage page with parallel fetch for user and friends data\n- Added take limits to home page queries to prevent over-fetching\n- Added pagination support to pups API endpoint\n- Combined validation queries in hangout PATCH endpoint with Promise.all\n- Replaced window.location.reload\\(\\) with router.refresh\\(\\) in ManageClient\n- Added compress and poweredByHeader settings to Next.js config\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npm run build:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nHome page redesign: action-focused layout with role-based views\n\nRedesigned the home/landing page to be more action-focused with different\nlayouts for owners and friends. Key changes:\n\n- Added rotating fun welcome messages using pup names\n- Owners see: pending suggestions, upcoming hangouts, pups with \"Create Hangout\"\n- Friends see: available hangouts, their assignments/suggestions, pups with \"Suggest Time\"\n- All hangout cards are clickable and open EventDetailsModal\n- All pup cards link to appropriate action pages \\(create hangout or suggest time\\)\n- Removed redundant Quick Actions grid \\(actions now on pup cards\\)\n- Mobile-first responsive design with compact cards\n\nNew components created in app/components/home/:\n- FunMessage.tsx: Hook for random welcome messages\n- HangoutListCard.tsx: Clickable hangout list item\n- SuggestionPreviewCard.tsx: Pending suggestion preview\n- PupActionCard.tsx: Pup card with action overlay\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git merge:*)",
+      "Bash(git branch:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd WhatsApp notifications for hangout assign/unassign\n\n- Add generateHangoutUnassignedMessage template for when friend cancels\n- Update assign route to notify owner when friend takes a hangout\n- Update unassign route to notify owner when friend cancels\n\nNotifications are only sent when WHATSAPP_ENABLED=true and owner has\na valid phone number. Errors are logged but don''t fail the operation.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run db:seed:*)",
+      "Bash(npx tsx:*)",
+      "Bash(echo:*)",
+      "Bash(del db-state.json)",
+      "Bash(node -e:*)",
+      "Bash(npm run db:reset:*)",
+      "Bash(tee:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:ZtMw33vsfqGmxb2d@db.pbcxogbnpanijehwbnqs.supabase.co:5432/postgres\" npx tsx:*)",
+      "Bash(export DATABASE_URL=\"postgresql://postgres:ZtMw33vsfqGmxb2d@db.pbcxogbnpanijehwbnqs.supabase.co:5432/postgres\")",
+      "Bash(npx dotenv-cli:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(npm --version)",
+      "Bash(test:*)",
+      "Bash(where npm)",
+      "Bash(\"C:\\\\Program Files\\\\nodejs\\\\npm.cmd\" install)"
     ]
   }
 }

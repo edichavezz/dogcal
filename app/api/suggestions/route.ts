@@ -7,8 +7,8 @@ import { z } from 'zod';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import { addDays, addWeeks, addMonths } from 'date-fns';
-import { sendWhatsAppMessage, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
-import { generateSuggestionCreatedMessage } from '@/lib/messageTemplates';
+import { sendWhatsAppTemplate, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
+import { getSuggestionCreatedTemplateVars } from '@/lib/messageTemplates';
 
 const createSuggestionSchema = z.object({
   pupId: z.string().uuid(),
@@ -145,21 +145,18 @@ export async function POST(request: NextRequest) {
               reason: 'No valid phone number',
             });
           } else {
-            // Generate message using first suggestion in series
-            const message = await generateSuggestionCreatedMessage({
+            // Generate template variables using first suggestion in series
+            const templateVars = await getSuggestionCreatedTemplateVars({
               ownerUserId: owner.id,
               ownerName: owner.name,
               friendName: actingUser.name,
               pupName: suggestions[0].pup.name,
               startAt: suggestions[0].startAt,
               endAt: suggestions[0].endAt,
-              eventName: suggestions[0].eventName,
-              friendComment: suggestions[0].friendComment,
-              suggestionId: suggestions[0].id,
             });
 
-            // Send WhatsApp message
-            const result = await sendWhatsAppMessage(owner.phoneNumber!, message);
+            // Send WhatsApp template message
+            const result = await sendWhatsAppTemplate(owner.phoneNumber!, 'suggestion_created', templateVars);
 
             notificationResults.push({
               userId: owner.id,
@@ -216,21 +213,18 @@ export async function POST(request: NextRequest) {
               reason: 'No valid phone number',
             });
           } else {
-            // Generate message
-            const message = await generateSuggestionCreatedMessage({
+            // Generate template variables
+            const templateVars = await getSuggestionCreatedTemplateVars({
               ownerUserId: owner.id,
               ownerName: owner.name,
               friendName: actingUser.name,
               pupName: suggestion.pup.name,
               startAt: suggestion.startAt,
               endAt: suggestion.endAt,
-              eventName: suggestion.eventName,
-              friendComment: suggestion.friendComment,
-              suggestionId: suggestion.id,
             });
 
-            // Send WhatsApp message
-            const result = await sendWhatsAppMessage(owner.phoneNumber!, message);
+            // Send WhatsApp template message
+            const result = await sendWhatsAppTemplate(owner.phoneNumber!, 'suggestion_created', templateVars);
 
             notificationResults.push({
               userId: owner.id,

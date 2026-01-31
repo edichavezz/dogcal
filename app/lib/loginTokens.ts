@@ -125,7 +125,7 @@ export async function generateAllTokens(): Promise<Array<{
     });
 
     // Get app URL from environment
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yourdogcal.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://mydogcal.vercel.app';
 
     // Generate or get token for each user
     const tokens = await Promise.all(
@@ -159,6 +159,6 @@ export async function generateAllTokens(): Promise<Array<{
  */
 export async function getLoginUrl(userId: string): Promise<string> {
   const token = await getOrCreateLoginToken(userId);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yourdogcal.vercel.app';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://mydogcal.vercel.app';
   return `${appUrl}/api/login/${token}`;
 }
