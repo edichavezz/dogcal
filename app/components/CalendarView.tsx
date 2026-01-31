@@ -103,7 +103,7 @@ function CalendarView({
 }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
   const [selectedHangout, setSelectedHangout] = useState<Hangout | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
 
   // Filters state - default to "week" for calendar list
   const [filters, setFilters] = useState<HangoutFiltersState>({
@@ -277,17 +277,6 @@ function CalendarView({
           {/* View Mode Toggle */}
           <div className="flex rounded-lg bg-gray-100 p-0.5">
             <button
-              onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <List className="w-4 h-4" />
-              List
-            </button>
-            <button
               onClick={() => setViewMode('calendar')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 viewMode === 'calendar'
@@ -297,6 +286,17 @@ function CalendarView({
             >
               <Calendar className="w-4 h-4" />
               Calendar
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              List
             </button>
           </div>
 

@@ -1,8 +1,8 @@
 'use client';
 
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, addWeeks } from 'date-fns';
 
-export type TimeFilter = 'all' | 'today' | 'week' | 'month';
+export type TimeFilter = 'all' | 'today' | 'week' | 'nextweek';
 export type StatusFilter = 'all' | 'open' | 'confirmed';
 
 export type HangoutFiltersState = {
@@ -25,8 +25,11 @@ export function getTimeFilterRange(filter: TimeFilter): { start: Date; end: Date
       return { start: startOfDay(now), end: endOfDay(now) };
     case 'week':
       return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
-    case 'month':
-      return { start: startOfMonth(now), end: endOfMonth(now) };
+    case 'nextweek': {
+      const nextWeekStart = startOfWeek(addWeeks(now, 1), { weekStartsOn: 1 });
+      const nextWeekEnd = endOfWeek(addWeeks(now, 1), { weekStartsOn: 1 });
+      return { start: nextWeekStart, end: nextWeekEnd };
+    }
     case 'all':
     default:
       return null;
@@ -38,7 +41,7 @@ export default function HangoutFilters({ filters, onChange, showStatusFilter = t
     { value: 'all', label: 'All' },
     { value: 'today', label: 'Today' },
     { value: 'week', label: 'This week' },
-    { value: 'month', label: 'This month' },
+    { value: 'nextweek', label: 'Next week' },
   ];
 
   const statusOptions: { value: StatusFilter; label: string }[] = [
