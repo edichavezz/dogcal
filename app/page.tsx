@@ -78,7 +78,7 @@ export default async function Home() {
   // Fetch hangouts and suggestions in parallel based on role
   if (isOwner) {
     // OWNER: Upcoming hangouts for their pups + pending suggestions
-    const [upcomingHangouts, upcomingHangoutsTotal, pendingSuggestions] = await Promise.all([
+    const [allUpcomingHangouts, pendingSuggestions] = await Promise.all([
       prisma.hangout.findMany({
         where: {
           pupId: { in: pupIds },
@@ -132,7 +132,6 @@ export default async function Home() {
           },
         },
       }),
-      // Note: Total count is calculated after filtering below
       prisma.hangoutSuggestion.findMany({
         where: {
           pupId: { in: pupIds },
@@ -165,6 +164,11 @@ export default async function Home() {
       }),
     ]);
 
+    // Filter to show only the first of each recurring series, then take 5
+    const filteredUpcoming = filterFirstOfSeries(allUpcomingHangouts);
+    const upcomingHangoutsTotal = filteredUpcoming.length;
+    const upcomingHangouts = filteredUpcoming.slice(0, 5);
+
     return (
       <WelcomeScreen
         user={user}
@@ -193,16 +197,14 @@ export default async function Home() {
     );
   } else {
     // FRIEND: Available (OPEN) hangouts they can claim + their assigned hangouts + their suggestions
-    const [availableHangouts, availableHangoutsTotal, myAssignedHangouts, myAssignedHangoutsTotal, mySuggestions] = await Promise.all([
+    const [allAvailableHangouts, allMyAssignedHangouts, mySuggestions] = await Promise.all([
       prisma.hangout.findMany({
         where: {
           pupId: { in: pupIds },
           endAt: { gte: now },
           status: 'OPEN',
-          seriesId: null, // Hide recurring hangouts by default
         },
         orderBy: { startAt: 'asc' },
-        take: 5, // Initial page load - fetch only 5
         select: {
           id: true,
           startAt: true,
@@ -248,23 +250,13 @@ export default async function Home() {
           },
         },
       }),
-      prisma.hangout.count({
-        where: {
-          pupId: { in: pupIds },
-          endAt: { gte: now },
-          status: 'OPEN',
-          seriesId: null, // Hide recurring hangouts by default
-        },
-      }),
       prisma.hangout.findMany({
         where: {
           assignedFriendUserId: actingUserId,
           endAt: { gte: now },
           status: 'ASSIGNED',
-          seriesId: null, // Hide recurring hangouts by default
         },
         orderBy: { startAt: 'asc' },
-        take: 5, // Initial page load - fetch only 5
         select: {
           id: true,
           startAt: true,
@@ -308,14 +300,6 @@ export default async function Home() {
               },
             },
           },
-        },
-      }),
-      prisma.hangout.count({
-        where: {
-          assignedFriendUserId: actingUserId,
-          endAt: { gte: now },
-          status: 'ASSIGNED',
-          seriesId: null, // Hide recurring hangouts by default
         },
       }),
       prisma.hangoutSuggestion.findMany({
@@ -349,6 +333,15 @@ export default async function Home() {
         },
       }),
     ]);
+
+    // Filter to show only the first of each recurring series, then take 5
+    const filteredAvailable = filterFirstOfSeries(allAvailableHangouts);
+    const availableHangoutsTotal = filteredAvailable.length;
+    const availableHangouts = filteredAvailable.slice(0, 5);
+
+    const filteredMyAssigned = filterFirstOfSeries(allMyAssignedHangouts);
+    const myHangoutsTotal = filteredMyAssigned.length;
+    const myAssignedHangouts = filteredMyAssigned.slice(0, 5);
 
     return (
       <WelcomeScreen
@@ -386,7 +379,7 @@ export default async function Home() {
             endAt: s.endAt.toISOString(),
           })),
         }}
-        myHangoutsTotal={myAssignedHangoutsTotal}
+        myHangoutsTotal={myHangoutsTotal}
       />
     );
   }
