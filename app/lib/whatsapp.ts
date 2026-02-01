@@ -15,6 +15,9 @@ export const TEMPLATE_SIDS = {
   hangout_assigned: 'HX0d5ea016c99560931486aff18806a96c',
   suggestion_created: 'HX89e606f8feef51b0a8a1d3881dae68e8',
   hangout_unassigned: 'HX96a324fb5074616918db72b47b2247d3',
+  hangout_deleted: 'REPLACE_WITH_TWILIO_SID', // Template for notifying friends when OPEN hangout is deleted
+  hangout_cancelled: 'REPLACE_WITH_TWILIO_SID', // Template for notifying assigned friend when hangout is cancelled
+  suggestion_deleted: 'REPLACE_WITH_TWILIO_SID', // Template for notifying owner when friend deletes suggestion
 } as const;
 
 export type TemplateName = keyof typeof TEMPLATE_SIDS;

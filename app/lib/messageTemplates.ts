@@ -402,3 +402,78 @@ export async function getSuggestionCreatedTemplateVars(params: {
     '5': loginUrl,
   };
 }
+
+/**
+ * Generate template variables for hangout_deleted template
+ * Sent to friends when owner deletes an OPEN hangout
+ */
+export async function getHangoutDeletedTemplateVars(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<Record<string, string>> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+
+  return {
+    '1': friendName,
+    '2': ownerName,
+    '3': pupName,
+    '4': dateTime,
+    '5': loginUrl,
+  };
+}
+
+/**
+ * Generate template variables for hangout_cancelled template
+ * Sent to the assigned friend when owner cancels/deletes an ASSIGNED hangout
+ */
+export async function getHangoutCancelledTemplateVars(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<Record<string, string>> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+
+  return {
+    '1': friendName,
+    '2': ownerName,
+    '3': pupName,
+    '4': dateTime,
+    '5': loginUrl,
+  };
+}
+
+/**
+ * Generate template variables for suggestion_deleted template
+ * Sent to the owner when a friend deletes their suggestion
+ */
+export async function getSuggestionDeletedTemplateVars(params: {
+  ownerUserId: string;
+  ownerName: string;
+  friendName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<Record<string, string>> {
+  const { ownerUserId, ownerName, friendName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(ownerUserId);
+  const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+
+  return {
+    '1': ownerName,
+    '2': friendName,
+    '3': pupName,
+    '4': dateTime,
+    '5': loginUrl,
+  };
+}

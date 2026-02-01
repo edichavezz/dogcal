@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import Avatar from './Avatar';
-import { Repeat } from 'lucide-react';
+import NotificationResultModal from './NotificationResultModal';
+import { Repeat, Trash2 } from 'lucide-react';
 
 type Hangout = {
   id: string;
@@ -68,6 +69,15 @@ export default function EventDetailsModal({
   const [editedOwnerNotes, setEditedOwnerNotes] = useState(hangout.ownerNotes || '');
   const [editedAssignedFriend, setEditedAssignedFriend] = useState(hangout.assignedFriend?.id || '');
   const [friends, setFriends] = useState<Array<{ id: string; name: string }>>([]);
+  const [deleting, setDeleting] = useState(false);
+  const [notificationResults, setNotificationResults] = useState<Array<{
+    userId: string;
+    userName: string;
+    phoneNumber: string | null;
+    status: 'sent' | 'skipped' | 'failed';
+    reason?: string;
+    twilioSid?: string;
+  }> | null>(null);
 
   const isAssignedToMe = hangout.assignedFriend?.id === actingUserId;
   const isOwner = actingUserRole === 'OWNER' && hangout.pup.owner.id === actingUserId;
@@ -258,6 +268,45 @@ export default function EventDetailsModal({
   const handleCancelFullEdit = () => {
     setIsEditingFull(false);
     setError('');
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this hangout? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleting(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/hangouts/${hangout.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete hangout');
+      }
+
+      // Show notification results if any
+      if (data.notificationResults && data.notificationResults.length > 0) {
+        setNotificationResults(data.notificationResults);
+      } else {
+        onUpdate();
+        onClose();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleNotificationResultsClose = () => {
+    setNotificationResults(null);
+    onUpdate();
+    onClose();
   };
 
   const canEdit = isOwner || isAssignedToMe;
@@ -602,11 +651,11 @@ export default function EventDetailsModal({
 
               {/* Action Buttons */}
               {!isEditingFull && (
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-wrap gap-3 pt-4">
                   {canEdit && (
                     <button
                       onClick={handleStartFullEdit}
-                      disabled={loading}
+                      disabled={loading || deleting}
                       className="flex-1 px-6 py-3 bg-[#1a3a3a] text-white font-medium rounded-xl hover:bg-[#2a4a4a] disabled:opacity-50 transition-all"
                     >
                       Edit Hangout
@@ -615,7 +664,7 @@ export default function EventDetailsModal({
                   {canAssign && (
                     <button
                       onClick={handleAssign}
-                      disabled={loading}
+                      disabled={loading || deleting}
                       className="flex-1 px-6 py-3 bg-[#f4a9a8] text-[#1a3a3a] font-medium rounded-xl hover:bg-[#f5b9b8] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {loading ? 'Assigning...' : "I'll take this!"}
@@ -624,10 +673,21 @@ export default function EventDetailsModal({
                   {canUnassign && (
                     <button
                       onClick={handleUnassign}
-                      disabled={loading}
+                      disabled={loading || deleting}
                       className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {loading ? 'Unassigning...' : 'Unassign Myself'}
+                    </button>
+                  )}
+                  {isOwner && (
+                    <button
+                      onClick={handleDelete}
+                      disabled={loading || deleting}
+                      className="px-4 py-3 bg-red-100 text-red-700 font-medium rounded-xl hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                      title="Delete hangout"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {deleting ? 'Deleting...' : 'Delete'}
                     </button>
                   )}
                   <button
@@ -642,6 +702,14 @@ export default function EventDetailsModal({
           )}
         </div>
       </div>
+
+      {/* Notification Results Modal */}
+      {notificationResults && (
+        <NotificationResultModal
+          results={notificationResults}
+          onClose={handleNotificationResultsClose}
+        />
+      )}
     </div>
   );
 }

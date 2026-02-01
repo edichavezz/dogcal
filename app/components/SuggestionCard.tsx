@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import Avatar from './Avatar';
+import { Trash2 } from 'lucide-react';
 
 type Suggestion = {
   id: string;
@@ -28,6 +29,7 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
   const [error, setError] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [ownerComment, setOwnerComment] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleDecision = async (decision: 'APPROVE' | 'REJECT') => {
     setLoading(true);
@@ -56,6 +58,32 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this suggestion? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleting(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/suggestions/${suggestion.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete suggestion');
+      }
+
+      onDecision();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
       {error && (
@@ -66,20 +94,30 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
 
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Avatar
-            photoUrl={suggestion.pup.profilePhotoUrl}
-            name={suggestion.pup.name}
-            size="md"
-          />
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {suggestion.pup.name}
-            </h3>
-            <p className="text-sm text-gray-600">
-              Suggested by: <strong>{suggestion.suggestedByFriend.name}</strong>
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar
+              photoUrl={suggestion.pup.profilePhotoUrl}
+              name={suggestion.pup.name}
+              size="md"
+            />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {suggestion.pup.name}
+              </h3>
+              <p className="text-sm text-gray-600">
+                Suggested by: <strong>{suggestion.suggestedByFriend.name}</strong>
+              </p>
+            </div>
           </div>
+          <button
+            onClick={handleDelete}
+            disabled={loading || deleting}
+            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+            title="Delete suggestion"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Date & Time */}
@@ -129,14 +167,14 @@ export default function SuggestionCard({ suggestion, onDecision }: SuggestionCar
           )}
           <button
             onClick={() => handleDecision('APPROVE')}
-            disabled={loading}
+            disabled={loading || deleting}
             className="flex-1 px-6 py-2 bg-[#1a3a3a] text-white font-medium rounded-xl hover:bg-[#2a4a4a] disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {loading ? 'Processing...' : 'Approve'}
           </button>
           <button
             onClick={() => handleDecision('REJECT')}
-            disabled={loading}
+            disabled={loading || deleting}
             className="flex-1 px-6 py-2 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {loading ? 'Processing...' : 'Reject'}

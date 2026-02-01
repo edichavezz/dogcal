@@ -1,11 +1,22 @@
-// API Route: Get and Update Hangout Details
+// API Route: Get, Update, and Delete Hangout Details
 // GET /api/hangouts/:id
 // PATCH /api/hangouts/:id
+// DELETE /api/hangouts/:id
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
+import {
+  isWhatsAppEnabled,
+  isValidPhoneNumber,
+  sendWhatsAppTemplate,
+  NotificationResult,
+} from '@/lib/whatsapp';
+import {
+  getHangoutDeletedTemplateVars,
+  getHangoutCancelledTemplateVars,
+} from '@/lib/messageTemplates';
 
 const updateHangoutSchema = z.object({
   eventName: z.string().max(100).optional().nullable(),
@@ -240,6 +251,166 @@ export async function PATCH(
     }
 
     console.error('Error updating hangout:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const actingUserId = await getActingUserId();
+
+    if (!actingUserId) {
+      return NextResponse.json(
+        { error: 'No acting user set' },
+        { status: 401 }
+      );
+    }
+
+    // Get hangout with related data for notifications
+    const hangout = await prisma.hangout.findUnique({
+      where: { id },
+      include: {
+        pup: {
+          include: {
+            owner: true,
+            friendships: {
+              include: {
+                friend: true,
+              },
+            },
+          },
+        },
+        assignedFriend: true,
+        createdByOwner: true,
+      },
+    });
+
+    if (!hangout) {
+      return NextResponse.json(
+        { error: 'Hangout not found' },
+        { status: 404 }
+      );
+    }
+
+    // Only the pup owner can delete hangouts
+    const isOwner = hangout.pup.ownerUserId === actingUserId;
+    if (!isOwner) {
+      return NextResponse.json(
+        { error: 'Only the pup owner can delete hangouts' },
+        { status: 403 }
+      );
+    }
+
+    // Delete the hangout (notes cascade automatically)
+    await prisma.hangout.delete({
+      where: { id },
+    });
+
+    // Send WhatsApp notifications
+    const notificationResults: NotificationResult[] = [];
+
+    if (isWhatsAppEnabled()) {
+      const ownerName = hangout.pup.owner.name;
+      const pupName = hangout.pup.name;
+
+      if (hangout.status === 'ASSIGNED' && hangout.assignedFriend) {
+        // Notify the assigned friend that their hangout was cancelled
+        const friend = hangout.assignedFriend;
+
+        if (isValidPhoneNumber(friend.phoneNumber)) {
+          const templateVars = await getHangoutCancelledTemplateVars({
+            friendUserId: friend.id,
+            friendName: friend.name,
+            ownerName,
+            pupName,
+            startAt: hangout.startAt,
+            endAt: hangout.endAt,
+          });
+
+          const result = await sendWhatsAppTemplate(
+            friend.phoneNumber!,
+            'hangout_cancelled',
+            templateVars
+          );
+
+          notificationResults.push({
+            userId: friend.id,
+            userName: friend.name,
+            phoneNumber: friend.phoneNumber,
+            status: result.success ? 'sent' : 'failed',
+            reason: result.error,
+            twilioSid: result.sid,
+          });
+        } else {
+          notificationResults.push({
+            userId: friend.id,
+            userName: friend.name,
+            phoneNumber: friend.phoneNumber,
+            status: 'skipped',
+            reason: 'No valid phone number',
+          });
+        }
+      } else if (hangout.status === 'OPEN') {
+        // Notify all pup friends that the open hangout was deleted
+        for (const friendship of hangout.pup.friendships) {
+          const friend = friendship.friend;
+
+          if (isValidPhoneNumber(friend.phoneNumber)) {
+            const templateVars = await getHangoutDeletedTemplateVars({
+              friendUserId: friend.id,
+              friendName: friend.name,
+              ownerName,
+              pupName,
+              startAt: hangout.startAt,
+              endAt: hangout.endAt,
+            });
+
+            const result = await sendWhatsAppTemplate(
+              friend.phoneNumber!,
+              'hangout_deleted',
+              templateVars
+            );
+
+            notificationResults.push({
+              userId: friend.id,
+              userName: friend.name,
+              phoneNumber: friend.phoneNumber,
+              status: result.success ? 'sent' : 'failed',
+              reason: result.error,
+              twilioSid: result.sid,
+            });
+          } else {
+            notificationResults.push({
+              userId: friend.id,
+              userName: friend.name,
+              phoneNumber: friend.phoneNumber,
+              status: 'skipped',
+              reason: 'No valid phone number',
+            });
+          }
+
+          // Add small delay between messages to avoid rate limiting
+          if (hangout.pup.friendships.length > 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Hangout deleted successfully',
+      notificationResults,
+    });
+  } catch (error) {
+    console.error('Error deleting hangout:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
