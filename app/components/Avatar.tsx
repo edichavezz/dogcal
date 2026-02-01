@@ -7,6 +7,7 @@ type AvatarProps = {
   name: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  cacheKey?: string | number;
 };
 
 export default function Avatar({
@@ -14,6 +15,7 @@ export default function Avatar({
   name,
   size = 'md',
   className = '',
+  cacheKey,
 }: AvatarProps) {
   const sizeClasses = {
     xs: 'w-6 h-6 text-xs',
@@ -37,7 +39,7 @@ export default function Avatar({
     >
       {photoUrl ? (
         <Image
-          src={photoUrl}
+          src={cacheKey ? `${photoUrl}?v=${cacheKey}` : photoUrl}
           alt={name}
           width={sizePixels[size]}
           height={sizePixels[size]}

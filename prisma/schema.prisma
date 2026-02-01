@@ -35,12 +35,34 @@ model Pup {
   createdAt        DateTime            @default(now())
   profilePhotoUrl  String?
   breed            String?
+  // FAQ fields for structured pup care info
+  about            String?             // About the pup (personality, background)
+  food             String?             // Amounts, times, how to prep, toppings
+  treats           String?             // Conditions for giving treats, what's allowed
+  walks            String?             // Frequency, length, off/on-lead preferences
+  leash            String?             // Heel vs push, crossing road, on/off behavior
+  socialising      String?             // Other dogs, children, new people, special notes
+  tricks           String?             // Known tricks, training preferences
+  play             String?             // Toys, games, entertainment
   hangouts         Hangout[]
   suggestions      HangoutSuggestion[]
+  photos           PupPhoto[]
   owner            User                @relation("PupOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
   friendships      PupFriendship[]
 
   @@index([ownerUserId])
+}
+
+model PupPhoto {
+  id        String   @id @default(uuid())
+  pupId     String
+  photoUrl  String
+  caption   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  pup       Pup      @relation(fields: [pupId], references: [id], onDelete: Cascade)
+
+  @@index([pupId])
 }
 
 model PupFriendship {

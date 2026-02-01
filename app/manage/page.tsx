@@ -22,6 +22,9 @@ export default async function ManagePage() {
       include: {
         ownedPups: {
           include: {
+            photos: {
+              orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+            },
             friendships: {
               include: {
                 friend: {
@@ -40,6 +43,9 @@ export default async function ManagePage() {
           include: {
             pup: {
               include: {
+                photos: {
+                  orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+                },
                 owner: {
                   select: {
                     id: true,
