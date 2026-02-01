@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
               pupName: pup.name,
               startAt: hangouts[0].startAt,
               endAt: hangouts[0].endAt,
+              hangoutId: hangouts[0].id,
             });
 
             // Send WhatsApp template message
@@ -252,6 +253,7 @@ export async function POST(request: NextRequest) {
               pupName: pup.name,
               startAt: hangout.startAt,
               endAt: hangout.endAt,
+              hangoutId: hangout.id,
             });
 
             // Send WhatsApp template message

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import Avatar from './Avatar';
 import NotificationResultModal from './NotificationResultModal';
@@ -36,6 +36,16 @@ type Hangout = {
     createdAt: string;
     author: {
       name: string;
+    };
+  }>;
+  responses?: Array<{
+    id: string;
+    status: 'YES' | 'NO';
+    respondedAt: string;
+    responder: {
+      id: string;
+      name: string;
+      profilePhotoUrl?: string | null;
     };
   }>;
 };
@@ -78,6 +88,8 @@ export default function EventDetailsModal({
     reason?: string;
     twilioSid?: string;
   }> | null>(null);
+  const [responses, setResponses] = useState<NonNullable<Hangout['responses']>>(hangout.responses ?? []);
+  const [loadingResponses, setLoadingResponses] = useState(false);
 
   const isAssignedToMe = hangout.assignedFriend?.id === actingUserId;
   const isOwner = actingUserRole === 'OWNER' && hangout.pup.owner.id === actingUserId;
@@ -168,6 +180,29 @@ export default function EventDetailsModal({
     }
   };
 
+  const refreshResponses = useCallback(async () => {
+    setLoadingResponses(true);
+
+    try {
+      const response = await fetch(`/api/hangouts/${hangout.id}`);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.hangout?.responses) {
+        setResponses(data.hangout.responses);
+      }
+    } catch (err) {
+      console.error('Error fetching responses:', err);
+    } finally {
+      setLoadingResponses(false);
+    }
+  }, [hangout.id]);
+
+  useEffect(() => {
+    setResponses(hangout.responses ?? []);
+    refreshResponses();
+  }, [hangout.responses, refreshResponses]);
+
   const handleSaveEventName = async () => {
     setLoading(true);
     setError('');
@@ -256,8 +291,14 @@ export default function EventDetailsModal({
         throw new Error(data.error || 'Failed to update hangout');
       }
 
-      setIsEditingFull(false);
-      onUpdate();
+      const data = await response.json();
+
+      if (data.notificationResults && data.notificationResults.length > 0) {
+        setNotificationResults(data.notificationResults);
+      } else {
+        setIsEditingFull(false);
+        onUpdate();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -566,10 +607,10 @@ export default function EventDetailsModal({
                 </span>
               )}
             </div>
-            {hangout.assignedFriend && (
-              <div className="flex items-center gap-2 mt-3">
-                <Avatar
-                  photoUrl={hangout.assignedFriend.profilePhotoUrl}
+          {hangout.assignedFriend && (
+            <div className="flex items-center gap-2 mt-3">
+              <Avatar
+                photoUrl={hangout.assignedFriend.profilePhotoUrl}
                   name={hangout.assignedFriend.name}
                   size="sm"
                 />
@@ -578,6 +619,11 @@ export default function EventDetailsModal({
                   <p className="text-sm font-semibold text-gray-900">{hangout.assignedFriend.name}</p>
                 </div>
               </div>
+            )}
+            {hangout.status === 'ASSIGNED' && (isOwner || isAssignedToMe) && (
+              <p className="mt-2 text-xs text-gray-500">
+                Calendar exports are one-way. If details change, export again.
+              </p>
             )}
           </div>
 
@@ -649,6 +695,40 @@ export default function EventDetailsModal({
             </div>
           )}
 
+          {/* Responses */}
+          {isOwner && hangout.status === 'OPEN' && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Responses</h3>
+              {loadingResponses ? (
+                <p className="text-sm text-gray-500">Loading responses…</p>
+              ) : responses && responses.length > 0 ? (
+                <div className="space-y-2">
+                  {responses.map((response) => (
+                    <div key={response.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <Avatar
+                          photoUrl={response.responder.profilePhotoUrl}
+                          name={response.responder.name}
+                          size="sm"
+                        />
+                        <span className="text-sm text-gray-800">{response.responder.name}</span>
+                      </div>
+                      <span
+                        className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                          response.status === 'YES' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
+                        {response.status === 'YES' ? 'Available' : 'Unavailable'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No responses yet.</p>
+              )}
+            </div>
+          )}
+
               {/* Action Buttons */}
               {!isEditingFull && (
                 <div className="flex flex-wrap gap-3 pt-4">
@@ -678,6 +758,15 @@ export default function EventDetailsModal({
                     >
                       {loading ? 'Unassigning...' : 'Unassign Myself'}
                     </button>
+                  )}
+                  {hangout.status === 'ASSIGNED' && (isOwner || isAssignedToMe) && (
+                    <a
+                      href={`/api/hangouts/${hangout.id}/calendar`}
+                      download
+                      className="flex-1 px-6 py-3 bg-blue-50 text-blue-700 font-medium rounded-xl hover:bg-blue-100 transition-all text-center"
+                    >
+                      Add to calendar
+                    </a>
                   )}
                   {isOwner && (
                     <button

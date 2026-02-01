@@ -10,10 +10,14 @@ import { prisma } from '@/lib/prisma';
 import {
   isWhatsAppEnabled,
   isValidPhoneNumber,
+  sendWhatsAppMessage,
   sendWhatsAppTemplate,
   NotificationResult,
 } from '@/lib/whatsapp';
 import {
+  generateHangoutRescheduledMessage,
+  generateHangoutClosedMessage,
+  generateHangoutConfirmedMessage,
   getHangoutDeletedTemplateVars,
   getHangoutCancelledTemplateVars,
 } from '@/lib/messageTemplates';
@@ -58,6 +62,14 @@ export async function GET(
           },
           orderBy: {
             createdAt: 'asc',
+          },
+        },
+        responses: {
+          include: {
+            responder: true,
+          },
+          orderBy: {
+            respondedAt: 'desc',
           },
         },
       },
@@ -107,7 +119,7 @@ export async function PATCH(
     const existingHangout = await prisma.hangout.findUnique({
       where: { id },
       include: {
-        pup: { include: { owner: true } },
+        pup: { include: { owner: true, friendships: { include: { friend: true } } } },
         assignedFriend: true,
       },
     });
@@ -225,7 +237,15 @@ export async function PATCH(
     if (updates.ownerNotes !== undefined) updateData.ownerNotes = updates.ownerNotes;
     if (updates.startAt) updateData.startAt = newStartAt;
     if (updates.endAt) updateData.endAt = newEndAt;
-    if (updates.assignedFriendUserId !== undefined) {
+    const shouldResetAssignment = isOwner
+      && (updates.startAt || updates.endAt)
+      && existingHangout.status === 'ASSIGNED'
+      && existingHangout.assignedFriendUserId;
+
+    if (shouldResetAssignment) {
+      updateData.assignedFriendUserId = null;
+      updateData.status = 'OPEN';
+    } else if (updates.assignedFriendUserId !== undefined) {
       updateData.assignedFriendUserId = updates.assignedFriendUserId;
       updateData.status = updates.assignedFriendUserId ? 'ASSIGNED' : 'OPEN';
     }
@@ -235,13 +255,127 @@ export async function PATCH(
       where: { id },
       data: updateData,
       include: {
-        pup: { include: { owner: true } },
+        pup: { include: { owner: true, friendships: { include: { friend: true } } } },
         assignedFriend: true,
         createdByOwner: true,
       },
     });
 
-    return NextResponse.json({ hangout: updatedHangout });
+    const notificationResults: NotificationResult[] = [];
+
+    const isNewAssignment = !shouldResetAssignment
+      && updates.assignedFriendUserId
+      && updates.assignedFriendUserId !== existingHangout.assignedFriendUserId;
+
+    if (isWhatsAppEnabled() && shouldResetAssignment && existingHangout.assignedFriend) {
+      const friend = existingHangout.assignedFriend;
+
+      if (isValidPhoneNumber(friend.phoneNumber)) {
+        const message = await generateHangoutRescheduledMessage({
+          friendUserId: friend.id,
+          friendName: friend.name,
+          ownerName: existingHangout.pup.owner.name,
+          pupName: existingHangout.pup.name,
+          startAt: newStartAt,
+          endAt: newEndAt,
+          hangoutId: existingHangout.id,
+        });
+
+        const result = await sendWhatsAppMessage(friend.phoneNumber!, message);
+
+        notificationResults.push({
+          userId: friend.id,
+          userName: friend.name,
+          phoneNumber: friend.phoneNumber,
+          status: result.success ? 'sent' : 'failed',
+          reason: result.error,
+          twilioSid: result.sid,
+        });
+      } else {
+        notificationResults.push({
+          userId: friend.id,
+          userName: friend.name,
+          phoneNumber: friend.phoneNumber,
+          status: 'skipped',
+          reason: 'No valid phone number',
+        });
+      }
+    }
+
+    if (isWhatsAppEnabled() && isNewAssignment && updatedHangout.assignedFriend) {
+      const assignedFriend = updatedHangout.assignedFriend;
+      const ownerName = updatedHangout.pup.owner.name;
+      const pupName = updatedHangout.pup.name;
+
+      if (isValidPhoneNumber(assignedFriend.phoneNumber)) {
+        const message = await generateHangoutConfirmedMessage({
+          friendUserId: assignedFriend.id,
+          friendName: assignedFriend.name,
+          ownerName,
+          pupName,
+          startAt: updatedHangout.startAt,
+          endAt: updatedHangout.endAt,
+        });
+
+        const result = await sendWhatsAppMessage(assignedFriend.phoneNumber!, message);
+        notificationResults.push({
+          userId: assignedFriend.id,
+          userName: assignedFriend.name,
+          phoneNumber: assignedFriend.phoneNumber,
+          status: result.success ? 'sent' : 'failed',
+          reason: result.error,
+          twilioSid: result.sid,
+        });
+      } else {
+        notificationResults.push({
+          userId: assignedFriend.id,
+          userName: assignedFriend.name,
+          phoneNumber: assignedFriend.phoneNumber,
+          status: 'skipped',
+          reason: 'No valid phone number',
+        });
+      }
+
+      for (const friendship of updatedHangout.pup.friendships) {
+        const friend = friendship.friend;
+        if (friend.id === assignedFriend.id) continue;
+
+        if (isValidPhoneNumber(friend.phoneNumber)) {
+          const message = await generateHangoutClosedMessage({
+            friendUserId: friend.id,
+            friendName: friend.name,
+            ownerName,
+            pupName,
+            startAt: updatedHangout.startAt,
+            endAt: updatedHangout.endAt,
+          });
+
+          const result = await sendWhatsAppMessage(friend.phoneNumber!, message);
+          notificationResults.push({
+            userId: friend.id,
+            userName: friend.name,
+            phoneNumber: friend.phoneNumber,
+            status: result.success ? 'sent' : 'failed',
+            reason: result.error,
+            twilioSid: result.sid,
+          });
+        } else {
+          notificationResults.push({
+            userId: friend.id,
+            userName: friend.name,
+            phoneNumber: friend.phoneNumber,
+            status: 'skipped',
+            reason: 'No valid phone number',
+          });
+        }
+
+        if (updatedHangout.pup.friendships.length > 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    }
+
+    return NextResponse.json({ hangout: updatedHangout, notificationResults });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
