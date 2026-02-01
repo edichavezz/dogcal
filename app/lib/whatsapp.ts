@@ -11,10 +11,10 @@ export type NotificationResult = {
 
 // WhatsApp Message Template SIDs
 export const TEMPLATE_SIDS = {
-  hangout_created: 'HX9101474e143c82f229805d085d79e798',
-  hangout_assigned: 'HX8ca533abdca8a345b8a3998db13a66d5',
-  suggestion_created: 'HX85b0ae5f77c05bd9d7f40c28abac35f6',
-  hangout_unassigned: 'HXfa18269f9cee0dd396205c31afb71c85',
+  hangout_created: 'HXc3e46a163d41e1bbc0f125ea9798650e',
+  hangout_assigned: 'HX0d5ea016c99560931486aff18806a96c',
+  suggestion_created: 'HX89e606f8feef51b0a8a1d3881dae68e8',
+  hangout_unassigned: 'HX96a324fb5074616918db72b47b2247d3',
 } as const;
 
 export type TemplateName = keyof typeof TEMPLATE_SIDS;
