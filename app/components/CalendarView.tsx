@@ -1,33 +1,15 @@
 'use client';
 
-import { memo, useRef, useState, useMemo, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import type FullCalendar from '@fullcalendar/react';
-import { EventClickArg, EventInput, EventMountArg } from '@fullcalendar/core';
+import { memo, useState, useMemo, useCallback } from 'react';
 import EventDetailsModal from './EventDetailsModal';
-import CalendarSkeleton from './ui/CalendarSkeleton';
 import HangoutListCard from './home/HangoutListCard';
 import HangoutFilters, { HangoutFiltersState, getTimeFilterRange } from './home/HangoutFilters';
-import { Calendar, List, Repeat } from 'lucide-react';
+import { MonthCalendar, CalendarEvent } from './calendar';
+import { Calendar, List } from 'lucide-react';
 import {
-  getFriendColor,
-  getPupColor,
-  OPEN_HANGOUT_COLOR,
-  SUGGESTED_HANGOUT_COLOR,
   generateHangoutTitle,
-  generateSuggestionTitle,
-  getHangoutStyles,
-  getSuggestionStyles,
+  getEventGradientClass,
 } from '@/lib/colorUtils';
-
-// Dynamic import of FullCalendar with no SSR - this reduces initial bundle by ~150KB
-const FullCalendarWrapper = dynamic(
-  () => import('./FullCalendarWrapper'),
-  {
-    ssr: false,
-    loading: () => <CalendarSkeleton message="Loading calendar..." />,
-  }
-);
 
 type Hangout = {
   id: string;
@@ -101,7 +83,6 @@ function CalendarView({
   actingUserRole,
   onUpdate,
 }: CalendarViewProps) {
-  const calendarRef = useRef<FullCalendar>(null);
   const [selectedHangout, setSelectedHangout] = useState<Hangout | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
 
@@ -149,92 +130,27 @@ function CalendarView({
     return filtered;
   }, [hangouts, filters]);
 
-  // Memoize hangout events transformation for calendar
-  const hangoutEvents = useMemo((): EventInput[] => {
-    return hangouts.map((hangout) => {
-      const isAssigned = hangout.status === 'ASSIGNED' && hangout.assignedFriend;
-      const isRecurring = !!hangout.seriesId;
-
-      let backgroundColor: string;
-      if (isAssigned) {
-        backgroundColor = actingUserRole === 'OWNER'
-          ? getFriendColor(hangout.assignedFriend!.id)
-          : getPupColor(hangout.pup.id);
-      } else {
-        backgroundColor = OPEN_HANGOUT_COLOR;
-      }
-
-      const styles = getHangoutStyles(hangout.status);
-
-      // Add repeat indicator to title if recurring
-      const title = isRecurring
-        ? `🔄 ${generateHangoutTitle(hangout)}`
-        : generateHangoutTitle(hangout);
-
-      return {
-        id: hangout.id,
-        title,
-        start: hangout.startAt,
-        end: hangout.endAt,
-        backgroundColor,
-        borderColor: backgroundColor,
-        textColor: '#1F2937',
-        extendedProps: {
-          hangout,
-          borderStyle: styles.borderStyle,
-          opacity: styles.opacity,
-          isRecurring,
-        },
-      };
-    });
-  }, [hangouts, actingUserRole]);
-
-  // Memoize suggestion events transformation
-  const suggestionEvents = useMemo((): EventInput[] => {
-    return suggestions.map((suggestion) => {
-      const styles = getSuggestionStyles();
-
-      return {
-        id: `suggestion-${suggestion.id}`,
-        title: `[Suggested] ${generateSuggestionTitle(suggestion)}`,
-        start: suggestion.startAt,
-        end: suggestion.endAt,
-        backgroundColor: SUGGESTED_HANGOUT_COLOR,
-        borderColor: SUGGESTED_HANGOUT_COLOR,
-        textColor: '#1F2937',
-        extendedProps: {
-          suggestion,
-          isSuggestion: true,
-          borderStyle: styles.borderStyle,
-          opacity: styles.opacity,
-        },
-      };
-    });
-  }, [suggestions]);
-
-  // Combine all events
-  const allEvents = useMemo(
-    () => [...hangoutEvents, ...suggestionEvents],
-    [hangoutEvents, suggestionEvents]
-  );
-
-  // Memoize event click handler
-  const handleEventClick = useCallback(async (info: EventClickArg) => {
-    if (info.event.extendedProps.isSuggestion) {
-      window.location.href = '/approvals';
-      return;
-    }
-
-    const hangout = info.event.extendedProps.hangout as Hangout;
-
-    try {
-      const response = await fetch(`/api/hangouts/${hangout.id}`);
-      const data = await response.json();
-      setSelectedHangout(data.hangout);
-    } catch (error) {
-      console.error('Error fetching hangout details:', error);
-    }
-  }, []);
+  // Transform hangouts to CalendarEvent format for MonthCalendar
+  const calendarEvents = useMemo((): CalendarEvent[] => {
+    return hangouts.map((hangout) => ({
+      id: hangout.id,
+      title: hangout.eventName || generateHangoutTitle(hangout),
+      startAt: new Date(hangout.startAt),
+      endAt: new Date(hangout.endAt),
+      type: 'hangout' as const,
+      status: hangout.status,
+      pupId: hangout.pup.id,
+      pupName: hangout.pup.name,
+      pupPhotoUrl: hangout.pup.profilePhotoUrl,
+      assignedFriendId: hangout.assignedFriend?.id,
+      assignedFriendName: hangout.assignedFriend?.name,
+      assignedFriendPhotoUrl: hangout.assignedFriend?.profilePhotoUrl,
+      colorClass: getEventGradientClass(hangout.assignedFriend?.id || hangout.pup.id),
+      hangout,
+      seriesId: hangout.seriesId,
+      isRecurring: !!hangout.seriesId,
+    }));
+  }, [hangouts]);
 
   // Handle list item click
   const handleListItemClick = useCallback(async (hangout: Hangout) => {
@@ -247,6 +163,19 @@ function CalendarView({
     }
   }, []);
 
+  // Handle calendar event view details
+  const handleViewDetails = useCallback(async (event: CalendarEvent) => {
+    if (event.hangout) {
+      try {
+        const response = await fetch(`/api/hangouts/${event.id}`);
+        const data = await response.json();
+        setSelectedHangout(data.hangout);
+      } catch (error) {
+        console.error('Error fetching hangout details:', error);
+      }
+    }
+  }, []);
+
   const handleCloseModal = useCallback(() => {
     setSelectedHangout(null);
   }, []);
@@ -255,19 +184,6 @@ function CalendarView({
     setSelectedHangout(null);
     onUpdate();
   }, [onUpdate]);
-
-  // Memoize event did mount handler
-  const handleEventDidMount = useCallback((info: EventMountArg) => {
-    const borderStyle = info.event.extendedProps.borderStyle;
-    const opacity = info.event.extendedProps.opacity;
-
-    if (borderStyle) {
-      info.el.style.borderStyle = borderStyle;
-    }
-    if (opacity !== undefined) {
-      info.el.style.opacity = opacity.toString();
-    }
-  }, []);
 
   return (
     <div className="h-full flex flex-col min-h-0">
@@ -315,14 +231,11 @@ function CalendarView({
       <div className="flex-1 min-h-0">
         {viewMode === 'calendar' ? (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
-            <div className="flex-1 min-h-0 p-4">
-              <FullCalendarWrapper
-                ref={calendarRef}
-                events={allEvents}
-                onEventClick={handleEventClick}
-                onEventDidMount={handleEventDidMount}
-              />
-            </div>
+            <MonthCalendar
+              events={calendarEvents}
+              onViewDetails={handleViewDetails}
+              currentUserId={actingUserId}
+            />
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full overflow-y-auto p-4">
