@@ -21,6 +21,7 @@ model User {
   assignedHangouts   Hangout[]           @relation("HangoutAssignedFriend")
   createdHangouts    Hangout[]           @relation("HangoutCreator")
   hangoutNotes       HangoutNote[]
+  hangoutResponses   HangoutResponse[]
   ownerDecisions     HangoutSuggestion[] @relation("SuggestionOwnerDecision")
   hangoutSuggestions HangoutSuggestion[] @relation("SuggestionFriend")
   ownedPups          Pup[]               @relation("PupOwner")
