@@ -4,6 +4,13 @@ import { useRef, useState } from 'react';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
+const interestOptions = [
+  { value: 'owner', label: 'I have a dog and want care help' },
+  { value: 'friend', label: 'I want to hang out with a dog' },
+  { value: 'both', label: 'Both' },
+  { value: 'other', label: 'Something else' },
+];
+
 export default function ContactForm() {
   const [status, setStatus] = useState<Status>('idle');
   const formRef = useRef<HTMLFormElement>(null);
@@ -16,6 +23,7 @@ export default function ContactForm() {
     const data = {
       name: (form.elements.namedItem('name') as HTMLInputElement).value.trim(),
       email: (form.elements.namedItem('email') as HTMLInputElement).value.trim(),
+      interest: (form.elements.namedItem('interest') as HTMLSelectElement).value,
       message: (form.elements.namedItem('message') as HTMLTextAreaElement).value.trim(),
     };
 
@@ -54,8 +62,12 @@ export default function ContactForm() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h3 className="font-display font-semibold text-xl text-[#1a3a3a] mb-2">you&apos;re on the list!</h3>
-        <p className="text-slate-500 text-sm">thanks for reaching out. we&apos;ll be in touch soon.</p>
+        <h3 className="font-display font-semibold text-xl text-[#1a3a3a] mb-2">
+          You&apos;re on the list!
+        </h3>
+        <p className="text-slate-500 text-sm">
+          Thanks for reaching out. We&apos;ll be in touch soon.
+        </p>
       </div>
     );
   }
@@ -64,21 +76,21 @@ export default function ContactForm() {
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1.5">
-          name
+          Name
         </label>
         <input
           id="name"
           name="name"
           type="text"
           required
-          placeholder="your name"
+          placeholder="Your name"
           className={inputClass}
         />
       </div>
 
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
-          email
+          Email
         </label>
         <input
           id="email"
@@ -91,22 +103,44 @@ export default function ContactForm() {
       </div>
 
       <div>
+        <label htmlFor="interest" className="block text-sm font-medium text-slate-700 mb-1.5">
+          I&apos;m interested because…
+        </label>
+        <select
+          id="interest"
+          name="interest"
+          required
+          defaultValue=""
+          className={`${inputClass} cursor-pointer`}
+        >
+          <option value="" disabled>
+            Select an option
+          </option>
+          {interestOptions.map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
         <label htmlFor="message" className="block text-sm font-medium text-slate-700 mb-1.5">
-          message{' '}
+          Message{' '}
           <span className="text-slate-400 font-normal">(optional)</span>
         </label>
         <textarea
           id="message"
           name="message"
           rows={4}
-          placeholder="tell us about your pup, or send us any questions…"
+          placeholder="Tell us about your pup, or ask us anything…"
           className={`${inputClass} resize-none`}
         />
       </div>
 
       {status === 'error' && (
         <p className="text-red-500 text-sm text-center">
-          something went wrong. please try again in a moment.
+          Something went wrong. Please try again in a moment.
         </p>
       )}
 
@@ -115,11 +149,11 @@ export default function ContactForm() {
         disabled={status === 'loading'}
         className="w-full bg-[#1a3a3a] text-white font-medium py-3.5 px-6 rounded-full hover:bg-[#2a4a4a] transition-colors disabled:opacity-60 disabled:cursor-not-allowed text-sm"
       >
-        {status === 'loading' ? 'sending…' : 'send message'}
+        {status === 'loading' ? 'Sending…' : 'Send message'}
       </button>
 
       <p className="text-center text-xs text-slate-400">
-        we&apos;ll never share your details with anyone.
+        We&apos;ll never share your details with anyone.
       </p>
     </form>
   );

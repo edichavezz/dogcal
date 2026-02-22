@@ -4,11 +4,11 @@ import Link from 'next/link';
 import ContactForm from './ContactForm';
 
 export const metadata: Metadata = {
-  title: 'dogcal — dog care, made easy',
+  title: 'dogcal — Dog care, made easy',
   description:
     'dogcal helps you schedule and coordinate care for your dog with the trusted friends and family who love them. Join the waitlist.',
   openGraph: {
-    title: 'dogcal — dog care, made easy',
+    title: 'dogcal — Dog care, made easy',
     description:
       'dogcal helps you schedule and coordinate care for your dog with the trusted friends and family who love them.',
     type: 'website',
@@ -18,27 +18,27 @@ export const metadata: Metadata = {
 const howItWorks = [
   {
     step: '01',
-    title: 'post a hangout',
-    body: 'owners create time slots when their pup needs care — a walk, a day visit, or an overnight stay.',
+    title: 'Post a hangout',
+    body: 'Owners create time slots when their pup needs care — a walk, a day visit, or an overnight stay.',
   },
   {
     step: '02',
-    title: 'friends claim it',
-    body: 'trusted friends and family browse open slots and sign up for the ones that suit them.',
+    title: 'Friends claim it',
+    body: 'Trusted friends and family browse open slots and sign up for the ones that suit them.',
   },
   {
     step: '03',
-    title: 'everyone stays in sync',
-    body: 'notes, care instructions, and WhatsApp notifications keep everyone organised — no chaotic group chats.',
+    title: 'Everyone stays in sync',
+    body: 'Notes, care instructions, and WhatsApp notifications keep everyone organised — no chaotic group chats.',
   },
 ];
 
 const features = [
-  'invite-only — your trusted network, no strangers',
-  'suggest care times that work for both sides',
+  'Invite-only — your trusted network, no strangers',
+  'Suggest care times that work for both sides',
   'WhatsApp notifications to keep everyone updated',
-  'leave notes and care instructions for your pup',
-  'free to use',
+  'Leave notes and care instructions for your pup',
+  'Free to use',
 ];
 
 export default function AboutPage() {
@@ -60,7 +60,7 @@ export default function AboutPage() {
             href="/"
             className="inline-flex items-center gap-1.5 text-sm font-medium px-5 py-2 rounded-full transition-colors text-white bg-[#1a3a3a] hover:bg-[#2a4a4a]"
           >
-            open app
+            Open app
             <svg
               width="14"
               height="14"
@@ -78,7 +78,7 @@ export default function AboutPage() {
       </header>
 
       {/* ─── Hero ─── */}
-      <section className="pt-20 pb-16 px-6 sm:px-8 md:pt-28 md:pb-24">
+      <section className="pt-20 pb-24 px-6 sm:px-8 md:pt-28 md:pb-32">
         <div className="max-w-4xl mx-auto text-center">
           {/* Beta badge */}
           <div
@@ -90,14 +90,12 @@ export default function AboutPage() {
             }}
           >
             <Image src="/paws-pink.svg" alt="" width={14} height={14} className="w-3.5 h-3.5" />
-            currently in private beta
+            Currently in private beta
           </div>
 
           {/* Headline */}
-          <h1
-            className="text-5xl sm:text-6xl md:text-7xl font-display font-semibold tracking-tight leading-[1.08] mb-6 text-[#1a3a3a]"
-          >
-            dog care, from
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-display font-semibold tracking-tight leading-[1.08] mb-6 text-[#1a3a3a]">
+            Dog care, from
             <br />
             <span style={{ color: '#f4a9a8' }}>people you trust.</span>
           </h1>
@@ -114,27 +112,14 @@ export default function AboutPage() {
               href="#contact"
               className="w-full sm:w-auto inline-flex items-center justify-center bg-[#1a3a3a] hover:bg-[#2a4a4a] text-white text-base font-medium px-8 py-3.5 rounded-full transition-colors"
             >
-              join the waitlist
+              Join the waitlist
             </a>
             <Link
               href="/"
               className="w-full sm:w-auto inline-flex items-center justify-center border-2 border-[#1a3a3a] text-[#1a3a3a] text-base font-medium px-8 py-3.5 rounded-full hover:bg-[#1a3a3a] hover:text-white transition-colors"
             >
-              open app
+              Open app
             </Link>
-          </div>
-        </div>
-
-        {/* Hero logo */}
-        <div className="mt-20 flex justify-center">
-          <div className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 rounded-[2.5rem] overflow-hidden shadow-2xl ring-1 ring-black/5">
-            <Image
-              src="/full-dogcal-logo-pink.svg"
-              alt="dogcal"
-              width={256}
-              height={256}
-              className="w-full h-full"
-            />
           </div>
         </div>
       </section>
@@ -144,10 +129,10 @@ export default function AboutPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-xs font-semibold uppercase tracking-widest mb-3 text-[#f4a9a8]">
-              how it works
+              How it works
             </p>
             <h2 className="text-3xl md:text-4xl font-display font-semibold tracking-tight text-[#1a3a3a]">
-              simple, from start to finish.
+              Simple, from start to finish.
             </h2>
           </div>
 
@@ -160,9 +145,7 @@ export default function AboutPage() {
                 <span className="text-xs font-semibold font-mono tracking-widest text-[#f4a9a8]">
                   {step}
                 </span>
-                <h3 className="text-lg font-display font-semibold text-[#1a3a3a]">
-                  {title}
-                </h3>
+                <h3 className="text-lg font-display font-semibold text-[#1a3a3a]">{title}</h3>
                 <p className="text-slate-500 leading-relaxed text-sm">{body}</p>
               </div>
             ))}
@@ -175,22 +158,20 @@ export default function AboutPage() {
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest mb-4 text-[#f4a9a8]">
-              why dogcal
+              Why dogcal
             </p>
             <h2 className="text-3xl md:text-4xl font-display font-semibold text-white tracking-tight mb-6">
-              care from people who already love your dog.
+              Care from people who already love your dog.
             </h2>
             <p className="text-slate-300 text-base leading-relaxed mb-8">
-              unlike generic pet-sitting platforms, dogcal is built around your existing circle of
-              trust. no strangers, no uncertainty — just the people who already know and love your
+              Unlike generic pet-sitting platforms, dogcal is built around your existing circle of
+              trust. No strangers, no uncertainty — just the people who already know and love your
               pup.
             </p>
             <ul className="space-y-3.5">
               {features.map((item) => (
                 <li key={item} className="flex items-start gap-3 text-slate-200 text-sm">
-                  <span
-                    className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center bg-[#f4a9a8]/15 text-[#f4a9a8]"
-                  >
+                  <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center bg-[#f4a9a8]/15 text-[#f4a9a8]">
                     <svg
                       width="10"
                       height="10"
@@ -228,13 +209,13 @@ export default function AboutPage() {
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest mb-3 text-[#f4a9a8]">
-              get in touch
+              Get in touch
             </p>
             <h2 className="text-3xl md:text-4xl font-display font-semibold tracking-tight mb-4 text-[#1a3a3a]">
-              want early access?
+              Want early access?
             </h2>
             <p className="text-slate-500 leading-relaxed">
-              dogcal is currently in private beta. fill in the form to join the waitlist or send us
+              dogcal is currently in private beta. Fill in the form to join the waitlist or send us
               any questions.
             </p>
           </div>
@@ -251,7 +232,7 @@ export default function AboutPage() {
             <span className="font-display font-semibold text-[#1a3a3a]">dogcal</span>
           </div>
           <p className="text-slate-400 text-sm text-center">
-            © {year} dogcal. all rights reserved.
+            © {year} dogcal. All rights reserved.
           </p>
         </div>
       </footer>

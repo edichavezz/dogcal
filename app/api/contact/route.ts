@@ -10,23 +10,31 @@ import { z } from 'zod';
 //   CONTACT_EMAIL=the.address.to.receive.emails@gmail.com
 // ---------------------------------------------------------------------------
 
+const interestLabels: Record<string, string> = {
+  owner: 'I have a dog and want care help',
+  friend: 'I want to hang out with a dog',
+  both: 'Both',
+  other: 'Something else',
+};
+
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   email: z.string().email('Please provide a valid email').max(200),
+  interest: z.enum(['owner', 'friend', 'both', 'other']),
   message: z.string().max(2000).optional(),
 });
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, message } = schema.parse(body);
+    const { name, email, interest, message } = schema.parse(body);
 
     const gmailUser = process.env.GMAIL_USER;
     const gmailPass = process.env.GMAIL_APP_PASSWORD;
     const contactEmail = process.env.CONTACT_EMAIL;
 
     if (!gmailUser || !gmailPass || !contactEmail) {
-      console.error('[contact] Missing email environment variables');
+      console.error('[contact] Missing env vars — GMAIL_USER:', !!gmailUser, 'GMAIL_APP_PASSWORD:', !!gmailPass, 'CONTACT_EMAIL:', !!contactEmail);
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
@@ -34,6 +42,7 @@ export async function POST(request: Request) {
       host: 'smtp.gmail.com',
       port: 587,
       secure: false,
+      requireTLS: true,
       auth: {
         user: gmailUser,
         pass: gmailPass,
@@ -41,6 +50,7 @@ export async function POST(request: Request) {
     });
 
     const messageBody = message?.trim() || '';
+    const interestLabel = interestLabels[interest] ?? interest;
 
     await transporter.sendMail({
       from: `"dogcal" <${gmailUser}>`,
@@ -56,7 +66,7 @@ export async function POST(request: Request) {
           </div>
           <table style="width:100%;border-collapse:collapse;">
             <tr>
-              <td style="padding:10px 0;color:#64748b;font-size:13px;width:80px;vertical-align:top;font-weight:500;">Name</td>
+              <td style="padding:10px 0;color:#64748b;font-size:13px;width:90px;vertical-align:top;font-weight:500;">Name</td>
               <td style="padding:10px 0;color:#0f172a;font-size:14px;">${escapeHtml(name)}</td>
             </tr>
             <tr>
@@ -64,6 +74,10 @@ export async function POST(request: Request) {
               <td style="padding:10px 0;font-size:14px;">
                 <a href="mailto:${escapeHtml(email)}" style="color:#1a3a3a;">${escapeHtml(email)}</a>
               </td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:#64748b;font-size:13px;vertical-align:top;font-weight:500;">Interest</td>
+              <td style="padding:10px 0;color:#0f172a;font-size:14px;">${escapeHtml(interestLabel)}</td>
             </tr>
             ${
               messageBody
@@ -75,17 +89,20 @@ export async function POST(request: Request) {
             }
           </table>
           <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
-          <p style="color:#94a3b8;font-size:12px;margin:0;">sent via dogcal contact form</p>
+          <p style="color:#94a3b8;font-size:12px;margin:0;">Sent via dogcal contact form</p>
         </div>
       `,
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    // Zod validation error
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
     }
-    console.error('[contact] error:', error);
+    // Log the real error so it shows in terminal / Vercel logs
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('[contact] Failed to send email:', msg);
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
   }
 }
