@@ -194,10 +194,6 @@ export default function WelcomeScreen({
     setSelectedHangout(null);
   }, []);
 
-  const handleModalUpdate = useCallback(() => {
-    router.refresh();
-  }, [router]);
-
   // Fetch hangouts with filters
   const fetchHangouts = useCallback(async (
     context: 'owner' | 'friend-available' | 'friend-assigned',
@@ -219,6 +215,38 @@ export default function WelcomeScreen({
     const data = await response.json();
     return { hangouts: data.hangouts as HangoutSummary[], total: data.total as number };
   }, []);
+
+  const handleModalUpdate = useCallback(async () => {
+    setSelectedHangout(null);
+
+    try {
+      if (isOwner) {
+        const { hangouts, total } = await fetchHangouts('owner', ownerFilters);
+        setUpcomingHangouts(hangouts);
+        setUpcomingTotal(total);
+      } else {
+        const [available, myAssigned] = await Promise.all([
+          fetchHangouts('friend-available', friendAvailableFilters),
+          fetchHangouts('friend-assigned', friendMyFilters),
+        ]);
+        setAvailableHangouts(available.hangouts);
+        setAvailableTotal(available.total);
+        setMyHangouts(myAssigned.hangouts);
+        setMyTotal(myAssigned.total);
+      }
+    } catch (error) {
+      console.error('Error refreshing hangouts:', error);
+    }
+
+    router.refresh();
+  }, [
+    isOwner,
+    fetchHangouts,
+    ownerFilters,
+    friendAvailableFilters,
+    friendMyFilters,
+    router,
+  ]);
 
   // Handle filter change for owners
   const handleOwnerFilterChange = useCallback(async (newFilters: HangoutFiltersState) => {

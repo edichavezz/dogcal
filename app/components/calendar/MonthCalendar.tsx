@@ -15,7 +15,7 @@ type MonthCalendarProps = {
 function CalendarContent({
   onViewDetails,
   currentUserId,
-}: MonthCalendarProps) {
+}: Omit<MonthCalendarProps, 'events'>) {
   const { goToNextMonth, goToPrevMonth } = useCalendarData();
 
   // Swipe gestures for month navigation

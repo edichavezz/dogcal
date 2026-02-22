@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * Token Login Form
+ * Username Login Form
  *
- * Universal login form that accepts both admin tokens and user login tokens.
- * - Admin tokens: Redirect to admin page with token in URL
- * - User tokens: Log in via API and redirect to home/calendar
+ * Universal login form that accepts both admin and user usernames.
+ * - Admin username: Redirect to admin page with username in URL
+ * - User username: Log in via API and redirect to home/calendar
  */
 
 import { useState } from 'react';
@@ -18,7 +18,7 @@ interface TokenLoginFormProps {
 }
 
 export default function TokenLoginForm({ error: initialError }: TokenLoginFormProps) {
-  const [token, setToken] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialError || '');
   const router = useRouter();
@@ -26,7 +26,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!token.trim()) {
+    if (!username.trim()) {
       setError('Please enter a username');
       return;
     }
@@ -34,22 +34,22 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
     setLoading(true);
     setError('');
 
-    const trimmedToken = token.trim();
+    const trimmedUsername = username.trim();
 
     try {
-      // Validate the token via API
+      // Validate the username via API
       const response = await fetch('/api/validate-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: trimmedToken }),
+        body: JSON.stringify({ username: trimmedUsername }),
       });
 
       const data = await response.json();
 
       if (data.valid) {
         if (data.type === 'admin') {
-          // Redirect to admin page with token
-          router.push(`/admin?token=${encodeURIComponent(trimmedToken)}`);
+          // Redirect to admin page with username
+          router.push(`/admin?token=${encodeURIComponent(trimmedUsername)}`);
         } else if (data.type === 'user') {
           // User is now logged in (cookie set by API), redirect to home
           router.push('/');
@@ -59,7 +59,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
         setLoading(false);
       }
     } catch {
-      setError('Failed to validate token. Please try again.');
+      setError('Failed to validate username. Please try again.');
       setLoading(false);
     }
   };
@@ -97,14 +97,14 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
           {/* Login form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="token" className="block text-sm font-medium text-[#1a3a3a] mb-1">
+              <label htmlFor="username" className="block text-sm font-medium text-[#1a3a3a] mb-1">
                 Username
               </label>
               <input
                 type="text"
-                id="token"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]/50 focus:border-[#f4a9a8] transition-colors"
                 disabled={loading}
@@ -115,7 +115,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
 
             <button
               type="submit"
-              disabled={loading || !token.trim()}
+              disabled={loading || !username.trim()}
               className="w-full bg-[#f4a9a8] text-[#1a3a3a] py-3 px-6 rounded-xl hover:bg-[#f4a9a8]/80 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed font-semibold transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (
