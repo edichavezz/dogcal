@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * Token Login Form
+ * Username Login Form
  *
- * Universal login form that accepts both admin tokens and user login tokens.
- * - Admin tokens: Redirect to admin page with token in URL
- * - User tokens: Log in via API and redirect to home/calendar
+ * Universal login form that accepts both admin and user usernames.
+ * - Admin username: Redirect to admin page with username in URL
+ * - User username: Log in via API and redirect to home/calendar
  */
 
 import { useState } from 'react';
@@ -19,7 +19,7 @@ interface TokenLoginFormProps {
 }
 
 export default function TokenLoginForm({ error: initialError }: TokenLoginFormProps) {
-  const [token, setToken] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialError || '');
   const router = useRouter();
@@ -27,40 +27,40 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!token.trim()) {
-      setError('Please enter a password');
+    if (!username.trim()) {
+      setError('Please enter a username');
       return;
     }
 
     setLoading(true);
     setError('');
 
-    const trimmedToken = token.trim();
+    const trimmedUsername = username.trim();
 
     try {
-      // Validate the token via API
+      // Validate the username via API
       const response = await fetch('/api/validate-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: trimmedToken }),
+        body: JSON.stringify({ username: trimmedUsername }),
       });
 
       const data = await response.json();
 
       if (data.valid) {
         if (data.type === 'admin') {
-          // Redirect to admin page with token
-          router.push(`/admin?token=${encodeURIComponent(trimmedToken)}`);
+          // Redirect to admin page with username
+          router.push(`/admin?token=${encodeURIComponent(trimmedUsername)}`);
         } else if (data.type === 'user') {
           // User is now logged in (cookie set by API), redirect to home
           router.push('/');
         }
       } else {
-        setError('Invalid password. Please check your password and try again.');
+        setError('Invalid username. Please check your username and try again.');
         setLoading(false);
       }
     } catch {
-      setError('Failed to validate token. Please try again.');
+      setError('Failed to validate username. Please try again.');
       setLoading(false);
     }
   };
@@ -85,7 +85,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
             Welcome back!
           </h1>
           <p className="text-gray-600 text-center mb-6">
-            Enter your password to continue
+            Enter your username to continue
           </p>
 
           {/* Error message */}
@@ -98,15 +98,15 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
           {/* Login form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="token" className="block text-sm font-medium text-[#1a3a3a] mb-1">
-                Password
+              <label htmlFor="username" className="block text-sm font-medium text-[#1a3a3a] mb-1">
+                Username
               </label>
               <input
-                type="password"
-                id="token"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="Enter your password..."
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]/50 focus:border-[#f4a9a8] transition-colors"
                 disabled={loading}
                 autoFocus
@@ -116,7 +116,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
 
             <button
               type="submit"
-              disabled={loading || !token.trim()}
+              disabled={loading || !username.trim()}
               className="w-full bg-[#f4a9a8] text-[#1a3a3a] py-3 px-6 rounded-xl hover:bg-[#f4a9a8]/80 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed font-semibold transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -133,7 +133,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
           {/* Help text */}
           <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
             <p className="text-sm text-gray-500 text-center">
-              Don&apos;t have a password? Contact Edi to get your personal login link.
+              Don&apos;t have a username? Contact Edi to get your personal login link.
             </p>
             <div className="text-center">
               <Link

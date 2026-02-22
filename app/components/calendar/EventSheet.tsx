@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { X, Clock, User } from 'lucide-react';
-import { CalendarEvent, useCalendar } from './CalendarContext';
+import { CalendarEvent, useCalendarActions, useCalendarSheet } from './CalendarContext';
 import Avatar from '../Avatar';
 
 type EventSheetProps = {
@@ -15,7 +15,8 @@ export default function EventSheet({
   onViewDetails,
   currentUserId,
 }: EventSheetProps) {
-  const { selectedEvent, isSheetOpen, closeSheet } = useCalendar();
+  const { selectedEvent, isSheetOpen } = useCalendarSheet();
+  const { closeSheet } = useCalendarActions();
   const sheetRef = useRef<HTMLDivElement>(null);
 
   // Handle backdrop click

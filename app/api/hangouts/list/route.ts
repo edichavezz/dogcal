@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, addWeeks } from 'date-fns';
+import type { Prisma } from '@prisma/client';
 
 const querySchema = z.object({
-  timeRange: z.enum(['all', 'today', 'week', 'month']).optional().default('all'),
+  timeRange: z.enum(['all', 'today', 'week', 'nextweek']).optional().default('all'),
   status: z.enum(['all', 'open', 'confirmed']).optional().default('all'),
   hideRepeats: z.enum(['true', 'false']).optional().default('false'),
   limit: z.coerce.number().min(1).max(50).optional().default(5),
@@ -22,7 +23,8 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: actingUserId },
-      include: {
+      select: {
+        role: true,
         ownedPups: { select: { id: true } },
         pupFriendships: { select: { pupId: true } },
       },
@@ -54,9 +56,14 @@ export async function GET(request: NextRequest) {
         case 'week':
           timeFilter = { gte: startOfWeek(today, { weekStartsOn: 1 }), lte: endOfWeek(today, { weekStartsOn: 1 }) };
           break;
-        case 'month':
-          timeFilter = { gte: startOfMonth(today), lte: endOfMonth(today) };
+        case 'nextweek': {
+          const nextWeek = addWeeks(today, 1);
+          timeFilter = {
+            gte: startOfWeek(nextWeek, { weekStartsOn: 1 }),
+            lte: endOfWeek(nextWeek, { weekStartsOn: 1 }),
+          };
           break;
+        }
       }
     }
 
@@ -75,7 +82,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build where clause based on context
-    const whereClause: Record<string, unknown> = {
+    const whereClause: Prisma.HangoutWhereInput = {
       startAt: timeFilter,
       endAt: { gte: now },
       status: statusFilter,
@@ -87,54 +94,59 @@ export async function GET(request: NextRequest) {
       whereClause.pupId = { in: pupIds };
     }
 
-    // Fetch hangouts
+    const hangoutSummarySelect = {
+      id: true,
+      startAt: true,
+      endAt: true,
+      status: true,
+      eventName: true,
+      seriesId: true,
+      seriesIndex: true,
+      pup: {
+        select: {
+          id: true,
+          name: true,
+          profilePhotoUrl: true,
+        },
+      },
+      assignedFriend: {
+        select: {
+          id: true,
+          name: true,
+          profilePhotoUrl: true,
+        },
+      },
+    } satisfies Prisma.HangoutSelect;
+
+    // Fast path when repeats are visible: paginate directly in DB.
+    if (params.hideRepeats === 'false') {
+      const [total, paginatedHangouts] = await Promise.all([
+        prisma.hangout.count({ where: whereClause }),
+        prisma.hangout.findMany({
+          where: whereClause,
+          orderBy: { startAt: 'asc' },
+          skip: params.offset,
+          take: params.limit,
+          select: hangoutSummarySelect,
+        }),
+      ]);
+
+      return NextResponse.json({
+        hangouts: paginatedHangouts.map(h => ({
+          ...h,
+          startAt: h.startAt.toISOString(),
+          endAt: h.endAt.toISOString(),
+        })),
+        total,
+        hasMore: params.offset + params.limit < total,
+      });
+    }
+
+    // Keep exact hide-repeats behavior by filtering after query.
     const hangouts = await prisma.hangout.findMany({
       where: whereClause,
       orderBy: { startAt: 'asc' },
-      select: {
-        id: true,
-        startAt: true,
-        endAt: true,
-        status: true,
-        eventName: true,
-        ownerNotes: true,
-        seriesId: true,
-        seriesIndex: true,
-        pup: {
-          select: {
-            id: true,
-            name: true,
-            profilePhotoUrl: true,
-            careInstructions: true,
-            owner: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        assignedFriend: {
-          select: {
-            id: true,
-            name: true,
-            profilePhotoUrl: true,
-          },
-        },
-        notes: {
-          orderBy: { createdAt: 'asc' },
-          select: {
-            id: true,
-            noteText: true,
-            createdAt: true,
-            author: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
+      select: hangoutSummarySelect,
     });
 
     // Apply hideRepeats filter (client-side logic done server-side)
@@ -158,10 +170,6 @@ export async function GET(request: NextRequest) {
         ...h,
         startAt: h.startAt.toISOString(),
         endAt: h.endAt.toISOString(),
-        notes: h.notes.map(n => ({
-          ...n,
-          createdAt: n.createdAt.toISOString(),
-        })),
       })),
       total,
       hasMore: params.offset + params.limit < total,

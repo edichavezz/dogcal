@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useEffect, useMemo } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Calendar, Users, Home, Plus, CheckSquare, Lightbulb } from 'lucide-react';
 import Avatar from './Avatar';
 import PawsIcon from './PawsIcon';
@@ -19,6 +20,7 @@ type SidebarProps = {
 
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const isActive = (path: string) => pathname === path;
 
@@ -37,7 +39,28 @@ export default function Sidebar({ user }: SidebarProps) {
     { id: 'pups', path: '/manage', label: 'Pups', icon: Users },
   ];
 
-  const tabs = user.role === 'OWNER' ? ownerTabs : friendTabs;
+  const tabs = useMemo(
+    () => (user.role === 'OWNER' ? ownerTabs : friendTabs),
+    [user.role]
+  );
+
+  useEffect(() => {
+    const prefetchTabs = () => {
+      for (const tab of tabs) {
+        if (tab.path !== pathname) {
+          router.prefetch(tab.path);
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const callbackId = window.requestIdleCallback(prefetchTabs, { timeout: 1200 });
+      return () => window.cancelIdleCallback(callbackId);
+    }
+
+    const timeoutId = window.setTimeout(prefetchTabs, 200);
+    return () => window.clearTimeout(timeoutId);
+  }, [pathname, router, tabs]);
 
   return (
     <>
@@ -61,6 +84,7 @@ export default function Sidebar({ user }: SidebarProps) {
                 <Link
                   key={tab.id}
                   href={tab.path}
+                  onMouseEnter={() => router.prefetch(tab.path)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     active
                       ? 'bg-[#f4a9a8] text-[#1a3a3a]'
@@ -79,6 +103,7 @@ export default function Sidebar({ user }: SidebarProps) {
         <div className="p-4 border-t border-[#2a4a4a]">
           <Link
             href="/manage"
+            onMouseEnter={() => router.prefetch('/manage')}
             className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#2a4a4a] transition-colors"
           >
             <Avatar

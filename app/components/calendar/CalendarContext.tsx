@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 import { startOfMonth, addMonths, subMonths } from 'date-fns';
 
 // Extended CalendarEvent type with v1's extra fields
@@ -16,32 +16,43 @@ export type CalendarEvent = {
   pupPhotoUrl?: string | null;
   assignedFriendId?: string | null;
   assignedFriendName?: string | null;
-  assignedFriendPhotoUrl?: string | null;  // NEW: for dual avatar
+  assignedFriendPhotoUrl?: string | null;
   colorClass: string;
-  hangout?: unknown;                        // NEW: full data for modal
-  seriesId?: string | null;                 // NEW: recurring indicator
-  isRecurring?: boolean;                    // NEW: recurring indicator
+  hangout?: unknown;
+  seriesId?: string | null;
+  isRecurring?: boolean;
 };
 
-type CalendarContextType = {
+type CalendarDataContextType = {
   currentMonth: Date;
   events: CalendarEvent[];
-  selectedEvent: CalendarEvent | null;
-  isSheetOpen: boolean;
   goToNextMonth: () => void;
   goToPrevMonth: () => void;
   goToToday: () => void;
-  setEvents: (events: CalendarEvent[]) => void;
+};
+
+type CalendarSheetContextType = {
+  selectedEvent: CalendarEvent | null;
+  isSheetOpen: boolean;
+};
+
+type CalendarActionsContextType = {
   selectEvent: (event: CalendarEvent | null) => void;
   openSheet: () => void;
   closeSheet: () => void;
 };
 
-const CalendarContext = createContext<CalendarContextType | null>(null);
+const CalendarDataContext = createContext<CalendarDataContextType | null>(null);
+const CalendarSheetContext = createContext<CalendarSheetContextType | null>(null);
+const CalendarActionsContext = createContext<CalendarActionsContextType | null>(null);
 
-export function CalendarProvider({ children }: { children: ReactNode }) {
+type CalendarProviderProps = {
+  children: ReactNode;
+  events: CalendarEvent[];
+};
+
+export function CalendarProvider({ children, events }: CalendarProviderProps) {
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -73,31 +84,65 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     setSelectedEvent(null);
   }, []);
 
+  const dataValue = useMemo(() => ({
+    currentMonth,
+    events,
+    goToNextMonth,
+    goToPrevMonth,
+    goToToday,
+  }), [currentMonth, events, goToNextMonth, goToPrevMonth, goToToday]);
+
+  const sheetValue = useMemo(() => ({
+    selectedEvent,
+    isSheetOpen,
+  }), [selectedEvent, isSheetOpen]);
+
+  const actionsValue = useMemo(() => ({
+    selectEvent,
+    openSheet,
+    closeSheet,
+  }), [selectEvent, openSheet, closeSheet]);
+
   return (
-    <CalendarContext.Provider
-      value={{
-        currentMonth,
-        events,
-        selectedEvent,
-        isSheetOpen,
-        goToNextMonth,
-        goToPrevMonth,
-        goToToday,
-        setEvents,
-        selectEvent,
-        openSheet,
-        closeSheet,
-      }}
-    >
-      {children}
-    </CalendarContext.Provider>
+    <CalendarDataContext.Provider value={dataValue}>
+      <CalendarActionsContext.Provider value={actionsValue}>
+        <CalendarSheetContext.Provider value={sheetValue}>
+          {children}
+        </CalendarSheetContext.Provider>
+      </CalendarActionsContext.Provider>
+    </CalendarDataContext.Provider>
   );
 }
 
-export function useCalendar() {
-  const context = useContext(CalendarContext);
+export function useCalendarData() {
+  const context = useContext(CalendarDataContext);
   if (!context) {
-    throw new Error('useCalendar must be used within a CalendarProvider');
+    throw new Error('useCalendarData must be used within a CalendarProvider');
   }
   return context;
+}
+
+export function useCalendarSheet() {
+  const context = useContext(CalendarSheetContext);
+  if (!context) {
+    throw new Error('useCalendarSheet must be used within a CalendarProvider');
+  }
+  return context;
+}
+
+export function useCalendarActions() {
+  const context = useContext(CalendarActionsContext);
+  if (!context) {
+    throw new Error('useCalendarActions must be used within a CalendarProvider');
+  }
+  return context;
+}
+
+// Backward-compatible combined hook.
+export function useCalendar() {
+  return {
+    ...useCalendarData(),
+    ...useCalendarSheet(),
+    ...useCalendarActions(),
+  };
 }

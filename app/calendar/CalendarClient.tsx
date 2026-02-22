@@ -16,18 +16,13 @@ type Hangout = {
     id: string;
     name: string;
     profilePhotoUrl?: string | null;
-    careInstructions?: string | null;
-    owner: {
-      id: string;
-      name: string;
-    };
   };
   assignedFriend?: {
     id: string;
     name: string;
     profilePhotoUrl?: string | null;
   } | null;
-  notes: Array<{
+  notes?: Array<{
     id: string;
     noteText: string;
     createdAt: Date;
@@ -47,10 +42,6 @@ type Suggestion = {
     id: string;
     name: string;
     profilePhotoUrl?: string | null;
-    owner: {
-      id: string;
-      name: string;
-    };
   };
   suggestedByFriend: {
     id: string;

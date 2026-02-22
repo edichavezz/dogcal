@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
-import { CalendarProvider, CalendarEvent, useCalendar } from './CalendarContext';
+import { CalendarProvider, CalendarEvent, useCalendarData } from './CalendarContext';
 import { useCalendarGestures } from './useCalendarGestures';
 import MonthHeader from './MonthHeader';
 import DayGrid from './DayGrid';
@@ -14,16 +13,10 @@ type MonthCalendarProps = {
 };
 
 function CalendarContent({
-  events,
   onViewDetails,
   currentUserId,
-}: MonthCalendarProps) {
-  const { goToNextMonth, goToPrevMonth, setEvents } = useCalendar();
-
-  // Sync events with context
-  useEffect(() => {
-    setEvents(events);
-  }, [events, setEvents]);
+}: Omit<MonthCalendarProps, 'events'>) {
+  const { goToNextMonth, goToPrevMonth } = useCalendarData();
 
   // Swipe gestures for month navigation
   const { handlers, swipeOffset, isAnimating } = useCalendarGestures({
@@ -60,8 +53,11 @@ function CalendarContent({
 
 export default function MonthCalendar(props: MonthCalendarProps) {
   return (
-    <CalendarProvider>
-      <CalendarContent {...props} />
+    <CalendarProvider events={props.events}>
+      <CalendarContent
+        onViewDetails={props.onViewDetails}
+        currentUserId={props.currentUserId}
+      />
     </CalendarProvider>
   );
 }

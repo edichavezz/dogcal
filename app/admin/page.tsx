@@ -52,7 +52,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   // Verify if it's the admin token
   if (providedToken !== adminToken) {
     // Not the admin token - show error with login form
-    return <TokenLoginForm error="Invalid token. Please try again or contact Edi for access." />;
+    return <TokenLoginForm error="Invalid username. Please try again or contact Edi for access." />;
   }
 
   // Render admin interface

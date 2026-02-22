@@ -17,8 +17,6 @@ export default async function CalendarPage() {
       id: true,
       name: true,
       role: true,
-      addressText: true,
-      phoneNumber: true,
       profilePhotoUrl: true,
       ownedPups: {
         select: {
@@ -65,7 +63,6 @@ export default async function CalendarPage() {
           startAt: true,
           endAt: true,
           status: true,
-          ownerNotes: true,
           eventName: true,
           seriesId: true,
           seriesIndex: true,
@@ -74,13 +71,6 @@ export default async function CalendarPage() {
               id: true,
               name: true,
               profilePhotoUrl: true,
-              careInstructions: true,
-              owner: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
           assignedFriend: {
@@ -112,12 +102,6 @@ export default async function CalendarPage() {
               id: true,
               name: true,
               profilePhotoUrl: true,
-              owner: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
           suggestedByFriend: {
@@ -192,7 +176,6 @@ export default async function CalendarPage() {
           startAt: true,
           endAt: true,
           status: true,
-          ownerNotes: true,
           eventName: true,
           seriesId: true,
           seriesIndex: true,
@@ -201,13 +184,6 @@ export default async function CalendarPage() {
               id: true,
               name: true,
               profilePhotoUrl: true,
-              careInstructions: true,
-              owner: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
           assignedFriend: {
@@ -239,12 +215,6 @@ export default async function CalendarPage() {
               id: true,
               name: true,
               profilePhotoUrl: true,
-              owner: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
           suggestedByFriend: {
