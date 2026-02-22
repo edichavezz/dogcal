@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
+    // Force IPv4 — Gmail's SMTP over IPv6 is often blocked by local networks
+    dns.setDefaultResultOrder('ipv4first');
+
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
@@ -46,6 +50,10 @@ export async function POST(request: Request) {
       auth: {
         user: gmailUser,
         pass: gmailPass,
+      },
+      tls: {
+        // Bypass self-signed cert issues common on Windows / corporate networks
+        rejectUnauthorized: false,
       },
     });
 
@@ -100,10 +108,14 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
     }
-    // Log the real error so it shows in terminal / Vercel logs
+    // Log the full error so it shows in terminal / Vercel logs
+    console.error('[contact] Failed to send email:', error);
     const msg = error instanceof Error ? error.message : String(error);
-    console.error('[contact] Failed to send email:', msg);
-    return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
+    // Return real error in dev so it's visible in the browser network tab
+    const payload = process.env.NODE_ENV === 'development'
+      ? { error: msg }
+      : { error: 'Failed to send message' };
+    return NextResponse.json(payload, { status: 500 });
   }
 }
 
