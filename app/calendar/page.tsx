@@ -71,6 +71,7 @@ export default async function CalendarPage() {
               id: true,
               name: true,
               profilePhotoUrl: true,
+              owner: { select: { id: true, name: true } },
             },
           },
           assignedFriend: {
@@ -184,6 +185,7 @@ export default async function CalendarPage() {
               id: true,
               name: true,
               profilePhotoUrl: true,
+              owner: { select: { id: true, name: true } },
             },
           },
           assignedFriend: {

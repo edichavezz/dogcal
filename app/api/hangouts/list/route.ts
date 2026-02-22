@@ -3,7 +3,7 @@ import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, addWeeks } from 'date-fns';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, HangoutStatus } from '@prisma/client';
 
 const querySchema = z.object({
   timeRange: z.enum(['all', 'today', 'week', 'nextweek']).optional().default('all'),
@@ -68,17 +68,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Build status filter
-    let statusFilter: { in: string[] } | string | undefined;
+    let statusFilter: Prisma.HangoutWhereInput['status'];
     if (params.context === 'friend-available') {
-      statusFilter = 'OPEN';
+      statusFilter = 'OPEN' as HangoutStatus;
     } else if (params.context === 'friend-assigned') {
-      statusFilter = 'ASSIGNED';
+      statusFilter = 'ASSIGNED' as HangoutStatus;
     } else if (params.status === 'open') {
-      statusFilter = 'OPEN';
+      statusFilter = 'OPEN' as HangoutStatus;
     } else if (params.status === 'confirmed') {
-      statusFilter = 'ASSIGNED';
+      statusFilter = 'ASSIGNED' as HangoutStatus;
     } else {
-      statusFilter = { in: ['OPEN', 'ASSIGNED'] };
+      statusFilter = { in: ['OPEN', 'ASSIGNED'] as HangoutStatus[] };
     }
 
     // Build where clause based on context

@@ -23,7 +23,12 @@ type Hangout = {
   pup: {
     id: string;
     name: string;
+    careInstructions?: string | null;
     profilePhotoUrl?: string | null;
+    owner: {
+      id: string;
+      name: string;
+    };
   };
   assignedFriend?: {
     id: string;

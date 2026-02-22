@@ -45,8 +45,8 @@ export default function MobileNav({ user }: MobileNavProps) {
       return () => window.cancelIdleCallback(callbackId);
     }
 
-    const timeoutId = window.setTimeout(prefetchTabs, 200);
-    return () => window.clearTimeout(timeoutId);
+    const timeoutId = setTimeout(prefetchTabs, 200);
+    return () => clearTimeout(timeoutId);
   }, [pathname, router, tabs]);
 
   return (
