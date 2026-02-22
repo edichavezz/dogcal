@@ -216,7 +216,7 @@ export default function EventDetailsModal({
         const response = await fetch(`/api/pups/${hangout.pup.id}`);
         const data = await response.json();
         if (data.pup?.friendships) {
-          setFriends(data.pup.friendships.map((f: any) => ({ id: f.friend.id, name: f.friend.name })));
+          setFriends(data.pup.friendships.map((f: { friend: { id: string; name: string } }) => ({ id: f.friend.id, name: f.friend.name })));
         }
       } catch (error) {
         console.error('Error fetching friends:', error);
@@ -234,7 +234,13 @@ export default function EventDetailsModal({
       const startAt = new Date(`${editedStartDate}T${editedStartTime}`).toISOString();
       const endAt = new Date(`${editedEndDate}T${editedEndTime}`).toISOString();
 
-      const updates: any = {
+      const updates: {
+        startAt: string;
+        endAt: string;
+        eventName?: string | null;
+        ownerNotes?: string | null;
+        assignedFriendUserId?: string | null;
+      } = {
         startAt,
         endAt,
       };

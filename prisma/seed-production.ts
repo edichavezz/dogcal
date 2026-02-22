@@ -312,7 +312,7 @@ async function main() {
 
   // Friday hangouts: 8am - 6pm with Zoro
   console.log('\n   📆 Friday hangouts (Edi & Tom + Zoro, 8am-6pm):');
-  let nextFriday = getNextDayOfWeek(5); // 5 = Friday
+  const nextFriday = getNextDayOfWeek(5); // 5 = Friday
 
   for (let i = 0; i < weeksToCreate; i++) {
     const startAt = new Date(nextFriday);
@@ -343,7 +343,7 @@ async function main() {
 
   // Sunday-Monday hangouts: Sunday 7pm - Monday 6pm with Zoro
   console.log('\n   📆 Sunday-Monday hangouts (Edi & Tom + Zoro, Sun 7pm - Mon 6pm):');
-  let nextSunday = getNextDayOfWeek(0); // 0 = Sunday
+  const nextSunday = getNextDayOfWeek(0); // 0 = Sunday
 
   for (let i = 0; i < weeksToCreate; i++) {
     const startAt = new Date(nextSunday);

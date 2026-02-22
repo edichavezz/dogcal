@@ -354,7 +354,7 @@ export default function WelcomeScreen({
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
-                  <p className="text-gray-600">You haven't added any pups yet.</p>
+                  <p className="text-gray-600">You haven&apos;t added any pups yet.</p>
                 </div>
               )}
             </section>
@@ -471,7 +471,7 @@ export default function WelcomeScreen({
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
-                  <p className="text-gray-600">You're not assigned to care for any pups yet.</p>
+                  <p className="text-gray-600">You&apos;re not assigned to care for any pups yet.</p>
                 </div>
               )}
             </section>

@@ -25,6 +25,7 @@ export default function DogPawLoader({
   const colorIndexRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | undefined>(undefined);
+  const animateFnRef = useRef<FrameRequestCallback | null>(null);
   const pawPrintsRef = useRef<PawPrint[]>([]);
   const positionRef = useRef({ x: size / 2, y: size / 2, angle: 0 });
   const lastStepTimeRef = useRef(0);
@@ -156,8 +157,12 @@ export default function DogPawLoader({
       (paw) => timestamp - paw.createdAt < fadeTime
     );
 
-    animationRef.current = requestAnimationFrame(animate);
+    animationRef.current = requestAnimationFrame((ts) => animateFnRef.current?.(ts));
   }, [size, drawPaw]);
+
+  useEffect(() => {
+    animateFnRef.current = animate;
+  }, [animate]);
 
   useEffect(() => {
     // Reset position to center
@@ -165,7 +170,7 @@ export default function DogPawLoader({
     pawPrintsRef.current = [];
     lastStepTimeRef.current = 0;
 
-    animationRef.current = requestAnimationFrame(animate);
+    animationRef.current = requestAnimationFrame((ts) => animateFnRef.current?.(ts));
 
     return () => {
       if (animationRef.current) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const OWNER_MESSAGES = [
   "Who's caring for {pup} today?",
@@ -28,9 +28,7 @@ export function useFunMessage(
   role: 'OWNER' | 'FRIEND',
   pupNames: string[]
 ): string {
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
+  const [message] = useState<string>(() => {
     const messages = role === 'OWNER' ? OWNER_MESSAGES : FRIEND_MESSAGES;
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
 
@@ -39,8 +37,8 @@ export function useFunMessage(
       ? pupNames[Math.floor(Math.random() * pupNames.length)]
       : 'your pup';
 
-    setMessage(randomMessage.replace('{pup}', pupName));
-  }, [role, pupNames]);
+    return randomMessage.replace('{pup}', pupName);
+  });
 
   return message;
 }

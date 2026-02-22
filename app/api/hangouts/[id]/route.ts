@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import {
@@ -220,7 +221,7 @@ export async function PATCH(
     }
 
     // Build update data
-    const updateData: any = {};
+    const updateData: Prisma.HangoutUncheckedUpdateInput = {};
     if (updates.eventName !== undefined) updateData.eventName = updates.eventName;
     if (updates.ownerNotes !== undefined) updateData.ownerNotes = updates.ownerNotes;
     if (updates.startAt) updateData.startAt = newStartAt;
