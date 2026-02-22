@@ -124,7 +124,7 @@ describe('/api/users', () => {
       const data = await response.json();
       expect(data.error).toBe('Invalid data');
       expect(data.details).toBeDefined();
-      expect(data.details.some((d: any) => d.path.includes('profilePhotoUrl'))).toBe(true);
+      expect(data.details.some((d: { path: string[] }) => d.path.includes('profilePhotoUrl'))).toBe(true);
     });
 
     it('should reject owner with name too long', async () => {
@@ -219,7 +219,7 @@ describe('/api/users', () => {
       const response = await fetch(`${API_BASE}/api/users`);
       const data = await response.json();
 
-      const roles = data.users.map((u: any) => u.role);
+      const roles = data.users.map((u: { role: string }) => u.role);
       const ownerIndex = roles.indexOf('OWNER');
       const friendIndex = roles.findIndex((r: string, i: number) => i > ownerIndex && r === 'FRIEND');
 

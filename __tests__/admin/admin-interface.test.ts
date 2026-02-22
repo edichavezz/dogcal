@@ -34,7 +34,7 @@ describe('Admin Interface Integration Tests', () => {
       // Verify user appears in the list
       const listResponse = await fetch(`${API_BASE}/api/users`);
       const listData = await listResponse.json();
-      const createdUser = listData.users.find((u: any) => u.name === ownerData.name);
+      const createdUser = listData.users.find((u: { name: string; role: string }) => u.name === ownerData.name);
       expect(createdUser).toBeDefined();
       expect(createdUser.role).toBe('OWNER');
     });

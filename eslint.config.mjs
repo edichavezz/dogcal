@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Separate prototype app - not part of the main build
+    "figma-app-redesign/**",
   ]),
 ]);
 

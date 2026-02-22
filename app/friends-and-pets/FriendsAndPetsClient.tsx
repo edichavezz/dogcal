@@ -661,7 +661,7 @@ export default function FriendsAndPetsClient({
           {user.pupFriendships?.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm p-6">
               <p className="text-gray-500 italic">
-                You haven't been linked to any pups yet.
+                You haven&apos;t been linked to any pups yet.
               </p>
             </div>
           ) : (
