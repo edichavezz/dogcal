@@ -75,6 +75,7 @@ model Hangout {
   createdByOwner       User          @relation("HangoutCreator", fields: [createdByOwnerUserId], references: [id], onDelete: Cascade)
   pup                  Pup           @relation(fields: [pupId], references: [id], onDelete: Cascade)
   notes                HangoutNote[]
+  responses            HangoutResponse[]
 
   @@index([pupId])
   @@index([status])
@@ -93,6 +94,20 @@ model HangoutNote {
   hangout      Hangout  @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
 
   @@index([hangoutId])
+}
+
+model HangoutResponse {
+  id              String                @id @default(uuid())
+  hangoutId       String
+  responderUserId String
+  status          HangoutResponseStatus
+  respondedAt     DateTime              @default(now())
+  hangout         Hangout               @relation(fields: [hangoutId], references: [id], onDelete: Cascade)
+  responder       User                  @relation(fields: [responderUserId], references: [id], onDelete: Cascade)
+
+  @@unique([hangoutId, responderUserId])
+  @@index([hangoutId])
+  @@index([responderUserId])
 }
 
 model HangoutSuggestion {
@@ -129,6 +144,11 @@ enum HangoutStatus {
   ASSIGNED
   COMPLETED
   CANCELLED
+}
+
+enum HangoutResponseStatus {
+  YES
+  NO
 }
 
 enum SuggestionStatus {

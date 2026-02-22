@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { getLoginUrl } from './loginTokens';
+import { getLoginUrl, getRespondUrl } from './loginTokens';
 
 /**
  * Format a date for display in messages
@@ -41,10 +41,13 @@ export async function generateHangoutCreatedMessage(params: {
     endAt,
     eventName,
     ownerNotes,
+    hangoutId,
   } = params;
 
   // Get static login URL for the friend
   const loginUrl = await getLoginUrl(friendUserId);
+  const yesUrl = await getRespondUrl(friendUserId, hangoutId, 'yes');
+  const noUrl = await getRespondUrl(friendUserId, hangoutId, 'no');
 
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
@@ -69,8 +72,13 @@ ${ownerName} needs someone to hang out with ${pupName} 🐾
   }
 
   // Format URL for WhatsApp clickability - ensure it's on its own line
-  message += `\n\n👉 View & assign yourself:
+  message += `\n\n✅ Yes, I can help:
+${yesUrl}
 
+❌ Sorry, I can’t:
+${noUrl}
+
+🔍 View details:
 ${loginUrl}
 
 Thanks for being a pup friend!`;
@@ -245,6 +253,116 @@ ${loginUrl}`;
 }
 
 /**
+ * Generate WhatsApp message for when a confirmed hangout is rescheduled
+ * Sent to the assigned friend so they can re-accept
+ */
+export async function generateHangoutRescheduledMessage(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+  hangoutId: string;
+}): Promise<string> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt, hangoutId } = params;
+
+  const loginUrl = await getLoginUrl(friendUserId);
+  const yesUrl = await getRespondUrl(friendUserId, hangoutId, 'yes');
+  const noUrl = await getRespondUrl(friendUserId, hangoutId, 'no');
+
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  let message = `🐕 *DogCal: Hangout Update*
+
+Hi ${friendName}!
+
+${ownerName} updated the hangout time for ${pupName} 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}
+
+Please re-confirm if you can still help.`;
+
+  message += `\n\n✅ Yes, I can help:
+${yesUrl}
+
+❌ Sorry, I can’t:
+${noUrl}
+
+🔍 View details:
+${loginUrl}`;
+
+  return message;
+}
+
+/**
+ * Generate WhatsApp message for when a hangout is confirmed for a helper
+ * Sent to the confirmed helper
+ */
+export async function generateHangoutConfirmedMessage(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<string> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  let message = `🐕 *DogCal: You’re confirmed!*
+
+Hi ${friendName}!
+
+${ownerName} confirmed you to hang out with ${pupName} 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}`;
+
+  message += `\n\n🔍 View details:
+${loginUrl}`;
+
+  return message;
+}
+
+/**
+ * Generate WhatsApp message for when a hangout is closed to other invitees
+ */
+export async function generateHangoutClosedMessage(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<string> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  let message = `🐕 *DogCal: Hangout Filled*
+
+Hi ${friendName}!
+
+${ownerName} has confirmed help for ${pupName} 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}`;
+
+  message += `\n\n🔍 View details:
+${loginUrl}`;
+
+  return message;
+}
+
+/**
  * Generate WhatsApp message for when a suggestion is approved
  * Sent to the friend who made the suggestion (future enhancement)
  */
@@ -314,17 +432,21 @@ export async function getHangoutCreatedTemplateVars(params: {
   pupName: string;
   startAt: Date;
   endAt: Date;
+  hangoutId: string;
 }): Promise<Record<string, string>> {
-  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt, hangoutId } = params;
   const loginUrl = await getLoginUrl(friendUserId);
+  const yesUrl = await getRespondUrl(friendUserId, hangoutId, 'yes');
+  const noUrl = await getRespondUrl(friendUserId, hangoutId, 'no');
   const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+  const responseLinks = `Yes: ${yesUrl}\nNo: ${noUrl}\nDetails: ${loginUrl}`;
 
   return {
     '1': friendName,
     '2': ownerName,
     '3': pupName,
     '4': dateTime,
-    '5': loginUrl,
+    '5': responseLinks,
   };
 }
 

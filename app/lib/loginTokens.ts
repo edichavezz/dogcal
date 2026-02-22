@@ -223,6 +223,27 @@ export async function getLoginUrl(userId: string): Promise<string> {
 }
 
 /**
+ * Get a response URL for a user and hangout
+ *
+ * @param userId - UUID of the user
+ * @param hangoutId - UUID of the hangout
+ * @param response - yes or no response
+ * @returns Full response URL
+ */
+export async function getRespondUrl(
+  userId: string,
+  hangoutId: string,
+  response: 'yes' | 'no'
+): Promise<string> {
+  const token = await getOrCreateLoginToken(userId);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://mydogcal.vercel.app';
+  const responseParam = encodeURIComponent(response);
+  const tokenParam = encodeURIComponent(token);
+
+  return `${appUrl}/api/hangouts/${hangoutId}/respond?response=${responseParam}&token=${tokenParam}`;
+}
+
+/**
  * Regenerate a memorable password for a user
  * Clears existing token and creates a new memorable password
  *
