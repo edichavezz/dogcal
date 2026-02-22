@@ -139,7 +139,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
 
         {/* Footer */}
         <p className="mt-6 text-center text-sm text-white/60">
-          Coordinate care time for your pups with friends
+          Dog care, from people you trust. &copy; {new Date().getFullYear()} DogCal
         </p>
       </div>
     </div>

@@ -4,11 +4,11 @@ import Link from 'next/link';
 import ContactForm from './ContactForm';
 
 export const metadata: Metadata = {
-  title: 'dogcal — Dog care, made easy',
+  title: 'dogcal — Dog care, from people you trust.',
   description:
     'dogcal helps you schedule and coordinate care for your dog with the trusted friends and family who love them. Join the waitlist.',
   openGraph: {
-    title: 'dogcal — Dog care, made easy',
+    title: 'dogcal — Dog care, from people you trust.',
     description:
       'dogcal helps you schedule and coordinate care for your dog with the trusted friends and family who love them.',
     type: 'website',
@@ -95,7 +95,7 @@ export default function AboutPage() {
 
           {/* Headline */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-display font-semibold tracking-tight leading-[1.08] mb-6 text-[#1a3a3a]">
-            Dog care, from
+            dog care, from
             <br />
             <span style={{ color: '#f4a9a8' }}>people you trust.</span>
           </h1>
