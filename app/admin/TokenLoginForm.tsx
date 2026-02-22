@@ -11,6 +11,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface TokenLoginFormProps {
@@ -130,10 +131,18 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
           </form>
 
           {/* Help text */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
             <p className="text-sm text-gray-500 text-center">
               Don&apos;t have a password? Contact Edi to get your personal login link.
             </p>
+            <div className="text-center">
+              <Link
+                href="/about"
+                className="text-sm text-[#1a3a3a] font-medium hover:underline"
+              >
+                Learn more about dogcal →
+              </Link>
+            </div>
           </div>
         </div>
 
