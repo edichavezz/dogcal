@@ -7,6 +7,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
+import {
+  isValidPhoneNumber,
+  isWhatsAppEnabled,
+  sendWhatsAppMessage,
+  type NotificationResult,
+} from '@/lib/whatsapp';
+import {
+  generateHangoutClosedMessage,
+  generateHangoutConfirmedMessage,
+} from '@/lib/messageTemplates';
 
 const quickAssignSchema = z.object({
   friendUserId: z.string().uuid(),
@@ -78,13 +88,88 @@ export async function POST(
         status: 'ASSIGNED',
       },
       include: {
-        pup: { include: { owner: true } },
+        pup: { include: { owner: true, friendships: { include: { friend: true } } } },
         assignedFriend: true,
         createdByOwner: true,
       },
     });
 
-    return NextResponse.json({ hangout: updatedHangout });
+    const notificationResults: NotificationResult[] = [];
+
+    if (isWhatsAppEnabled() && updatedHangout.assignedFriend) {
+      const assignedFriend = updatedHangout.assignedFriend;
+      const ownerName = updatedHangout.pup.owner.name;
+      const pupName = updatedHangout.pup.name;
+
+      if (isValidPhoneNumber(assignedFriend.phoneNumber)) {
+        const message = await generateHangoutConfirmedMessage({
+          friendUserId: assignedFriend.id,
+          friendName: assignedFriend.name,
+          ownerName,
+          pupName,
+          startAt: updatedHangout.startAt,
+          endAt: updatedHangout.endAt,
+        });
+
+        const result = await sendWhatsAppMessage(assignedFriend.phoneNumber!, message);
+        notificationResults.push({
+          userId: assignedFriend.id,
+          userName: assignedFriend.name,
+          phoneNumber: assignedFriend.phoneNumber,
+          status: result.success ? 'sent' : 'failed',
+          reason: result.error,
+          twilioSid: result.sid,
+        });
+      } else {
+        notificationResults.push({
+          userId: assignedFriend.id,
+          userName: assignedFriend.name,
+          phoneNumber: assignedFriend.phoneNumber,
+          status: 'skipped',
+          reason: 'No valid phone number',
+        });
+      }
+
+      for (const friendship of updatedHangout.pup.friendships) {
+        const friend = friendship.friend;
+        if (friend.id === assignedFriend.id) continue;
+
+        if (isValidPhoneNumber(friend.phoneNumber)) {
+          const message = await generateHangoutClosedMessage({
+            friendUserId: friend.id,
+            friendName: friend.name,
+            ownerName,
+            pupName,
+            startAt: updatedHangout.startAt,
+            endAt: updatedHangout.endAt,
+          });
+
+          const result = await sendWhatsAppMessage(friend.phoneNumber!, message);
+          notificationResults.push({
+            userId: friend.id,
+            userName: friend.name,
+            phoneNumber: friend.phoneNumber,
+            status: result.success ? 'sent' : 'failed',
+            reason: result.error,
+            twilioSid: result.sid,
+          });
+        } else {
+          notificationResults.push({
+            userId: friend.id,
+            userName: friend.name,
+            phoneNumber: friend.phoneNumber,
+            status: 'skipped',
+            reason: 'No valid phone number',
+          });
+        }
+
+        if (updatedHangout.pup.friendships.length > 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    }
+
+    return NextResponse.json({ hangout: updatedHangout, notifications: notificationResults });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
