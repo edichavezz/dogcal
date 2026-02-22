@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useEffect, useMemo } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Calendar, Users, Home } from 'lucide-react';
 import Avatar from './Avatar';
 import PawsIcon from './PawsIcon';
@@ -19,26 +20,45 @@ type MobileNavProps = {
 
 export default function MobileNav({ user }: MobileNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const isActive = (path: string) => pathname === path;
 
   // Mobile nav shows 3 main tabs
-  const tabs = [
+  const tabs = useMemo(() => ([
     { id: 'home', path: '/', label: 'Home', icon: Home },
     { id: 'calendar', path: '/calendar', label: 'Calendar', icon: Calendar },
     { id: 'pups', path: '/manage', label: 'Pups', icon: Users },
-  ];
+  ]), []);
+
+  useEffect(() => {
+    const prefetchTabs = () => {
+      for (const tab of tabs) {
+        if (tab.path !== pathname) {
+          router.prefetch(tab.path);
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const callbackId = window.requestIdleCallback(prefetchTabs, { timeout: 1200 });
+      return () => window.cancelIdleCallback(callbackId);
+    }
+
+    const timeoutId = window.setTimeout(prefetchTabs, 200);
+    return () => window.clearTimeout(timeoutId);
+  }, [pathname, router, tabs]);
 
   return (
     <>
       {/* Mobile Top Bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 bg-[#1a3a3a] border-b border-[#2a4a4a] z-50">
         <div className="flex items-center justify-between p-4">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" onMouseEnter={() => router.prefetch('/')} className="flex items-center gap-2">
             <PawsIcon size={28} color="pink" />
             <span className="text-lg font-semibold text-white">dogcal</span>
           </Link>
-          <Link href="/manage">
+          <Link href="/manage" onMouseEnter={() => router.prefetch('/manage')}>
             <Avatar
               photoUrl={user.profilePhotoUrl}
               name={user.name}
@@ -58,6 +78,7 @@ export default function MobileNav({ user }: MobileNavProps) {
               <Link
                 key={tab.id}
                 href={tab.path}
+                onMouseEnter={() => router.prefetch(tab.path)}
                 className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all min-w-[70px] ${
                   active
                     ? 'bg-[#f4a9a8] text-[#1a3a3a]'

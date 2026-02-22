@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { CalendarEvent } from './CalendarContext';
 import Avatar from '../Avatar';
 
@@ -9,7 +10,7 @@ type EventPillProps = {
   compact?: boolean;
 };
 
-export default function EventPill({ event, onClick, compact = false }: EventPillProps) {
+function EventPill({ event, onClick, compact = false }: EventPillProps) {
   const isOpen = event.status === 'OPEN';
   const isPending = event.status === 'PENDING';
 
@@ -59,3 +60,5 @@ export default function EventPill({ event, onClick, compact = false }: EventPill
     </button>
   );
 }
+
+export default memo(EventPill);

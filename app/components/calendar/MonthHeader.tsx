@@ -2,10 +2,10 @@
 
 import { format } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useCalendar } from './CalendarContext';
+import { useCalendarData } from './CalendarContext';
 
 export default function MonthHeader() {
-  const { currentMonth, goToNextMonth, goToPrevMonth, goToToday } = useCalendar();
+  const { currentMonth, goToNextMonth, goToPrevMonth, goToToday } = useCalendarData();
 
   const isCurrentMonth = format(currentMonth, 'yyyy-MM') === format(new Date(), 'yyyy-MM');
 

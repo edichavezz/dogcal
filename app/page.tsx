@@ -2,6 +2,10 @@ import { getActingUserId } from './lib/cookies';
 import { prisma } from './lib/prisma';
 import WelcomeScreen from './components/WelcomeScreen';
 import TokenLoginForm from './admin/TokenLoginForm';
+import type { Prisma } from '@prisma/client';
+
+const HOME_PAGE_SIZE = 5;
+const HOME_FETCH_LIMIT = 120;
 
 // Helper to filter recurring hangouts, keeping only the first of each series
 function filterFirstOfSeries<T extends { seriesId: string | null }>(hangouts: T[]): T[] {
@@ -12,6 +16,36 @@ function filterFirstOfSeries<T extends { seriesId: string | null }>(hangouts: T[
     seenSeries.add(h.seriesId);
     return true;
   });
+}
+
+async function countUniqueHangouts(where: Prisma.HangoutWhereInput): Promise<number> {
+  const [nonRecurringCount, recurringSeries] = await Promise.all([
+    prisma.hangout.count({
+      where: {
+        ...where,
+        seriesId: null,
+      },
+    }),
+    prisma.hangout.groupBy({
+      by: ['seriesId'],
+      where: {
+        ...where,
+        seriesId: { not: null },
+      },
+    }),
+  ]);
+
+  return nonRecurringCount + recurringSeries.length;
+}
+
+function toIsoHangoutSummary<T extends { startAt: Date; endAt: Date }>(
+  hangout: T
+): Omit<T, 'startAt' | 'endAt'> & { startAt: string; endAt: string } {
+  return {
+    ...hangout,
+    startAt: hangout.startAt.toISOString(),
+    endAt: hangout.endAt.toISOString(),
+  };
 }
 
 export default async function Home() {
@@ -27,7 +61,11 @@ export default async function Home() {
   // Fetch user first to determine role
   const user = await prisma.user.findUnique({
     where: { id: actingUserId },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      profilePhotoUrl: true,
       ownedPups: {
         select: {
           id: true,
@@ -36,7 +74,9 @@ export default async function Home() {
         },
       },
       pupFriendships: {
-        include: {
+        select: {
+          id: true,
+          pupId: true,
           pup: {
             select: {
               id: true,
@@ -77,23 +117,25 @@ export default async function Home() {
 
   // Fetch hangouts and suggestions in parallel based on role
   if (isOwner) {
+    const ownerHangoutWhere: Prisma.HangoutWhereInput = {
+      pupId: { in: pupIds },
+      endAt: { gte: now },
+      status: { in: ['OPEN', 'ASSIGNED'] },
+    };
+
     // OWNER: Upcoming hangouts for their pups + pending suggestions
-    const [allUpcomingHangouts, pendingSuggestions] = await Promise.all([
+    const [allUpcomingHangouts, upcomingHangoutsTotal, pendingSuggestions] = await Promise.all([
       prisma.hangout.findMany({
-        where: {
-          pupId: { in: pupIds },
-          endAt: { gte: now },
-          status: { in: ['OPEN', 'ASSIGNED'] },
-        },
+        where: ownerHangoutWhere,
         orderBy: { startAt: 'asc' },
-        // Fetch more to account for filtering recurring hangouts
+        // Fetch enough candidates for de-duplication but keep payload bounded
+        take: HOME_FETCH_LIMIT,
         select: {
           id: true,
           startAt: true,
           endAt: true,
           status: true,
           eventName: true,
-          ownerNotes: true,
           seriesId: true,
           seriesIndex: true,
           pup: {
@@ -101,13 +143,6 @@ export default async function Home() {
               id: true,
               name: true,
               profilePhotoUrl: true,
-              careInstructions: true,
-              owner: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
           assignedFriend: {
@@ -117,21 +152,9 @@ export default async function Home() {
               profilePhotoUrl: true,
             },
           },
-          notes: {
-            orderBy: { createdAt: 'asc' },
-            select: {
-              id: true,
-              noteText: true,
-              createdAt: true,
-              author: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
         },
       }),
+      countUniqueHangouts(ownerHangoutWhere),
       prisma.hangoutSuggestion.findMany({
         where: {
           pupId: { in: pupIds },
@@ -139,7 +162,7 @@ export default async function Home() {
           endAt: { gte: now },
         },
         orderBy: { startAt: 'asc' },
-        take: 5,
+        take: HOME_PAGE_SIZE,
         select: {
           id: true,
           startAt: true,
@@ -166,23 +189,12 @@ export default async function Home() {
 
     // Filter to show only the first of each recurring series, then take 5
     const filteredUpcoming = filterFirstOfSeries(allUpcomingHangouts);
-    const upcomingHangoutsTotal = filteredUpcoming.length;
-    const upcomingHangouts = filteredUpcoming.slice(0, 5);
+    const upcomingHangouts = filteredUpcoming.slice(0, HOME_PAGE_SIZE);
 
     return (
       <WelcomeScreen
         user={user}
-        upcomingHangouts={upcomingHangouts.map(h => ({
-          ...h,
-          startAt: h.startAt.toISOString(),
-          endAt: h.endAt.toISOString(),
-          seriesId: h.seriesId,
-          seriesIndex: h.seriesIndex,
-          notes: h.notes.map(n => ({
-            ...n,
-            createdAt: n.createdAt.toISOString(),
-          })),
-        }))}
+        upcomingHangouts={upcomingHangouts.map(toIsoHangoutSummary)}
         upcomingHangoutsTotal={upcomingHangoutsTotal}
         pendingSuggestions={pendingSuggestions.map(s => ({
           ...s,
@@ -196,22 +208,35 @@ export default async function Home() {
       />
     );
   } else {
+    const availableHangoutWhere: Prisma.HangoutWhereInput = {
+      pupId: { in: pupIds },
+      endAt: { gte: now },
+      status: 'OPEN',
+    };
+    const assignedHangoutWhere: Prisma.HangoutWhereInput = {
+      assignedFriendUserId: actingUserId,
+      endAt: { gte: now },
+      status: 'ASSIGNED',
+    };
+
     // FRIEND: Available (OPEN) hangouts they can claim + their assigned hangouts + their suggestions
-    const [allAvailableHangouts, allMyAssignedHangouts, mySuggestions] = await Promise.all([
+    const [
+      allAvailableHangouts,
+      allMyAssignedHangouts,
+      availableHangoutsTotal,
+      myHangoutsTotal,
+      mySuggestions,
+    ] = await Promise.all([
       prisma.hangout.findMany({
-        where: {
-          pupId: { in: pupIds },
-          endAt: { gte: now },
-          status: 'OPEN',
-        },
+        where: availableHangoutWhere,
         orderBy: { startAt: 'asc' },
+        take: HOME_FETCH_LIMIT,
         select: {
           id: true,
           startAt: true,
           endAt: true,
           status: true,
           eventName: true,
-          ownerNotes: true,
           seriesId: true,
           seriesIndex: true,
           pup: {
@@ -219,13 +244,6 @@ export default async function Home() {
               id: true,
               name: true,
               profilePhotoUrl: true,
-              careInstructions: true,
-              owner: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
           assignedFriend: {
@@ -235,35 +253,18 @@ export default async function Home() {
               profilePhotoUrl: true,
             },
           },
-          notes: {
-            orderBy: { createdAt: 'asc' },
-            select: {
-              id: true,
-              noteText: true,
-              createdAt: true,
-              author: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
         },
       }),
       prisma.hangout.findMany({
-        where: {
-          assignedFriendUserId: actingUserId,
-          endAt: { gte: now },
-          status: 'ASSIGNED',
-        },
+        where: assignedHangoutWhere,
         orderBy: { startAt: 'asc' },
+        take: HOME_FETCH_LIMIT,
         select: {
           id: true,
           startAt: true,
           endAt: true,
           status: true,
           eventName: true,
-          ownerNotes: true,
           seriesId: true,
           seriesIndex: true,
           pup: {
@@ -271,13 +272,6 @@ export default async function Home() {
               id: true,
               name: true,
               profilePhotoUrl: true,
-              careInstructions: true,
-              owner: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
             },
           },
           assignedFriend: {
@@ -287,21 +281,10 @@ export default async function Home() {
               profilePhotoUrl: true,
             },
           },
-          notes: {
-            orderBy: { createdAt: 'asc' },
-            select: {
-              id: true,
-              noteText: true,
-              createdAt: true,
-              author: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
         },
       }),
+      countUniqueHangouts(availableHangoutWhere),
+      countUniqueHangouts(assignedHangoutWhere),
       prisma.hangoutSuggestion.findMany({
         where: {
           suggestedByFriendUserId: actingUserId,
@@ -309,7 +292,7 @@ export default async function Home() {
           endAt: { gte: now },
         },
         orderBy: { startAt: 'asc' },
-        take: 5,
+        take: HOME_PAGE_SIZE,
         select: {
           id: true,
           startAt: true,
@@ -336,12 +319,10 @@ export default async function Home() {
 
     // Filter to show only the first of each recurring series, then take 5
     const filteredAvailable = filterFirstOfSeries(allAvailableHangouts);
-    const availableHangoutsTotal = filteredAvailable.length;
-    const availableHangouts = filteredAvailable.slice(0, 5);
+    const availableHangouts = filteredAvailable.slice(0, HOME_PAGE_SIZE);
 
     const filteredMyAssigned = filterFirstOfSeries(allMyAssignedHangouts);
-    const myHangoutsTotal = filteredMyAssigned.length;
-    const myAssignedHangouts = filteredMyAssigned.slice(0, 5);
+    const myAssignedHangouts = filteredMyAssigned.slice(0, HOME_PAGE_SIZE);
 
     return (
       <WelcomeScreen
@@ -349,30 +330,10 @@ export default async function Home() {
         upcomingHangouts={[]}
         upcomingHangoutsTotal={0}
         pendingSuggestions={[]}
-        availableHangouts={availableHangouts.map(h => ({
-          ...h,
-          startAt: h.startAt.toISOString(),
-          endAt: h.endAt.toISOString(),
-          seriesId: h.seriesId,
-          seriesIndex: h.seriesIndex,
-          notes: h.notes.map(n => ({
-            ...n,
-            createdAt: n.createdAt.toISOString(),
-          })),
-        }))}
+        availableHangouts={availableHangouts.map(toIsoHangoutSummary)}
         availableHangoutsTotal={availableHangoutsTotal}
         myHangoutsAndSuggestions={{
-          hangouts: myAssignedHangouts.map(h => ({
-            ...h,
-            startAt: h.startAt.toISOString(),
-            endAt: h.endAt.toISOString(),
-            seriesId: h.seriesId,
-            seriesIndex: h.seriesIndex,
-            notes: h.notes.map(n => ({
-              ...n,
-              createdAt: n.createdAt.toISOString(),
-            })),
-          })),
+          hangouts: myAssignedHangouts.map(toIsoHangoutSummary),
           suggestions: mySuggestions.map(s => ({
             ...s,
             startAt: s.startAt.toISOString(),

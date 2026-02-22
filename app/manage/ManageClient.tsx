@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserRole } from '@prisma/client';
 import Image from 'next/image';
@@ -91,6 +91,20 @@ export default function ManageClient({ user, allFriends }: Props) {
   const [newFriendName, setNewFriendName] = useState('');
   const [newFriendAddress, setNewFriendAddress] = useState('');
   const [newFriendPhone, setNewFriendPhone] = useState('');
+
+  const availableFriendsByPup = useMemo(() => {
+    const byPup = new Map<string, Friend[]>();
+    if (userData.role !== 'OWNER') return byPup;
+
+    for (const pup of userData.ownedPups) {
+      const existingFriendIds = new Set(pup.friendships.map((friendship) => friendship.friend.id));
+      byPup.set(
+        pup.id,
+        allFriends.filter((friend) => !existingFriendIds.has(friend.id))
+      );
+    }
+    return byPup;
+  }, [allFriends, userData.ownedPups, userData.role]);
 
   const handlePhotoUpload = async (
     entityType: 'user' | 'pup',
@@ -674,8 +688,7 @@ export default function ManageClient({ user, allFriends }: Props) {
                               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] text-sm"
                             >
                               <option value="">Select a friend...</option>
-                              {allFriends
-                                .filter((f) => !pup.friendships.some((fs) => fs.friend.id === f.id))
+                              {(availableFriendsByPup.get(pup.id) ?? [])
                                 .map((friend) => (
                                   <option key={friend.id} value={friend.id}>
                                     {friend.name}

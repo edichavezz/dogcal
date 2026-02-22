@@ -9,20 +9,58 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import { User, Pup, PupFriendship } from '@prisma/client';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import AppLayout from './AppLayout';
 import Avatar from './Avatar';
-import EventDetailsModal from './EventDetailsModal';
 import { useFunMessage } from './home/FunMessage';
 import HangoutListCard, { HangoutCardData } from './home/HangoutListCard';
 import SuggestionPreviewCard, { SuggestionCardData } from './home/SuggestionPreviewCard';
 import PupActionCard, { PupCardData } from './home/PupActionCard';
-import HangoutFilters, { HangoutFiltersState, TimeFilter, StatusFilter } from './home/HangoutFilters';
+import HangoutFilters, { HangoutFiltersState } from './home/HangoutFilters';
 import PawsLoader from './ui/PawsLoader';
 
-// Hangout type with notes for modal
-type HangoutWithNotes = HangoutCardData & {
+const EventDetailsModal = dynamic(() => import('./EventDetailsModal'), {
+  ssr: false,
+});
+
+type WelcomeUser = {
+  id: string;
+  name: string;
+  role: 'OWNER' | 'FRIEND';
+  profilePhotoUrl?: string | null;
+  ownedPups: Array<{
+    id: string;
+    name: string;
+    profilePhotoUrl?: string | null;
+  }>;
+  pupFriendships: Array<{
+    id: string;
+    pupId: string;
+    pup: {
+      id: string;
+      name: string;
+      profilePhotoUrl?: string | null;
+      ownerUserId: string;
+      owner: {
+        id: string;
+        name: string;
+      };
+    };
+  }>;
+};
+
+type HangoutSummary = HangoutCardData;
+
+type HangoutModalData = {
+  id: string;
+  startAt: string;
+  endAt: string;
+  status: string;
   ownerNotes?: string | null;
+  eventName: string | null;
+  seriesId?: string | null;
+  seriesIndex?: number | null;
   pup: {
     id: string;
     name: string;
@@ -33,6 +71,11 @@ type HangoutWithNotes = HangoutCardData & {
       name: string;
     };
   };
+  assignedFriend?: {
+    id: string;
+    name: string;
+    profilePhotoUrl?: string | null;
+  } | null;
   notes: Array<{
     id: string;
     noteText: string;
@@ -44,23 +87,16 @@ type HangoutWithNotes = HangoutCardData & {
 };
 
 interface WelcomeScreenProps {
-  user: User & {
-    ownedPups: Pick<Pup, 'id' | 'name' | 'profilePhotoUrl'>[];
-    pupFriendships: (PupFriendship & {
-      pup: Pick<Pup, 'id' | 'name' | 'profilePhotoUrl' | 'ownerUserId'> & {
-        owner: Pick<User, 'id' | 'name'>;
-      };
-    })[];
-  };
+  user: WelcomeUser;
   // For owners
-  upcomingHangouts: HangoutWithNotes[];
+  upcomingHangouts: HangoutSummary[];
   upcomingHangoutsTotal: number;
   pendingSuggestions: SuggestionCardData[];
   // For friends
-  availableHangouts: HangoutWithNotes[];
+  availableHangouts: HangoutSummary[];
   availableHangoutsTotal: number;
   myHangoutsAndSuggestions: {
-    hangouts: HangoutWithNotes[];
+    hangouts: HangoutSummary[];
     suggestions: SuggestionCardData[];
   } | [];
   myHangoutsTotal: number;
@@ -78,6 +114,7 @@ export default function WelcomeScreen({
   myHangoutsAndSuggestions,
   myHangoutsTotal: initialMyTotal,
 }: WelcomeScreenProps) {
+  const router = useRouter();
   const isOwner = user.role === 'OWNER';
 
   // Memoize pups to prevent recreation on every render
@@ -96,7 +133,8 @@ export default function WelcomeScreen({
   const funMessage = useFunMessage(isOwner ? 'OWNER' : 'FRIEND', pupNames);
 
   // Modal state
-  const [selectedHangout, setSelectedHangout] = useState<HangoutWithNotes | null>(null);
+  const [selectedHangout, setSelectedHangout] = useState<HangoutModalData | null>(null);
+  const [isHangoutDetailsLoading, setIsHangoutDetailsLoading] = useState(false);
 
   // Filter state for owners
   const [ownerFilters, setOwnerFilters] = useState<HangoutFiltersState>({
@@ -136,8 +174,20 @@ export default function WelcomeScreen({
 
   const friendSuggestions = Array.isArray(myHangoutsAndSuggestions) ? [] : myHangoutsAndSuggestions.suggestions;
 
-  const handleHangoutClick = useCallback((hangout: HangoutWithNotes) => {
-    setSelectedHangout(hangout);
+  const handleHangoutClick = useCallback(async (hangout: HangoutSummary) => {
+    setIsHangoutDetailsLoading(true);
+    try {
+      const response = await fetch(`/api/hangouts/${hangout.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch hangout details');
+      }
+      const data = await response.json();
+      setSelectedHangout(data.hangout as HangoutModalData);
+    } catch (error) {
+      console.error('Error loading hangout details:', error);
+    } finally {
+      setIsHangoutDetailsLoading(false);
+    }
   }, []);
 
   const handleModalClose = useCallback(() => {
@@ -145,15 +195,14 @@ export default function WelcomeScreen({
   }, []);
 
   const handleModalUpdate = useCallback(() => {
-    window.location.reload();
-  }, []);
+    router.refresh();
+  }, [router]);
 
   // Fetch hangouts with filters
   const fetchHangouts = useCallback(async (
     context: 'owner' | 'friend-available' | 'friend-assigned',
     filters: HangoutFiltersState,
-    offset: number = 0,
-    append: boolean = false
+    offset: number = 0
   ) => {
     const params = new URLSearchParams({
       context,
@@ -168,7 +217,7 @@ export default function WelcomeScreen({
     if (!response.ok) throw new Error('Failed to fetch hangouts');
 
     const data = await response.json();
-    return { hangouts: data.hangouts as HangoutWithNotes[], total: data.total as number };
+    return { hangouts: data.hangouts as HangoutSummary[], total: data.total as number };
   }, []);
 
   // Handle filter change for owners
@@ -220,7 +269,7 @@ export default function WelcomeScreen({
   const handleLoadMoreUpcoming = useCallback(async () => {
     setUpcomingLoading(true);
     try {
-      const { hangouts, total } = await fetchHangouts('owner', ownerFilters, upcomingHangouts.length, true);
+      const { hangouts, total } = await fetchHangouts('owner', ownerFilters, upcomingHangouts.length);
       setUpcomingHangouts(prev => [...prev, ...hangouts]);
       setUpcomingTotal(total);
     } catch (error) {
@@ -233,7 +282,7 @@ export default function WelcomeScreen({
   const handleLoadMoreAvailable = useCallback(async () => {
     setAvailableLoading(true);
     try {
-      const { hangouts, total } = await fetchHangouts('friend-available', friendAvailableFilters, availableHangouts.length, true);
+      const { hangouts, total } = await fetchHangouts('friend-available', friendAvailableFilters, availableHangouts.length);
       setAvailableHangouts(prev => [...prev, ...hangouts]);
       setAvailableTotal(total);
     } catch (error) {
@@ -246,7 +295,7 @@ export default function WelcomeScreen({
   const handleLoadMoreMy = useCallback(async () => {
     setMyLoading(true);
     try {
-      const { hangouts, total } = await fetchHangouts('friend-assigned', friendMyFilters, myHangouts.length, true);
+      const { hangouts, total } = await fetchHangouts('friend-assigned', friendMyFilters, myHangouts.length);
       setMyHangouts(prev => [...prev, ...hangouts]);
       setMyTotal(total);
     } catch (error) {
@@ -354,7 +403,7 @@ export default function WelcomeScreen({
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
-                  <p className="text-gray-600">You haven't added any pups yet.</p>
+                  <p className="text-gray-600">You haven&apos;t added any pups yet.</p>
                 </div>
               )}
             </section>
@@ -471,7 +520,7 @@ export default function WelcomeScreen({
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-6 text-center">
-                  <p className="text-gray-600">You're not assigned to care for any pups yet.</p>
+                  <p className="text-gray-600">You&apos;re not assigned to care for any pups yet.</p>
                 </div>
               )}
             </section>
@@ -488,6 +537,14 @@ export default function WelcomeScreen({
           onClose={handleModalClose}
           onUpdate={handleModalUpdate}
         />
+      )}
+
+      {isHangoutDetailsLoading && !selectedHangout && (
+        <div className="fixed inset-0 bg-black/20 z-40 flex items-center justify-center">
+          <div className="bg-white px-4 py-2 rounded-lg shadow-sm text-sm text-gray-700">
+            Loading hangout details...
+          </div>
+        </div>
       )}
     </AppLayout>
   );

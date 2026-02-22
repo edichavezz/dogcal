@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   startOfMonth,
   endOfMonth,
@@ -7,31 +8,41 @@ import {
   endOfWeek,
   eachDayOfInterval,
 } from 'date-fns';
-import { useCalendar } from './CalendarContext';
+import { CalendarEvent, useCalendarActions, useCalendarData } from './CalendarContext';
 import DayCell from './DayCell';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const EMPTY_EVENTS: CalendarEvent[] = [];
 
 export default function DayGrid() {
-  const { currentMonth, events } = useCalendar();
+  const { currentMonth, events } = useCalendarData();
+  const { selectEvent } = useCalendarActions();
 
   // Get all days to display in the calendar grid
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const calendarStart = startOfWeek(monthStart);
-  const calendarEnd = endOfWeek(monthEnd);
-
-  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  const days = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const calendarStart = startOfWeek(monthStart);
+    const calendarEnd = endOfWeek(monthEnd);
+    return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  }, [currentMonth]);
 
   // Group events by date
-  const eventsByDate = new Map<string, typeof events>();
-  events.forEach((event) => {
-    const dateKey = event.startAt.toISOString().split('T')[0];
-    if (!eventsByDate.has(dateKey)) {
-      eventsByDate.set(dateKey, []);
+  const eventsByDate = useMemo(() => {
+    const grouped = new Map<string, typeof events>();
+    for (const event of events) {
+      const dateKey = event.startAt.toISOString().split('T')[0];
+      if (!grouped.has(dateKey)) {
+        grouped.set(dateKey, []);
+      }
+      grouped.get(dateKey)!.push(event);
     }
-    eventsByDate.get(dateKey)!.push(event);
-  });
+
+    for (const dayEvents of grouped.values()) {
+      dayEvents.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+    }
+    return grouped;
+  }, [events]);
 
   return (
     <div className="flex-1 flex flex-col bg-white">
@@ -51,10 +62,16 @@ export default function DayGrid() {
       <div className="flex-1 calendar-grid">
         {days.map((day) => {
           const dateKey = day.toISOString().split('T')[0];
-          const dayEvents = eventsByDate.get(dateKey) || [];
+          const dayEvents = eventsByDate.get(dateKey) ?? EMPTY_EVENTS;
 
           return (
-            <DayCell key={day.toISOString()} date={day} events={dayEvents} />
+            <DayCell
+              key={day.toISOString()}
+              date={day}
+              events={dayEvents}
+              currentMonth={currentMonth}
+              onSelectEvent={selectEvent}
+            />
           );
         })}
       </div>

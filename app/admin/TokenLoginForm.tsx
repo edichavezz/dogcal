@@ -27,7 +27,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
     e.preventDefault();
 
     if (!token.trim()) {
-      setError('Please enter a password');
+      setError('Please enter a username');
       return;
     }
 
@@ -55,7 +55,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
           router.push('/');
         }
       } else {
-        setError('Invalid password. Please check your password and try again.');
+        setError('Invalid username. Please check your username and try again.');
         setLoading(false);
       }
     } catch {
@@ -84,7 +84,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
             Welcome back!
           </h1>
           <p className="text-gray-600 text-center mb-6">
-            Enter your password to continue
+            Enter your username to continue
           </p>
 
           {/* Error message */}
@@ -98,14 +98,14 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="token" className="block text-sm font-medium text-[#1a3a3a] mb-1">
-                Password
+                Username
               </label>
               <input
-                type="password"
+                type="text"
                 id="token"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="Enter your password..."
+                placeholder="Enter your username..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]/50 focus:border-[#f4a9a8] transition-colors"
                 disabled={loading}
                 autoFocus
@@ -132,7 +132,7 @@ export default function TokenLoginForm({ error: initialError }: TokenLoginFormPr
           {/* Help text */}
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500 text-center">
-              Don&apos;t have a password? Contact Edi to get your personal login link.
+              Don&apos;t have a username? Contact Edi to get your personal login link.
             </p>
           </div>
         </div>
