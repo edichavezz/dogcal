@@ -238,10 +238,14 @@ export async function PATCH(
     if (updates.ownerNotes !== undefined) updateData.ownerNotes = updates.ownerNotes;
     if (updates.startAt) updateData.startAt = newStartAt;
     if (updates.endAt) updateData.endAt = newEndAt;
+    const timesActuallyChanged =
+      (updates.startAt && new Date(updates.startAt).getTime() !== existingHangout.startAt.getTime()) ||
+      (updates.endAt && new Date(updates.endAt).getTime() !== existingHangout.endAt.getTime());
+
     const shouldResetAssignment = isOwner
-      && (updates.startAt || updates.endAt)
+      && !!timesActuallyChanged
       && existingHangout.status === 'ASSIGNED'
-      && existingHangout.assignedFriendUserId;
+      && !!existingHangout.assignedFriendUserId;
 
     if (shouldResetAssignment) {
       updateData.assignedFriendUserId = null;
@@ -337,43 +341,6 @@ export async function PATCH(
         });
       }
 
-      for (const friendship of updatedHangout.pup.friendships) {
-        const friend = friendship.friend;
-        if (friend.id === assignedFriend.id) continue;
-
-        if (isValidPhoneNumber(friend.phoneNumber)) {
-          const message = await generateHangoutClosedMessage({
-            friendUserId: friend.id,
-            friendName: friend.name,
-            ownerName,
-            pupName,
-            startAt: updatedHangout.startAt,
-            endAt: updatedHangout.endAt,
-          });
-
-          const result = await sendWhatsAppMessage(friend.phoneNumber!, message);
-          notificationResults.push({
-            userId: friend.id,
-            userName: friend.name,
-            phoneNumber: friend.phoneNumber,
-            status: result.success ? 'sent' : 'failed',
-            reason: result.error,
-            twilioSid: result.sid,
-          });
-        } else {
-          notificationResults.push({
-            userId: friend.id,
-            userName: friend.name,
-            phoneNumber: friend.phoneNumber,
-            status: 'skipped',
-            reason: 'No valid phone number',
-          });
-        }
-
-        if (updatedHangout.pup.friendships.length > 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
     }
 
     return NextResponse.json({ hangout: updatedHangout, notificationResults });

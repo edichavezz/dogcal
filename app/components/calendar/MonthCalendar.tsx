@@ -1,10 +1,10 @@
 'use client';
 
-import { CalendarProvider, CalendarEvent, useCalendarData } from './CalendarContext';
+import { useEffect } from 'react';
+import { CalendarProvider, CalendarEvent, useCalendarData, useCalendarSheet, useCalendarActions } from './CalendarContext';
 import { useCalendarGestures } from './useCalendarGestures';
 import MonthHeader from './MonthHeader';
 import DayGrid from './DayGrid';
-import EventSheet from './EventSheet';
 
 type MonthCalendarProps = {
   events: CalendarEvent[];
@@ -14,9 +14,18 @@ type MonthCalendarProps = {
 
 function CalendarContent({
   onViewDetails,
-  currentUserId,
 }: Omit<MonthCalendarProps, 'events'>) {
   const { goToNextMonth, goToPrevMonth } = useCalendarData();
+  const { selectedEvent, isSheetOpen } = useCalendarSheet();
+  const { closeSheet } = useCalendarActions();
+
+  // Skip the bottom sheet — open the full modal directly
+  useEffect(() => {
+    if (isSheetOpen && selectedEvent && onViewDetails) {
+      closeSheet();
+      onViewDetails(selectedEvent);
+    }
+  }, [isSheetOpen, selectedEvent, onViewDetails, closeSheet]);
 
   // Swipe gestures for month navigation
   const { handlers, swipeOffset, isAnimating } = useCalendarGestures({
@@ -42,11 +51,6 @@ function CalendarContent({
           <DayGrid />
         </div>
       </div>
-
-      <EventSheet
-        onViewDetails={onViewDetails}
-        currentUserId={currentUserId}
-      />
     </div>
   );
 }
@@ -56,7 +60,6 @@ export default function MonthCalendar(props: MonthCalendarProps) {
     <CalendarProvider events={props.events}>
       <CalendarContent
         onViewDetails={props.onViewDetails}
-        currentUserId={props.currentUserId}
       />
     </CalendarProvider>
   );
