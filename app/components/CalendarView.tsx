@@ -5,7 +5,8 @@ import EventDetailsModal from './EventDetailsModal';
 import HangoutListCard from './home/HangoutListCard';
 import HangoutFilters, { HangoutFiltersState, getTimeFilterRange } from './home/HangoutFilters';
 import { MonthCalendar, CalendarEvent } from './calendar';
-import { Calendar, List } from 'lucide-react';
+import Link from 'next/link';
+import { Calendar, List, Plus, Lightbulb } from 'lucide-react';
 import {
   generateHangoutTitle,
   getEventGradientClass,
@@ -220,6 +221,18 @@ function CalendarView({
               showStatusFilter={actingUserRole === 'OWNER'}
             />
           )}
+
+          {/* Create / Suggest button */}
+          <Link
+            href={actingUserRole === 'OWNER' ? '/hangouts/new' : '/suggest'}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-[#1a3a3a] text-white hover:bg-[#2a4a4a] transition-colors"
+          >
+            {actingUserRole === 'OWNER' ? (
+              <><Plus className="w-4 h-4" /> Create Hangout</>
+            ) : (
+              <><Lightbulb className="w-4 h-4" /> Suggest Time</>
+            )}
+          </Link>
         </div>
       </div>
 
