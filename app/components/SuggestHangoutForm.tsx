@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { format, addHours } from 'date-fns';
+import { format } from 'date-fns';
 import { getPupColor } from '@/lib/colorUtils';
 import type { NotificationResult } from '@/lib/whatsapp';
 import NotificationResultModal from './NotificationResultModal';
+import TimePeriodPicker, { type TimePeriod } from './forms/TimePeriodPicker';
 
 type Pup = {
   id: string;
@@ -38,46 +39,22 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
   const [error, setError] = useState('');
   const [notificationResults, setNotificationResults] = useState<NotificationResult[] | null>(null);
 
-  // Get current time and smart defaults
+  // Get current date
   const now = new Date();
-  const roundedNow = new Date(now);
-  roundedNow.setMinutes(0, 0, 0); // Round to current hour
-  const fourHoursLater = addHours(roundedNow, 4);
 
   // Form state with smart defaults
   const [pupId, setPupId] = useState(pups.length === 1 ? pups[0].id : ''); // Pre-select if only one pup
   const [startDate, setStartDate] = useState(format(now, 'yyyy-MM-dd')); // Today
-  const [startTime, setStartTime] = useState(format(roundedNow, 'HH:mm')); // Current hour
+  const [startTime, setStartTime] = useState('07:00');
   const [endDate, setEndDate] = useState(format(now, 'yyyy-MM-dd')); // Same as start date
-  const [endTime, setEndTime] = useState(format(fourHoursLater, 'HH:mm')); // 4 hours later
+  const [endTime, setEndTime] = useState('12:00');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('morning');
   const [friendComment, setFriendComment] = useState('');
   const [eventName, setEventName] = useState('');
   const [placeholder] = useState(generatePlaceholder());
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [repeatFrequency, setRepeatFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [repeatCount, setRepeatCount] = useState(4);
-
-  // Auto-sync end date with start date
-  useEffect(() => {
-    if (startDate) {
-      setEndDate(startDate);
-    }
-  }, [startDate]);
-
-  // Auto-update end time when start time changes (maintain 4-hour duration)
-  useEffect(() => {
-    if (startTime && startDate === endDate) {
-      try {
-        const [hours, minutes] = startTime.split(':').map(Number);
-        const startDateTime = new Date();
-        startDateTime.setHours(hours, minutes, 0, 0);
-        const endDateTime = addHours(startDateTime, 4);
-        setEndTime(format(endDateTime, 'HH:mm'));
-      } catch {
-        // If parsing fails, keep existing end time
-      }
-    }
-  }, [startTime, startDate, endDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,7 +152,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
         </div>
       </div>
 
-      {/* Start Date & Time */}
+      {/* Start & End Date */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
@@ -193,24 +170,6 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
           />
         </div>
         <div>
-          <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
-            Start Time *
-          </label>
-          <input
-            type="time"
-            id="startTime"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] cursor-pointer"
-            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
-          />
-        </div>
-      </div>
-
-      {/* End Date & Time */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
           <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
             End Date * {startDate !== endDate && <span className="text-xs text-gray-500">(multi-day)</span>}
           </label>
@@ -225,21 +184,17 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
           />
         </div>
-        <div>
-          <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
-            End Time *
-          </label>
-          <input
-            type="time"
-            id="endTime"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] cursor-pointer"
-            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
-          />
-        </div>
       </div>
+
+      {/* Time Period */}
+      <TimePeriodPicker
+        period={timePeriod}
+        startTime={startTime}
+        endTime={endTime}
+        onPeriodChange={setTimePeriod}
+        onStartTimeChange={setStartTime}
+        onEndTimeChange={setEndTime}
+      />
 
       {/* Event Name */}
       <div>
