@@ -242,15 +242,8 @@ export async function PATCH(
       (updates.startAt && new Date(updates.startAt).getTime() !== existingHangout.startAt.getTime()) ||
       (updates.endAt && new Date(updates.endAt).getTime() !== existingHangout.endAt.getTime());
 
-    const shouldResetAssignment = isOwner
-      && !!timesActuallyChanged
-      && existingHangout.status === 'ASSIGNED'
-      && !!existingHangout.assignedFriendUserId;
-
-    if (shouldResetAssignment) {
-      updateData.assignedFriendUserId = null;
-      updateData.status = 'OPEN';
-    } else if (updates.assignedFriendUserId !== undefined) {
+    // Only update assignment if explicitly provided — time edits alone do NOT unassign
+    if (updates.assignedFriendUserId !== undefined) {
       updateData.assignedFriendUserId = updates.assignedFriendUserId;
       updateData.status = updates.assignedFriendUserId ? 'ASSIGNED' : 'OPEN';
     }
@@ -268,11 +261,16 @@ export async function PATCH(
 
     const notificationResults: NotificationResult[] = [];
 
-    const isNewAssignment = !shouldResetAssignment
-      && updates.assignedFriendUserId
+    const isNewAssignment = updates.assignedFriendUserId
       && updates.assignedFriendUserId !== existingHangout.assignedFriendUserId;
 
-    if (isWhatsAppEnabled() && shouldResetAssignment && existingHangout.assignedFriend) {
+    // Notify the assigned friend when the owner reschedules (but keeps them assigned)
+    const isRescheduleOfAssigned = !!timesActuallyChanged
+      && existingHangout.status === 'ASSIGNED'
+      && !!existingHangout.assignedFriendUserId
+      && !isNewAssignment;
+
+    if (isWhatsAppEnabled() && isRescheduleOfAssigned && existingHangout.assignedFriend) {
       const friend = existingHangout.assignedFriend;
 
       if (isValidPhoneNumber(friend.phoneNumber)) {
