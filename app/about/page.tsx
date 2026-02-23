@@ -38,7 +38,7 @@ const features = [
   'Suggest care times that work for both sides',
   'WhatsApp notifications to keep everyone updated',
   'Leave notes and care instructions for your pup',
-  'Free to use',
+  'Join a social to meet new dog-loving friends in your area',
 ];
 
 export default function AboutPage() {

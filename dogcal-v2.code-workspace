@@ -1,11 +1,12 @@
 {
 	"folders": [
 		{
-			"path": "../dogcal-v2"
-		},
-		{
 			"name": "dogcal",
 			"path": "."
+		},
+		{
+			"name": "dogcal-v2",
+			"path": "../dogcal-v2"
 		}
 	],
 	"settings": {}
