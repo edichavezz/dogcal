@@ -30,11 +30,11 @@ export default async function SuggestPage() {
     redirect('/');
   }
 
-  if (actingUser.role !== 'FRIEND') {
-    redirect('/calendar');
+  if (actingUser.pupFriendships.length === 0) {
+    redirect('/');
   }
 
-  // Get pups this friend can suggest times for
+  // Get pups this user can suggest times for
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pups = actingUser.pupFriendships.map((f: any) => f.pup);
 

@@ -54,11 +54,19 @@ type Suggestion = {
   };
 };
 
+type PupInfo = {
+  id: string;
+  name: string;
+  profilePhotoUrl?: string | null;
+};
+
 type CalendarClientProps = {
   hangouts: Hangout[];
   suggestions: Suggestion[];
   actingUserId: string;
   actingUserRole: 'OWNER' | 'FRIEND';
+  ownedPups?: PupInfo[];
+  friendPups?: PupInfo[];
 };
 
 export default function CalendarClient({
@@ -66,6 +74,8 @@ export default function CalendarClient({
   suggestions,
   actingUserId,
   actingUserRole,
+  ownedPups = [],
+  friendPups = [],
 }: CalendarClientProps) {
   const router = useRouter();
 
@@ -80,6 +90,8 @@ export default function CalendarClient({
       actingUserId={actingUserId}
       actingUserRole={actingUserRole}
       onUpdate={handleUpdate}
+      ownedPups={ownedPups}
+      friendPups={friendPups}
     />
   );
 }

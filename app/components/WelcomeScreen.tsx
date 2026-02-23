@@ -100,6 +100,8 @@ interface WelcomeScreenProps {
     suggestions: SuggestionCardData[];
   } | [];
   myHangoutsTotal: number;
+  // For owners who are also friends for other pups
+  friendPups?: PupCardData[];
 }
 
 const ITEMS_PER_PAGE = 5;
@@ -113,6 +115,7 @@ export default function WelcomeScreen({
   availableHangoutsTotal: initialAvailableTotal,
   myHangoutsAndSuggestions,
   myHangoutsTotal: initialMyTotal,
+  friendPups = [],
 }: WelcomeScreenProps) {
   const router = useRouter();
   const isOwner = user.role === 'OWNER';
@@ -435,6 +438,25 @@ export default function WelcomeScreen({
                 </div>
               )}
             </section>
+
+            {/* Pups you're also a friend for */}
+            {friendPups.length > 0 && (
+              <section>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                  Pups you&apos;re also a friend for
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {friendPups.map(pup => (
+                    <PupActionCard
+                      key={pup.id}
+                      pup={pup}
+                      isOwner={false}
+                      ownerName={pup.owner?.name}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
 

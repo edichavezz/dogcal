@@ -191,6 +191,11 @@ export default async function Home() {
     const filteredUpcoming = filterFirstOfSeries(allUpcomingHangouts);
     const upcomingHangouts = filteredUpcoming.slice(0, HOME_PAGE_SIZE);
 
+    const friendPups = user.pupFriendships.map(f => ({
+      ...f.pup,
+      owner: f.pup.owner,
+    }));
+
     return (
       <WelcomeScreen
         user={user}
@@ -205,6 +210,7 @@ export default async function Home() {
         availableHangoutsTotal={0}
         myHangoutsAndSuggestions={[]}
         myHangoutsTotal={0}
+        friendPups={friendPups}
       />
     );
   } else {
