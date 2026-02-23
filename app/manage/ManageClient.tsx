@@ -326,6 +326,36 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
+      const { friendship } = await res.json();
+
+      // Update local state so the new friend appears immediately
+      setUserData((prev) => ({
+        ...prev,
+        ownedPups: prev.ownedPups.map((p) =>
+          p.id !== pupId
+            ? p
+            : {
+                ...p,
+                friendships: [
+                  ...p.friendships,
+                  {
+                    id: friendship.id,
+                    historyWithPup: friendship.historyWithPup,
+                    friend: {
+                      id: friendship.friend.id,
+                      name: friendship.friend.name,
+                      profilePhotoUrl: friendship.friend.profilePhotoUrl,
+                      calendarColor: friendship.friend.calendarColor,
+                    },
+                  },
+                ],
+              }
+        ),
+      }));
+
+      setShowAddFriend(null);
+      setSelectedFriend('');
+      setFriendHistory('');
       router.refresh();
     } catch (error) {
       console.error('Add friend error:', error);
@@ -350,6 +380,14 @@ export default function ManageClient({ user, allFriends }: Props) {
         return;
       }
 
+      // Update local state so the friend disappears immediately
+      setUserData((prev) => ({
+        ...prev,
+        ownedPups: prev.ownedPups.map((p) => ({
+          ...p,
+          friendships: p.friendships.filter((f) => f.id !== friendshipId),
+        })),
+      }));
       router.refresh();
     } catch (error) {
       console.error('Delete friendship error:', error);
