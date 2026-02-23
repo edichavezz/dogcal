@@ -65,10 +65,10 @@ export async function POST(request: NextRequest) {
       where: { id: actingUserId },
     });
 
-    if (!actingUser || actingUser.role !== 'FRIEND') {
+    if (!actingUser) {
       return NextResponse.json(
-        { error: 'Only friends can suggest hangout times' },
-        { status: 403 }
+        { error: 'User not found' },
+        { status: 401 }
       );
     }
 

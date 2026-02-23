@@ -32,13 +32,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify friend exists and is a FRIEND role
+    // Verify friend user exists
     const friend = await prisma.user.findUnique({
       where: { id: data.friendUserId },
     });
-    if (!friend || friend.role !== 'FRIEND') {
+    if (!friend) {
       return NextResponse.json(
-        { error: 'Invalid friend user' },
+        { error: 'User not found' },
         { status: 400 }
       );
     }

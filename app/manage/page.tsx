@@ -79,7 +79,7 @@ export default async function ManagePage() {
 
   const friendsForDropdown = user.role === 'OWNER'
     ? await prisma.user.findMany({
-        where: { role: 'FRIEND' },
+        where: { id: { not: actingUserId } },
         select: {
           id: true,
           name: true,

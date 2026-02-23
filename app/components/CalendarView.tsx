@@ -5,7 +5,8 @@ import EventDetailsModal from './EventDetailsModal';
 import HangoutListCard from './home/HangoutListCard';
 import HangoutFilters, { HangoutFiltersState, getTimeFilterRange } from './home/HangoutFilters';
 import { MonthCalendar, CalendarEvent } from './calendar';
-import { Calendar, List } from 'lucide-react';
+import Link from 'next/link';
+import { Calendar, List, Plus, Lightbulb } from 'lucide-react';
 import {
   generateHangoutTitle,
   getEventGradientClass,
@@ -62,12 +63,20 @@ type Suggestion = {
   };
 };
 
+type PupInfo = {
+  id: string;
+  name: string;
+  profilePhotoUrl?: string | null;
+};
+
 type CalendarViewProps = {
   hangouts: Hangout[];
   suggestions: Suggestion[];
   actingUserId: string;
   actingUserRole: 'OWNER' | 'FRIEND';
   onUpdate: () => void;
+  ownedPups?: PupInfo[];
+  friendPups?: PupInfo[];
 };
 
 type ViewMode = 'calendar' | 'list';
@@ -78,6 +87,8 @@ function CalendarView({
   actingUserId,
   actingUserRole,
   onUpdate,
+  ownedPups = [],
+  friendPups = [],
 }: CalendarViewProps) {
   const [selectedHangout, setSelectedHangout] = useState<Hangout | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
@@ -89,9 +100,41 @@ function CalendarView({
     hideRepeats: false,
   });
 
+  // Pup filter state
+  const allPups = useMemo(() => [...ownedPups, ...friendPups], [ownedPups, friendPups]);
+  const [selectedPupIds, setSelectedPupIds] = useState<Set<string>>(
+    () => new Set(allPups.map((p) => p.id))
+  );
+
+  const togglePup = useCallback((pupId: string) => {
+    setSelectedPupIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(pupId)) {
+        next.delete(pupId);
+      } else {
+        next.add(pupId);
+      }
+      return next;
+    });
+  }, []);
+
+  const selectAllPups = useCallback(() => {
+    setSelectedPupIds(new Set(allPups.map((p) => p.id)));
+  }, [allPups]);
+
+  const selectNoPups = useCallback(() => {
+    setSelectedPupIds(new Set());
+  }, []);
+
+  // Hangouts filtered by selected pups (applied before time/status filters)
+  const pupFilteredHangouts = useMemo(
+    () => (allPups.length > 1 ? hangouts.filter((h) => selectedPupIds.has(h.pup.id)) : hangouts),
+    [hangouts, allPups.length, selectedPupIds]
+  );
+
   // Filter hangouts for list view
   const filteredHangouts = useMemo(() => {
-    let filtered = [...hangouts];
+    let filtered = [...pupFilteredHangouts];
 
     // Apply time filter
     const timeRange = getTimeFilterRange(filters.timeRange);
@@ -124,11 +167,11 @@ function CalendarView({
     filtered.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
     return filtered;
-  }, [hangouts, filters]);
+  }, [pupFilteredHangouts, filters]);
 
   // Transform hangouts to CalendarEvent format for MonthCalendar
   const calendarEvents = useMemo((): CalendarEvent[] => {
-    return hangouts.map((hangout) => ({
+    return pupFilteredHangouts.map((hangout) => ({
       id: hangout.id,
       title: hangout.eventName || generateHangoutTitle(hangout),
       startAt: new Date(hangout.startAt),
@@ -220,7 +263,75 @@ function CalendarView({
               showStatusFilter={actingUserRole === 'OWNER'}
             />
           )}
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-2">
+            {ownedPups.length > 0 && (
+              <Link
+                href="/hangouts/new"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-[#1a3a3a] text-white hover:bg-[#2a4a4a] transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Create Hangout
+              </Link>
+            )}
+            {friendPups.length > 0 && (
+              <Link
+                href="/suggest"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-[#1a3a3a] text-white hover:bg-[#2a4a4a] transition-colors"
+              >
+                <Lightbulb className="w-4 h-4" /> Suggest Time
+              </Link>
+            )}
+            {/* Fallback for users with neither (shouldn't happen) */}
+            {ownedPups.length === 0 && friendPups.length === 0 && (
+              <Link
+                href={actingUserRole === 'OWNER' ? '/hangouts/new' : '/suggest'}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-[#1a3a3a] text-white hover:bg-[#2a4a4a] transition-colors"
+              >
+                {actingUserRole === 'OWNER' ? (
+                  <><Plus className="w-4 h-4" /> Create Hangout</>
+                ) : (
+                  <><Lightbulb className="w-4 h-4" /> Suggest Time</>
+                )}
+              </Link>
+            )}
+          </div>
         </div>
+
+        {/* Pup filter pills — only shown when there are multiple pups */}
+        {allPups.length > 1 && (
+          <div className="flex items-center gap-2 flex-wrap mt-3">
+            {allPups.length > 2 && (
+              <>
+                <button
+                  onClick={selectAllPups}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                  All
+                </button>
+                <button
+                  onClick={selectNoPups}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                  None
+                </button>
+              </>
+            )}
+            {allPups.map((pup) => (
+              <button
+                key={pup.id}
+                onClick={() => togglePup(pup.id)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+                  selectedPupIds.has(pup.id)
+                    ? getEventGradientClass(pup.id) + ' text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {pup.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Content */}

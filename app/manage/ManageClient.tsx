@@ -784,7 +784,7 @@ export default function ManageClient({ user, allFriends }: Props) {
         </div>
 
         {/* Meet New Friends Section */}
-        <MeetNewFriendsSection userRole={user.role} userId={user.id} />
+        <MeetNewFriendsSection userRole={user.role} userId={user.id} userName={user.name} />
       </div>
     );
   }
@@ -966,7 +966,7 @@ export default function ManageClient({ user, allFriends }: Props) {
       </div>
 
       {/* Meet New Friends Section */}
-      <MeetNewFriendsSection userRole={user.role} userId={user.id} />
+      <MeetNewFriendsSection userRole={user.role} userId={user.id} userName={user.name} />
     </div>
   );
 }
@@ -979,7 +979,7 @@ type MeetupWithRsvp = Meetup & {
   currentUserRsvpd: boolean;
 };
 
-function MeetNewFriendsSection({ userRole, userId }: { userRole: 'OWNER' | 'FRIEND'; userId: string }) {
+function MeetNewFriendsSection({ userRole, userId, userName }: { userRole: 'OWNER' | 'FRIEND'; userId: string; userName: string }) {
   const [meetups, setMeetups] = useState<MeetupWithRsvp[]>([]);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: '', email: '', type: '' });
@@ -1009,6 +1009,7 @@ function MeetNewFriendsSection({ userRole, userId }: { userRole: 'OWNER' | 'FRIE
           name: inviteForm.name,
           email: inviteForm.email,
           type: inviteForm.type,
+          requestedBy: userName,
         }),
       });
       if (!res.ok) {

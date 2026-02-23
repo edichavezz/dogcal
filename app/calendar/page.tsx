@@ -46,82 +46,108 @@ export default async function CalendarPage() {
 
   const now = new Date();
 
+  // Shared hangout select shape
+  const hangoutSelect = {
+    id: true,
+    startAt: true,
+    endAt: true,
+    status: true,
+    eventName: true,
+    seriesId: true,
+    seriesIndex: true,
+    pup: {
+      select: {
+        id: true,
+        name: true,
+        profilePhotoUrl: true,
+        owner: { select: { id: true, name: true } },
+      },
+    },
+    assignedFriend: {
+      select: {
+        id: true,
+        name: true,
+        profilePhotoUrl: true,
+      },
+    },
+  } as const;
+
+  const suggestionSelect = {
+    id: true,
+    startAt: true,
+    endAt: true,
+    status: true,
+    friendComment: true,
+    pup: {
+      select: {
+        id: true,
+        name: true,
+        profilePhotoUrl: true,
+      },
+    },
+    suggestedByFriend: {
+      select: {
+        id: true,
+        name: true,
+      },
+    },
+  } as const;
+
   // Build queries based on role - use parallel fetching with Promise.all
   if (actingUser.role === 'OWNER') {
-    const pupIds = actingUser.ownedPups.map((p) => p.id);
+    const ownedPupIds = actingUser.ownedPups.map((p) => p.id);
+    const friendPupIds = actingUser.pupFriendships.map((f) => f.pupId);
 
-    // Parallel fetch: hangouts and suggestions simultaneously
-    const [upcomingHangouts, upcomingSuggestions] = await Promise.all([
-      // Hangouts query - removed nested notes include (fetch on demand)
+    const [ownedHangouts, ownedSuggestions, friendHangouts, mySuggestions] = await Promise.all([
+      // Hangouts for owned pups
       prisma.hangout.findMany({
-        where: {
-          pupId: { in: pupIds },
-          endAt: { gte: now },
-        },
-        select: {
-          id: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          eventName: true,
-          seriesId: true,
-          seriesIndex: true,
-          pup: {
-            select: {
-              id: true,
-              name: true,
-              profilePhotoUrl: true,
-              owner: { select: { id: true, name: true } },
-            },
-          },
-          assignedFriend: {
-            select: {
-              id: true,
-              name: true,
-              profilePhotoUrl: true,
-            },
-          },
-        },
+        where: { pupId: { in: ownedPupIds }, endAt: { gte: now } },
+        select: hangoutSelect,
         orderBy: { startAt: 'asc' },
-        take: 100, // Limit to prevent unbounded queries
+        take: 100,
       }),
-      // Suggestions query
+      // Suggestions for owned pups (from friends)
       prisma.hangoutSuggestion.findMany({
-        where: {
-          pupId: { in: pupIds },
-          status: 'PENDING',
-          endAt: { gte: now },
-        },
-        select: {
-          id: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          friendComment: true,
-          pup: {
-            select: {
-              id: true,
-              name: true,
-              profilePhotoUrl: true,
-            },
-          },
-          suggestedByFriend: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
+        where: { pupId: { in: ownedPupIds }, status: 'PENDING', endAt: { gte: now } },
+        select: suggestionSelect,
         orderBy: { startAt: 'asc' },
         take: 50,
       }),
+      // Hangouts for friend pups (OPEN ones + ones assigned to this user)
+      friendPupIds.length > 0
+        ? prisma.hangout.findMany({
+            where: {
+              pupId: { in: friendPupIds },
+              endAt: { gte: now },
+              OR: [{ status: 'OPEN' }, { assignedFriendUserId: actingUserId }],
+            },
+            select: hangoutSelect,
+            orderBy: { startAt: 'asc' },
+            take: 100,
+          })
+        : Promise.resolve([]),
+      // Suggestions submitted by this owner for friend pups
+      friendPupIds.length > 0
+        ? prisma.hangoutSuggestion.findMany({
+            where: { suggestedByFriendUserId: actingUserId, status: 'PENDING', endAt: { gte: now } },
+            select: suggestionSelect,
+            orderBy: { startAt: 'asc' },
+            take: 50,
+          })
+        : Promise.resolve([]),
     ]);
 
-    // Add empty notes array for compatibility with CalendarView type
-    const hangoutsWithEmptyNotes = upcomingHangouts.map((h) => ({
-      ...h,
-      notes: [],
-    }));
+    // Merge and dedup hangouts by ID
+    const hangoutMap = new Map<string, typeof ownedHangouts[0]>();
+    [...ownedHangouts, ...friendHangouts].forEach((h) => hangoutMap.set(h.id, h));
+    const allHangouts = Array.from(hangoutMap.values());
+
+    const allSuggestions = [...ownedSuggestions, ...mySuggestions];
+
+    const hangoutsWithEmptyNotes = allHangouts.map((h) => ({ ...h, notes: [] }));
+
+    const ownedPups = actingUser.ownedPups;
+    const friendPups = actingUser.pupFriendships.map((f) => f.pup);
 
     return (
       <AppLayout user={actingUser}>
@@ -138,9 +164,11 @@ export default async function CalendarPage() {
           <div className="flex-1 min-h-0">
             <CalendarClient
               hangouts={hangoutsWithEmptyNotes}
-              suggestions={upcomingSuggestions}
+              suggestions={allSuggestions}
               actingUserId={actingUserId}
               actingUserRole={actingUser.role}
+              ownedPups={ownedPups}
+              friendPups={friendPups}
             />
           </div>
         </div>
@@ -150,92 +178,33 @@ export default async function CalendarPage() {
     // FRIEND role
     const friendPupIds = actingUser.pupFriendships.map((f) => f.pupId);
 
-    // Parallel fetch: hangouts and suggestions simultaneously
     const [upcomingHangouts, upcomingSuggestions] = await Promise.all([
-      // Hangouts query for friends
       prisma.hangout.findMany({
         where: {
           AND: [
             { endAt: { gte: now } },
             {
               OR: [
-                {
-                  AND: [
-                    { pupId: { in: friendPupIds } },
-                    { status: 'OPEN' },
-                  ],
-                },
-                {
-                  assignedFriendUserId: actingUserId,
-                },
+                { AND: [{ pupId: { in: friendPupIds } }, { status: 'OPEN' }] },
+                { assignedFriendUserId: actingUserId },
               ],
             },
           ],
         },
-        select: {
-          id: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          eventName: true,
-          seriesId: true,
-          seriesIndex: true,
-          pup: {
-            select: {
-              id: true,
-              name: true,
-              profilePhotoUrl: true,
-              owner: { select: { id: true, name: true } },
-            },
-          },
-          assignedFriend: {
-            select: {
-              id: true,
-              name: true,
-              profilePhotoUrl: true,
-            },
-          },
-        },
+        select: hangoutSelect,
         orderBy: { startAt: 'asc' },
         take: 100,
       }),
-      // Suggestions query for friends
       prisma.hangoutSuggestion.findMany({
-        where: {
-          suggestedByFriendUserId: actingUserId,
-          status: 'PENDING',
-          endAt: { gte: now },
-        },
-        select: {
-          id: true,
-          startAt: true,
-          endAt: true,
-          status: true,
-          friendComment: true,
-          pup: {
-            select: {
-              id: true,
-              name: true,
-              profilePhotoUrl: true,
-            },
-          },
-          suggestedByFriend: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
+        where: { suggestedByFriendUserId: actingUserId, status: 'PENDING', endAt: { gte: now } },
+        select: suggestionSelect,
         orderBy: { startAt: 'asc' },
         take: 50,
       }),
     ]);
 
-    // Add empty notes array for compatibility with CalendarView type
-    const hangoutsWithEmptyNotes = upcomingHangouts.map((h) => ({
-      ...h,
-      notes: [],
-    }));
+    const hangoutsWithEmptyNotes = upcomingHangouts.map((h) => ({ ...h, notes: [] }));
+    const friendPups = actingUser.pupFriendships.map((f) => f.pup);
 
     return (
       <AppLayout user={actingUser}>
@@ -255,6 +224,8 @@ export default async function CalendarPage() {
               suggestions={upcomingSuggestions}
               actingUserId={actingUserId}
               actingUserRole={actingUser.role}
+              ownedPups={[]}
+              friendPups={friendPups}
             />
           </div>
         </div>

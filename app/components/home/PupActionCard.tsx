@@ -65,6 +65,10 @@ export default function PupActionCard({ pup, isOwner, ownerName }: PupActionCard
         {!isOwner && ownerName && (
           <p className="text-xs text-gray-500 truncate">Owner: {ownerName}</p>
         )}
+        <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-teal-700 bg-teal-50 rounded-lg px-2 py-1.5">
+          <ActionIcon className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{actionLabel}</span>
+        </div>
       </div>
     </Link>
   );
