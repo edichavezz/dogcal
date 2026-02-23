@@ -6,7 +6,7 @@ import dns from 'dns';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, type } = body as { name?: string; email?: string; type?: string };
+    const { name, email, type, requestedBy } = body as { name?: string; email?: string; type?: string; requestedBy?: string };
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
               dogcal — invite request
             </h1>
           </div>
-          <p style="color:#0f172a;font-size:15px;margin:0 0 20px;">Someone wants to invite a friend to dogcal.</p>
+          <p style="color:#0f172a;font-size:15px;margin:0 0 20px;">${requestedBy ? `<strong>${escapeHtml(requestedBy)}</strong> wants to invite a friend to dogcal.` : 'Someone wants to invite a friend to dogcal.'}</p>
           <table style="width:100%;border-collapse:collapse;">
             <tr>
               <td style="padding:10px 0;color:#64748b;font-size:13px;width:100px;vertical-align:top;font-weight:500;">Their name</td>
