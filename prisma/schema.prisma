@@ -135,6 +135,17 @@ model HangoutSuggestion {
   @@index([pupId, status])
 }
 
+model CommunityMeetup {
+  id        String   @id @default(uuid())
+  startAt   DateTime
+  endAt     DateTime
+  location  String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([startAt])
+}
+
 enum UserRole {
   OWNER
   FRIEND

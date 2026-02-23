@@ -29,14 +29,23 @@ interface TokenData {
   loginUrl: string;
 }
 
+type Meetup = {
+  id: string;
+  startAt: string;
+  endAt: string;
+  location: string;
+};
+
 export default function AdminClient() {
   const [users, setUsers] = useState<UserWithPups[]>([]);
   const [pups, setPups] = useState<Pup[]>([]);
   const [tokens, setTokens] = useState<TokenData[]>([]);
+  const [meetups, setMeetups] = useState<Meetup[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [generatingMeetups, setGeneratingMeetups] = useState(false);
 
   // Modal states
   const [showAddOwner, setShowAddOwner] = useState(false);
@@ -48,6 +57,7 @@ export default function AdminClient() {
 
   useEffect(() => {
     fetchData();
+    fetchMeetups();
   }, []);
 
   const fetchData = async () => {
@@ -75,6 +85,56 @@ export default function AdminClient() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchMeetups = async () => {
+    try {
+      const res = await fetch('/api/meetups');
+      const data = await res.json();
+      setMeetups(data.meetups || []);
+    } catch (error) {
+      console.error('Error fetching meetups:', error);
+    }
+  };
+
+  const handleGenerateMeetups = async () => {
+    setGeneratingMeetups(true);
+    try {
+      const res = await fetch('/api/meetups', { method: 'POST' });
+      const data = await res.json();
+      showMessage('success', `Generated ${data.created} new meetup${data.created !== 1 ? 's' : ''}!`);
+      fetchMeetups();
+    } catch {
+      showMessage('error', 'Failed to generate meetups');
+    } finally {
+      setGeneratingMeetups(false);
+    }
+  };
+
+  const handleDeleteMeetup = async (meetupId: string) => {
+    if (!confirm('Delete this meetup date?')) return;
+    try {
+      const res = await fetch(`/api/meetups/${meetupId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed');
+      setMeetups((prev) => prev.filter((m) => m.id !== meetupId));
+      showMessage('success', 'Meetup deleted');
+    } catch {
+      showMessage('error', 'Failed to delete meetup');
+    }
+  };
+
+  const formatMeetupDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('en-GB', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+  const formatMeetupTime = (startStr: string, endStr: string) => {
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    return `${start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}–${end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
   };
 
   const showMessage = (type: 'success' | 'error', text: string) => {
@@ -359,6 +419,43 @@ export default function AdminClient() {
             <div className="mt-3 text-sm text-gray-600">
               <strong>Total:</strong> {tokens.length} users ({tokens.filter(t => t.role === 'OWNER').length} owners, {tokens.filter(t => t.role === 'FRIEND').length} friends)
             </div>
+          </div>
+
+          {/* Community Meetups Section */}
+          <div className="p-4 sm:p-6 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Community Meetups</h2>
+              <button
+                onClick={handleGenerateMeetups}
+                disabled={generatingMeetups}
+                className="px-3 py-1.5 text-sm bg-[#1a3a3a] text-white rounded-lg hover:bg-[#2a4a4a] disabled:bg-gray-300 font-medium transition-colors"
+              >
+                {generatingMeetups ? 'Generating...' : 'Generate next 8 Sundays'}
+              </button>
+            </div>
+
+            {meetups.length === 0 ? (
+              <p className="text-sm text-gray-500 italic">No upcoming meetups. Click &quot;Generate next 8 Sundays&quot; to create them.</p>
+            ) : (
+              <div className="space-y-2">
+                {meetups.map((meetup) => (
+                  <div key={meetup.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {formatMeetupDate(meetup.startAt)} &middot; {formatMeetupTime(meetup.startAt, meetup.endAt)}
+                      </p>
+                      <p className="text-xs text-gray-500">{meetup.location}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteMeetup(meetup.id)}
+                      className="text-xs text-red-600 hover:text-red-700 font-medium ml-4"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

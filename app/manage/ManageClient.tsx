@@ -1,10 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserRole } from '@prisma/client';
-import Image from 'next/image';
-import { Phone, Camera, UserPlus } from 'lucide-react';
+import { Phone, Camera, MapPin, Mail, UserPlus } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 
 type Friend = {
@@ -57,6 +56,13 @@ type User = {
   profilePhotoUrl: string | null;
   ownedPups: PupWithFriendships[];
   pupFriendships: PupFriendship[];
+};
+
+type Meetup = {
+  id: string;
+  startAt: string;
+  endAt: string;
+  location: string;
 };
 
 type Props = {
@@ -201,6 +207,49 @@ export default function ManageClient({ user, allFriends }: Props) {
     }
   };
 
+  const handleUpdateFriendship = async (friendshipId: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/friendships/${friendshipId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          historyWithPup: friendHistory || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || 'Failed to update friendship');
+        return;
+      }
+
+      // Update local state immediately for both owner and friend views
+      const newHistory = friendHistory || null;
+      setUserData({
+        ...userData,
+        // Update for owner view (friendships on owned pups)
+        ownedPups: userData.ownedPups.map((pup) => ({
+          ...pup,
+          friendships: pup.friendships.map((f) =>
+            f.id === friendshipId ? { ...f, historyWithPup: newHistory } : f
+          ),
+        })),
+        // Update for friend view (pupFriendships)
+        pupFriendships: userData.pupFriendships.map((f) =>
+          f.id === friendshipId ? { ...f, historyWithPup: newHistory } : f
+        ),
+      });
+      setEditingFriendship(null);
+      router.refresh();
+    } catch (error) {
+      console.error('Update friendship error:', error);
+      alert('Failed to update friendship');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreateNewFriend = async (pupId: string) => {
     if (!newFriendName.trim()) {
       alert('Please enter a name for the friend');
@@ -281,49 +330,6 @@ export default function ManageClient({ user, allFriends }: Props) {
     } catch (error) {
       console.error('Add friend error:', error);
       alert('Failed to add friend');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateFriendship = async (friendshipId: string) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/friendships/${friendshipId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          historyWithPup: friendHistory || null,
-        }),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        alert(error.error || 'Failed to update friendship');
-        return;
-      }
-
-      // Update local state immediately for both owner and friend views
-      const newHistory = friendHistory || null;
-      setUserData({
-        ...userData,
-        // Update for owner view (friendships on owned pups)
-        ownedPups: userData.ownedPups.map((pup) => ({
-          ...pup,
-          friendships: pup.friendships.map((f) =>
-            f.id === friendshipId ? { ...f, historyWithPup: newHistory } : f
-          ),
-        })),
-        // Update for friend view (pupFriendships)
-        pupFriendships: userData.pupFriendships.map((f) =>
-          f.id === friendshipId ? { ...f, historyWithPup: newHistory } : f
-        ),
-      });
-      setEditingFriendship(null);
-      router.refresh();
-    } catch (error) {
-      console.error('Update friendship error:', error);
-      alert('Failed to update friendship');
     } finally {
       setLoading(false);
     }
@@ -738,6 +744,9 @@ export default function ManageClient({ user, allFriends }: Props) {
             </div>
           )}
         </div>
+
+        {/* Meet New Friends Section */}
+        <MeetNewFriendsSection userRole={user.role} />
       </div>
     );
   }
@@ -916,6 +925,183 @@ export default function ManageClient({ user, allFriends }: Props) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Meet New Friends Section */}
+      <MeetNewFriendsSection userRole={user.role} />
+    </div>
+  );
+}
+
+// --- Meet New Friends Section ---
+
+function MeetNewFriendsSection({ userRole }: { userRole: 'OWNER' | 'FRIEND' }) {
+  const [meetups, setMeetups] = useState<Meetup[]>([]);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ name: '', email: '', type: '' });
+  const [inviteStatus, setInviteStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  useEffect(() => {
+    fetch('/api/meetups')
+      .then((r) => r.json())
+      .then((d) => setMeetups(d.meetups || []))
+      .catch(() => {});
+  }, []);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteStatus('sending');
+    try {
+      const interest = inviteForm.type === 'owner' ? 'owner' : 'friend';
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: inviteForm.name,
+          email: inviteForm.email,
+          interest,
+          message: `Invited by a dogcal ${userRole === 'OWNER' ? 'owner' : 'friend'} to join the community.`,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setInviteStatus('sent');
+    } catch {
+      setInviteStatus('error');
+    }
+  };
+
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+
+  const formatTime = (startStr: string, endStr: string) => {
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    return `${start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}–${end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  return (
+    <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-6">
+      <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
+        Meet new {userRole === 'OWNER' ? 'friends' : 'pups'}
+      </h2>
+      <p className="text-sm text-gray-600 mb-5">
+        {userRole === 'OWNER'
+          ? 'Find people who love dogs as much as you do.'
+          : 'Find more dogs and dog lovers to spend time with.'}
+      </p>
+
+      <div className="space-y-4">
+        {/* Option 1: Clissold Park meetup */}
+        <div className="rounded-xl border border-[#1a3a3a]/20 bg-[#1a3a3a]/5 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#1a3a3a] flex items-center justify-center flex-shrink-0 mt-0.5">
+              <MapPin className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 text-sm mb-1">Join a dogcal meetup</h3>
+              <p className="text-xs text-gray-600 mb-3">
+                Every Sunday at Clissold Park, Stoke Newington — 10am to 11am. Dog lovers,
+                owners, and friends all welcome. A great place to meet people who can help
+                out and who you can help in return.
+              </p>
+              {meetups.length > 0 ? (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-gray-700 mb-1">Upcoming dates:</p>
+                  {meetups.slice(0, 3).map((meetup) => (
+                    <div key={meetup.id} className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#1a3a3a] flex-shrink-0" />
+                      <span className="text-xs text-gray-700">
+                        {formatDate(meetup.startAt)}, {formatTime(meetup.startAt, meetup.endAt)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 italic">No upcoming dates scheduled yet — check back soon!</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Option 2: Invite someone */}
+        <div className="rounded-xl border border-[#f4a9a8]/40 bg-[#f4a9a8]/10 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#f4a9a8] flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Mail className="w-4 h-4 text-[#1a3a3a]" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900 text-sm mb-1">Invite someone to dogcal</h3>
+              <p className="text-xs text-gray-600 mb-3">
+                {userRole === 'OWNER'
+                  ? 'Know someone who loves dogs or has a dog that needs care? Invite them to join the community.'
+                  : 'Know someone with a dog or another dog lover? Invite them to join!'}
+              </p>
+
+              {inviteStatus === 'sent' ? (
+                <p className="text-sm text-green-700 font-medium">Invite sent! We&apos;ll be in touch with them.</p>
+              ) : !showInvite ? (
+                <button
+                  onClick={() => setShowInvite(true)}
+                  className="px-4 py-2 bg-[#f4a9a8] text-[#1a3a3a] rounded-lg font-medium text-sm hover:bg-[#f5b9b8] transition-colors"
+                >
+                  Send an invite
+                </button>
+              ) : (
+                <form onSubmit={handleInvite} className="space-y-3">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Their name"
+                    value={inviteForm.name}
+                    onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
+                  />
+                  <input
+                    type="email"
+                    required
+                    placeholder="Their email address"
+                    value={inviteForm.email}
+                    onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
+                  />
+                  <select
+                    required
+                    value={inviteForm.type}
+                    onChange={(e) => setInviteForm({ ...inviteForm, type: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
+                  >
+                    <option value="">What best describes them?</option>
+                    <option value="owner">They have a dog and want care help</option>
+                    <option value="friend">They want to hang out with dogs</option>
+                  </select>
+                  {inviteStatus === 'error' && (
+                    <p className="text-xs text-red-600">Something went wrong. Please try again.</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={inviteStatus === 'sending'}
+                      className="px-4 py-2 bg-[#f4a9a8] text-[#1a3a3a] rounded-lg font-medium text-sm hover:bg-[#f5b9b8] disabled:opacity-50 transition-colors"
+                    >
+                      {inviteStatus === 'sending' ? 'Sending...' : 'Send invite'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowInvite(false); setInviteStatus('idle'); }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
