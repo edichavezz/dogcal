@@ -22,6 +22,7 @@ model User {
   createdHangouts    Hangout[]           @relation("HangoutCreator")
   hangoutNotes       HangoutNote[]
   hangoutResponses   HangoutResponse[]
+  meetupRsvps        MeetupRSVP[]
   ownerDecisions     HangoutSuggestion[] @relation("SuggestionOwnerDecision")
   hangoutSuggestions HangoutSuggestion[] @relation("SuggestionFriend")
   ownedPups          Pup[]               @relation("PupOwner")
@@ -136,14 +137,28 @@ model HangoutSuggestion {
 }
 
 model CommunityMeetup {
-  id        String   @id @default(uuid())
+  id        String        @id @default(uuid())
   startAt   DateTime
   endAt     DateTime
   location  String
   notes     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
+  rsvps     MeetupRSVP[]
 
   @@index([startAt])
+}
+
+model MeetupRSVP {
+  id        String          @id @default(uuid())
+  meetupId  String
+  userId    String
+  createdAt DateTime        @default(now())
+  meetup    CommunityMeetup @relation(fields: [meetupId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetupId, userId])
+  @@index([meetupId])
+  @@index([userId])
 }
 
 enum UserRole {

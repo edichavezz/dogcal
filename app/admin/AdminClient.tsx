@@ -34,6 +34,9 @@ type Meetup = {
   startAt: string;
   endAt: string;
   location: string;
+  notes?: string | null;
+  rsvpCount: number;
+  rsvpNames: string[];
 };
 
 export default function AdminClient() {
@@ -46,6 +49,8 @@ export default function AdminClient() {
   const [loginLoading, setLoginLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [generatingMeetups, setGeneratingMeetups] = useState(false);
+  const [editingMeetup, setEditingMeetup] = useState<string | null>(null);
+  const [editMeetupForm, setEditMeetupForm] = useState({ date: '', startTime: '', endTime: '', location: '', notes: '' });
 
   // Modal states
   const [showAddOwner, setShowAddOwner] = useState(false);
@@ -120,6 +125,38 @@ export default function AdminClient() {
       showMessage('success', 'Meetup deleted');
     } catch {
       showMessage('error', 'Failed to delete meetup');
+    }
+  };
+
+  const startEditMeetup = (meetup: Meetup) => {
+    const start = new Date(meetup.startAt);
+    const end = new Date(meetup.endAt);
+    setEditMeetupForm({
+      date: start.toISOString().slice(0, 10),
+      startTime: start.toTimeString().slice(0, 5),
+      endTime: end.toTimeString().slice(0, 5),
+      location: meetup.location,
+      notes: meetup.notes || '',
+    });
+    setEditingMeetup(meetup.id);
+  };
+
+  const handleSaveMeetup = async (meetupId: string) => {
+    try {
+      const { date, startTime, endTime, location, notes } = editMeetupForm;
+      const startAt = new Date(`${date}T${startTime}:00`).toISOString();
+      const endAt = new Date(`${date}T${endTime}:00`).toISOString();
+      const res = await fetch(`/api/meetups/${meetupId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startAt, endAt, location, notes: notes || null }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      setEditingMeetup(null);
+      fetchMeetups();
+      showMessage('success', 'Meetup updated!');
+    } catch {
+      showMessage('error', 'Failed to update meetup');
     }
   };
 
@@ -437,21 +474,110 @@ export default function AdminClient() {
             {meetups.length === 0 ? (
               <p className="text-sm text-gray-500 italic">No upcoming meetups. Click &quot;Generate next 8 Sundays&quot; to create them.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {meetups.map((meetup) => (
-                  <div key={meetup.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {formatMeetupDate(meetup.startAt)} &middot; {formatMeetupTime(meetup.startAt, meetup.endAt)}
-                      </p>
-                      <p className="text-xs text-gray-500">{meetup.location}</p>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteMeetup(meetup.id)}
-                      className="text-xs text-red-600 hover:text-red-700 font-medium ml-4"
-                    >
-                      Delete
-                    </button>
+                  <div key={meetup.id} className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+                    {editingMeetup === meetup.id ? (
+                      /* Edit form */
+                      <div className="p-4 space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="col-span-3 sm:col-span-1">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                            <input
+                              type="date"
+                              value={editMeetupForm.date}
+                              onChange={(e) => setEditMeetupForm({ ...editMeetupForm, date: e.target.value })}
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a3a3a]/20"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Start</label>
+                            <input
+                              type="time"
+                              value={editMeetupForm.startTime}
+                              onChange={(e) => setEditMeetupForm({ ...editMeetupForm, startTime: e.target.value })}
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a3a3a]/20"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">End</label>
+                            <input
+                              type="time"
+                              value={editMeetupForm.endTime}
+                              onChange={(e) => setEditMeetupForm({ ...editMeetupForm, endTime: e.target.value })}
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a3a3a]/20"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Location</label>
+                          <input
+                            type="text"
+                            value={editMeetupForm.location}
+                            onChange={(e) => setEditMeetupForm({ ...editMeetupForm, location: e.target.value })}
+                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a3a3a]/20"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Notes (optional)</label>
+                          <input
+                            type="text"
+                            value={editMeetupForm.notes}
+                            onChange={(e) => setEditMeetupForm({ ...editMeetupForm, notes: e.target.value })}
+                            placeholder="e.g. Meet at the main gate"
+                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a3a3a]/20"
+                          />
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => handleSaveMeetup(meetup.id)}
+                            className="px-3 py-1.5 text-xs bg-[#1a3a3a] text-white rounded-lg hover:bg-[#2a4a4a] font-medium"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingMeetup(null)}
+                            className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Display row */
+                      <div className="px-4 py-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900">
+                              {formatMeetupDate(meetup.startAt)} &middot; {formatMeetupTime(meetup.startAt, meetup.endAt)}
+                            </p>
+                            <p className="text-xs text-gray-500">{meetup.location}</p>
+                            {meetup.notes && <p className="text-xs text-gray-400 italic mt-0.5">{meetup.notes}</p>}
+                            {meetup.rsvpCount > 0 ? (
+                              <p className="text-xs text-green-700 mt-1 font-medium">
+                                {meetup.rsvpCount} going: {meetup.rsvpNames.join(', ')}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-gray-400 mt-1">No RSVPs yet</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <button
+                              onClick={() => startEditMeetup(meetup)}
+                              className="text-xs text-[#1a3a3a] hover:text-[#2a4a4a] font-medium"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMeetup(meetup.id)}
+                              className="text-xs text-red-600 hover:text-red-700 font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

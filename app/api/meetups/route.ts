@@ -2,16 +2,38 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getActingUserId } from '@/lib/cookies';
 
-// GET /api/meetups - returns upcoming meetups (public)
+// GET /api/meetups - returns upcoming meetups with RSVP info
 export async function GET() {
   try {
     const now = new Date();
+    const actingUserId = await getActingUserId(); // optional — used to mark current user's RSVPs
+
     const meetups = await prisma.communityMeetup.findMany({
       where: { startAt: { gte: now } },
       orderBy: { startAt: 'asc' },
       take: 12,
+      include: {
+        rsvps: {
+          select: {
+            userId: true,
+            user: { select: { name: true } },
+          },
+        },
+      },
     });
-    return NextResponse.json({ meetups });
+
+    const result = meetups.map((m) => ({
+      id: m.id,
+      startAt: m.startAt,
+      endAt: m.endAt,
+      location: m.location,
+      notes: m.notes,
+      rsvpCount: m.rsvps.length,
+      rsvpNames: m.rsvps.map((r) => r.user.name),
+      currentUserRsvpd: actingUserId ? m.rsvps.some((r) => r.userId === actingUserId) : false,
+    }));
+
+    return NextResponse.json({ meetups: result });
   } catch (error) {
     console.error('Error fetching meetups:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -34,7 +56,6 @@ export async function POST() {
     const dayOfWeek = date.getDay(); // 0 = Sunday
     let daysUntilSunday: number;
     if (dayOfWeek === 0) {
-      // Today is Sunday - if 10am already passed, move to next Sunday
       daysUntilSunday = now.getHours() >= 10 ? 7 : 0;
     } else {
       daysUntilSunday = 7 - dayOfWeek;

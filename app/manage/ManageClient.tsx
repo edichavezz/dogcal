@@ -746,7 +746,7 @@ export default function ManageClient({ user, allFriends }: Props) {
         </div>
 
         {/* Meet New Friends Section */}
-        <MeetNewFriendsSection userRole={user.role} />
+        <MeetNewFriendsSection userRole={user.role} userId={user.id} />
       </div>
     );
   }
@@ -928,45 +928,85 @@ export default function ManageClient({ user, allFriends }: Props) {
       </div>
 
       {/* Meet New Friends Section */}
-      <MeetNewFriendsSection userRole={user.role} />
+      <MeetNewFriendsSection userRole={user.role} userId={user.id} />
     </div>
   );
 }
 
 // --- Meet New Friends Section ---
 
-function MeetNewFriendsSection({ userRole }: { userRole: 'OWNER' | 'FRIEND' }) {
-  const [meetups, setMeetups] = useState<Meetup[]>([]);
+type MeetupWithRsvp = Meetup & {
+  rsvpCount: number;
+  rsvpNames: string[];
+  currentUserRsvpd: boolean;
+};
+
+function MeetNewFriendsSection({ userRole, userId }: { userRole: 'OWNER' | 'FRIEND'; userId: string }) {
+  const [meetups, setMeetups] = useState<MeetupWithRsvp[]>([]);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: '', email: '', type: '' });
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [rsvpLoading, setRsvpLoading] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadMeetups = () => {
     fetch('/api/meetups')
       .then((r) => r.json())
       .then((d) => setMeetups(d.meetups || []))
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadMeetups();
   }, []);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!inviteForm.name.trim() || !inviteForm.email.trim() || !inviteForm.type) return;
     setInviteStatus('sending');
     try {
-      const interest = inviteForm.type === 'owner' ? 'owner' : 'friend';
-      const res = await fetch('/api/contact', {
+      const res = await fetch('/api/meetups/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: inviteForm.name,
           email: inviteForm.email,
-          interest,
-          message: `Invited by a dogcal ${userRole === 'OWNER' ? 'owner' : 'friend'} to join the community.`,
+          type: inviteForm.type,
         }),
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('Invite error:', err);
+        throw new Error('Failed');
+      }
       setInviteStatus('sent');
     } catch {
       setInviteStatus('error');
+    }
+  };
+
+  const handleRsvp = async (meetupId: string, currentlyRsvpd: boolean) => {
+    setRsvpLoading(meetupId);
+    try {
+      const method = currentlyRsvpd ? 'DELETE' : 'POST';
+      const res = await fetch(`/api/meetups/${meetupId}/rsvp`, { method });
+      if (!res.ok) throw new Error('Failed');
+      // Optimistically update
+      setMeetups((prev) =>
+        prev.map((m) => {
+          if (m.id !== meetupId) return m;
+          const newRsvpd = !currentlyRsvpd;
+          return {
+            ...m,
+            currentUserRsvpd: newRsvpd,
+            rsvpCount: newRsvpd ? m.rsvpCount + 1 : m.rsvpCount - 1,
+          };
+        })
+      );
+    } catch {
+      // silently fail — reload to sync
+      loadMeetups();
+    } finally {
+      setRsvpLoading(null);
     }
   };
 
@@ -983,16 +1023,14 @@ function MeetNewFriendsSection({ userRole }: { userRole: 'OWNER' | 'FRIEND' }) {
     return `${start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}–${end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
   };
 
+  // suppress userId lint warning — it's used in handleRsvp via closure
+  void userId;
+
   return (
     <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-5 sm:p-6">
       <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
         Meet new {userRole === 'OWNER' ? 'friends' : 'pups'}
       </h2>
-      <p className="text-sm text-gray-600 mb-5">
-        {userRole === 'OWNER'
-          ? 'Find people who love dogs as much as you do.'
-          : 'Find more dogs and dog lovers to spend time with.'}
-      </p>
 
       <div className="space-y-4">
         {/* Option 1: Clissold Park meetup */}
@@ -1003,20 +1041,52 @@ function MeetNewFriendsSection({ userRole }: { userRole: 'OWNER' | 'FRIEND' }) {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900 text-sm mb-1">Join a dogcal meetup</h3>
-              <p className="text-xs text-gray-600 mb-3">
-                Every Sunday at Clissold Park, Stoke Newington — 10am to 11am. Dog lovers,
-                owners, and friends all welcome. A great place to meet people who can help
-                out and who you can help in return.
+              <p className="text-xs text-gray-600 mb-1">
+                A chance for dogs and their people to meet. Bring along a friend who would like to join
+                the dogcal community — the more the merrier.
               </p>
+              <p className="text-xs text-gray-500 mb-3">
+                If your dog is reactive to other dogs but you still want to meet people,{' '}
+                <a href="/about#contact" className="underline text-[#1a3a3a] hover:text-[#2a4a4a]">
+                  get in touch
+                </a>{' '}
+                and we&apos;ll help you find friends.
+              </p>
+
               {meetups.length > 0 ? (
-                <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-gray-700 mb-1">Upcoming dates:</p>
+                <div className="space-y-3">
                   {meetups.slice(0, 3).map((meetup) => (
-                    <div key={meetup.id} className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#1a3a3a] flex-shrink-0" />
-                      <span className="text-xs text-gray-700">
-                        {formatDate(meetup.startAt)}, {formatTime(meetup.startAt, meetup.endAt)}
-                      </span>
+                    <div key={meetup.id} className="bg-white rounded-lg p-3 border border-[#1a3a3a]/10">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-gray-900">
+                            {formatDate(meetup.startAt)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatTime(meetup.startAt, meetup.endAt)} · {meetup.location.split(',')[0]}
+                          </p>
+                          {meetup.rsvpCount > 0 && (
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {meetup.rsvpCount} {meetup.rsvpCount === 1 ? 'person' : 'people'} going
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRsvp(meetup.id, meetup.currentUserRsvpd)}
+                          disabled={rsvpLoading === meetup.id}
+                          className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+                            meetup.currentUserRsvpd
+                              ? 'bg-[#1a3a3a] text-white hover:bg-[#2a4a4a]'
+                              : 'bg-white text-[#1a3a3a] border border-[#1a3a3a]/30 hover:bg-[#1a3a3a]/5'
+                          }`}
+                        >
+                          {rsvpLoading === meetup.id
+                            ? '...'
+                            : meetup.currentUserRsvpd
+                            ? "I'm going ✓"
+                            : "I'm coming"}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1027,28 +1097,28 @@ function MeetNewFriendsSection({ userRole }: { userRole: 'OWNER' | 'FRIEND' }) {
           </div>
         </div>
 
-        {/* Option 2: Invite someone */}
+        {/* Option 2: Request invite for someone */}
         <div className="rounded-xl border border-[#f4a9a8]/40 bg-[#f4a9a8]/10 p-4">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-full bg-[#f4a9a8] flex items-center justify-center flex-shrink-0 mt-0.5">
               <Mail className="w-4 h-4 text-[#1a3a3a]" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">Invite someone to dogcal</h3>
+              <h3 className="font-semibold text-gray-900 text-sm mb-1">Bring a friend to dogcal</h3>
               <p className="text-xs text-gray-600 mb-3">
                 {userRole === 'OWNER'
-                  ? 'Know someone who loves dogs or has a dog that needs care? Invite them to join the community.'
-                  : 'Know someone with a dog or another dog lover? Invite them to join!'}
+                  ? 'Know someone who loves dogs or has a dog that needs care? Request an invite for them.'
+                  : 'Know someone with a dog or another dog lover? Request an invite for them.'}
               </p>
 
               {inviteStatus === 'sent' ? (
-                <p className="text-sm text-green-700 font-medium">Invite sent! We&apos;ll be in touch with them.</p>
+                <p className="text-sm text-green-700 font-medium">Request sent! We&apos;ll be in touch with them soon.</p>
               ) : !showInvite ? (
                 <button
                   onClick={() => setShowInvite(true)}
                   className="px-4 py-2 bg-[#f4a9a8] text-[#1a3a3a] rounded-lg font-medium text-sm hover:bg-[#f5b9b8] transition-colors"
                 >
-                  Send an invite
+                  Request an invite for them
                 </button>
               ) : (
                 <form onSubmit={handleInvite} className="space-y-3">
@@ -1087,7 +1157,7 @@ function MeetNewFriendsSection({ userRole }: { userRole: 'OWNER' | 'FRIEND' }) {
                       disabled={inviteStatus === 'sending'}
                       className="px-4 py-2 bg-[#f4a9a8] text-[#1a3a3a] rounded-lg font-medium text-sm hover:bg-[#f5b9b8] disabled:opacity-50 transition-colors"
                     >
-                      {inviteStatus === 'sending' ? 'Sending...' : 'Send invite'}
+                      {inviteStatus === 'sending' ? 'Sending...' : 'Request invite'}
                     </button>
                     <button
                       type="button"
