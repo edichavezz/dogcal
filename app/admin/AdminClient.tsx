@@ -19,6 +19,14 @@ import { User, Pup } from '@prisma/client';
 
 type UserWithPups = User & { ownedPups?: Pup[] };
 
+type AdminFriendship = {
+  id: string;
+  pupId: string;
+  pupName: string;
+  friendUserId: string;
+  friendName: string;
+};
+
 interface TokenData {
   userId: string;
   name: string;
@@ -44,6 +52,9 @@ export default function AdminClient() {
   const [pups, setPups] = useState<Pup[]>([]);
   const [tokens, setTokens] = useState<TokenData[]>([]);
   const [meetups, setMeetups] = useState<Meetup[]>([]);
+  const [friendships, setFriendships] = useState<AdminFriendship[]>([]);
+  const [addFriendshipPupId, setAddFriendshipPupId] = useState<string | null>(null);
+  const [addFriendshipUserId, setAddFriendshipUserId] = useState('');
   const [loading, setLoading] = useState(true);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState<string | null>(null);
@@ -67,10 +78,11 @@ export default function AdminClient() {
 
   const fetchData = async () => {
     try {
-      const [usersRes, pupsRes, tokensRes] = await Promise.all([
+      const [usersRes, pupsRes, tokensRes, friendshipsRes] = await Promise.all([
         fetch('/api/users'),
         fetch('/api/pups'),
         fetch('/api/admin/tokens'),
+        fetch('/api/admin/friendships'),
       ]);
 
       if (!usersRes.ok || !pupsRes.ok || !tokensRes.ok) {
@@ -84,11 +96,50 @@ export default function AdminClient() {
       setUsers(usersData.users || []);
       setPups(pupsData.pups || []);
       setTokens(tokensData.tokens || []);
+
+      if (friendshipsRes.ok) {
+        const friendshipsData = await friendshipsRes.json();
+        setFriendships(friendshipsData.friendships || []);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       showMessage('error', 'Failed to load data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddFriendship = async (pupId: string) => {
+    if (!addFriendshipUserId) return;
+    try {
+      const res = await fetch('/api/admin/friendships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pupId, userId: addFriendshipUserId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showMessage('error', data.error || 'Failed to add friendship');
+        return;
+      }
+      setFriendships((prev) => [...prev, data.friendship]);
+      setAddFriendshipPupId(null);
+      setAddFriendshipUserId('');
+      showMessage('success', 'Friendship added!');
+    } catch {
+      showMessage('error', 'Failed to add friendship');
+    }
+  };
+
+  const handleRemoveFriendship = async (friendshipId: string) => {
+    if (!confirm('Remove this friendship?')) return;
+    try {
+      const res = await fetch(`/api/admin/friendships/${friendshipId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed');
+      setFriendships((prev) => prev.filter((f) => f.id !== friendshipId));
+      showMessage('success', 'Friendship removed');
+    } catch {
+      showMessage('error', 'Failed to remove friendship');
     }
   };
 
@@ -456,6 +507,91 @@ export default function AdminClient() {
             <div className="mt-3 text-sm text-gray-600">
               <strong>Total:</strong> {tokens.length} users ({tokens.filter(t => t.role === 'OWNER').length} owners, {tokens.filter(t => t.role === 'FRIEND').length} friends)
             </div>
+          </div>
+
+          {/* Pup Friendships Section */}
+          <div className="p-4 sm:p-6 border-t border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Pup Friendships</h2>
+            {pups.length === 0 ? (
+              <p className="text-sm text-gray-500 italic">No pups yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {pups.map((pup) => {
+                  const pupFriendships = friendships.filter((f) => f.pupId === pup.id);
+                  const availableUsers = users.filter(
+                    (u) => u.id !== pup.ownerUserId && !pupFriendships.some((f) => f.friendUserId === u.id)
+                  );
+                  const isAdding = addFriendshipPupId === pup.id;
+
+                  return (
+                    <div
+                      key={pup.id}
+                      className="flex items-start gap-3 flex-wrap bg-gray-50 rounded-xl px-4 py-3"
+                    >
+                      <span className="text-sm font-medium text-gray-700 w-24 flex-shrink-0 pt-0.5">
+                        {pup.name}
+                      </span>
+                      <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                        {pupFriendships.map((f) => (
+                          <span
+                            key={f.id}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#f4a9a8]/20 text-[#1a3a3a] text-xs rounded-full font-medium border border-[#f4a9a8]/40"
+                          >
+                            {f.friendName}
+                            <button
+                              onClick={() => handleRemoveFriendship(f.id)}
+                              className="ml-0.5 text-gray-400 hover:text-red-600 transition-colors leading-none"
+                              title="Remove friendship"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+
+                        {isAdding ? (
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={addFriendshipUserId}
+                              onChange={(e) => setAddFriendshipUserId(e.target.value)}
+                              className="text-xs px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1a3a3a]/20"
+                            >
+                              <option value="">Select user...</option>
+                              {availableUsers.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.name} ({u.role === 'OWNER' ? 'Owner' : 'Friend'})
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => handleAddFriendship(pup.id)}
+                              disabled={!addFriendshipUserId}
+                              className="text-xs px-2.5 py-1 bg-[#1a3a3a] text-white rounded-lg hover:bg-[#2a4a4a] disabled:bg-gray-300 transition-colors"
+                            >
+                              Add
+                            </button>
+                            <button
+                              onClick={() => { setAddFriendshipPupId(null); setAddFriendshipUserId(''); }}
+                              className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : availableUsers.length > 0 ? (
+                          <button
+                            onClick={() => { setAddFriendshipPupId(pup.id); setAddFriendshipUserId(''); }}
+                            className="text-xs px-2 py-1 border border-dashed border-gray-400 text-gray-500 rounded-full hover:border-[#1a3a3a] hover:text-[#1a3a3a] transition-colors"
+                          >
+                            + Add
+                          </button>
+                        ) : pupFriendships.length === 0 ? (
+                          <span className="text-xs text-gray-400 italic">No friends yet</span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Community Meetups Section */}
