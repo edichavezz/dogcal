@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Plus, Lightbulb } from 'lucide-react';
+import PupFriendsList from './PupFriendsList';
 
 export type PupCardData = {
   id: string;
@@ -12,6 +13,7 @@ export type PupCardData = {
     id: string;
     name: string;
   };
+  friends?: Array<{ id: string; name: string; profilePhotoUrl: string | null }>;
 };
 
 type PupActionCardProps = {
@@ -69,6 +71,9 @@ export default function PupActionCard({ pup, isOwner, ownerName }: PupActionCard
           <ActionIcon className="w-3.5 h-3.5 flex-shrink-0" />
           <span>{actionLabel}</span>
         </div>
+        {pup.friends && pup.friends.length > 0 && (
+          <PupFriendsList friends={pup.friends} pupName={pup.name} />
+        )}
       </div>
     </Link>
   );

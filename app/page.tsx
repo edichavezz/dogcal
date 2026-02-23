@@ -71,6 +71,13 @@ export default async function Home() {
           id: true,
           name: true,
           profilePhotoUrl: true,
+          friendships: {
+            select: {
+              friend: {
+                select: { id: true, name: true, profilePhotoUrl: true },
+              },
+            },
+          },
         },
       },
       pupFriendships: {
@@ -196,9 +203,17 @@ export default async function Home() {
       owner: f.pup.owner,
     }));
 
+    const userWithFriends = {
+      ...user,
+      ownedPups: user.ownedPups.map(pup => ({
+        ...pup,
+        friends: pup.friendships.map(f => f.friend),
+      })),
+    };
+
     return (
       <WelcomeScreen
-        user={user}
+        user={userWithFriends}
         upcomingHangouts={upcomingHangouts.map(toIsoHangoutSummary)}
         upcomingHangoutsTotal={upcomingHangoutsTotal}
         pendingSuggestions={pendingSuggestions.map(s => ({

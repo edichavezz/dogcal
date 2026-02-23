@@ -33,6 +33,7 @@ type WelcomeUser = {
     id: string;
     name: string;
     profilePhotoUrl?: string | null;
+    friends?: Array<{ id: string; name: string; profilePhotoUrl: string | null }>;
   }>;
   pupFriendships: Array<{
     id: string;
