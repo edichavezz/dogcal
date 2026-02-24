@@ -58,6 +58,40 @@ type EventDetailsModalProps = {
   onUpdate: () => void;
 };
 
+function buildGoogleCalendarUrl(hangout: Hangout): string {
+  // Google Calendar expects UTC dates in YYYYMMDDTHHmmssZ format
+  const toGCalDate = (iso: string) => iso.replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  const title = hangout.eventName
+    ? `${hangout.eventName} (${hangout.pup.name})`
+    : `Hang out with ${hangout.pup.name}`;
+
+  const lines: string[] = [
+    `${hangout.pup.name}'s hangout`,
+    `Owner: ${hangout.pup.owner.name}`,
+    `Friend: ${hangout.assignedFriend?.name ?? '—'}`,
+  ];
+
+  if (hangout.ownerNotes) {
+    lines.push('', 'Notes from owner:', hangout.ownerNotes);
+  }
+
+  if (hangout.pup.careInstructions) {
+    lines.push('', `Care instructions for ${hangout.pup.name}:`, hangout.pup.careInstructions);
+  }
+
+  lines.push('', `View details: ${window.location.origin}`);
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${toGCalDate(hangout.startAt)}/${toGCalDate(hangout.endAt)}`,
+    details: lines.join('\n'),
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 export default function EventDetailsModal({
   hangout,
   actingUserId,
@@ -626,11 +660,6 @@ export default function EventDetailsModal({
                 </div>
               </div>
             )}
-            {hangout.status === 'ASSIGNED' && (isOwner || isAssignedToMe) && (
-              <p className="mt-2 text-xs text-gray-500">
-                Calendar exports are one-way. If details change, export again.
-              </p>
-            )}
           </div>
 
           {/* Owner Notes */}
@@ -767,11 +796,12 @@ export default function EventDetailsModal({
                   )}
                   {hangout.status === 'ASSIGNED' && (isOwner || isAssignedToMe) && (
                     <a
-                      href={`/api/hangouts/${hangout.id}/calendar`}
-                      download
+                      href={buildGoogleCalendarUrl(hangout)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex-1 px-6 py-3 bg-blue-50 text-blue-700 font-medium rounded-xl hover:bg-blue-100 transition-all text-center"
                     >
-                      Add to calendar
+                      Add to Google Calendar
                     </a>
                   )}
                   {isOwner && (
