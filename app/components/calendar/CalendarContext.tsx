@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
-import { startOfMonth, addMonths, subMonths } from 'date-fns';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react';
+import { startOfMonth, addMonths, subMonths, startOfDay, addDays, subDays } from 'date-fns';
 
 // Extended CalendarEvent type with v1's extra fields
 export type CalendarEvent = {
@@ -25,10 +25,14 @@ export type CalendarEvent = {
 
 type CalendarDataContextType = {
   currentMonth: Date;
+  mobileFocusDate: Date;
+  isMobileView: boolean;
   events: CalendarEvent[];
   goToNextMonth: () => void;
   goToPrevMonth: () => void;
   goToToday: () => void;
+  goToNext3Days: () => void;
+  goToPrev3Days: () => void;
 };
 
 type CalendarSheetContextType = {
@@ -55,6 +59,16 @@ export function CalendarProvider({ children, events }: CalendarProviderProps) {
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [mobileFocusDate, setMobileFocusDate] = useState(() => startOfDay(new Date()));
+  const [isMobileView, setIsMobileView] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    setIsMobileView(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobileView(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const goToNextMonth = useCallback(() => {
     setCurrentMonth(prev => addMonths(prev, 1));
@@ -66,6 +80,15 @@ export function CalendarProvider({ children, events }: CalendarProviderProps) {
 
   const goToToday = useCallback(() => {
     setCurrentMonth(startOfMonth(new Date()));
+    setMobileFocusDate(startOfDay(new Date()));
+  }, []);
+
+  const goToNext3Days = useCallback(() => {
+    setMobileFocusDate(prev => addDays(prev, 3));
+  }, []);
+
+  const goToPrev3Days = useCallback(() => {
+    setMobileFocusDate(prev => subDays(prev, 3));
   }, []);
 
   const selectEvent = useCallback((event: CalendarEvent | null) => {
@@ -86,11 +109,15 @@ export function CalendarProvider({ children, events }: CalendarProviderProps) {
 
   const dataValue = useMemo(() => ({
     currentMonth,
+    mobileFocusDate,
+    isMobileView,
     events,
     goToNextMonth,
     goToPrevMonth,
     goToToday,
-  }), [currentMonth, events, goToNextMonth, goToPrevMonth, goToToday]);
+    goToNext3Days,
+    goToPrev3Days,
+  }), [currentMonth, mobileFocusDate, isMobileView, events, goToNextMonth, goToPrevMonth, goToToday, goToNext3Days, goToPrev3Days]);
 
   const sheetValue = useMemo(() => ({
     selectedEvent,
