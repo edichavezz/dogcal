@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { Calendar, List, Plus, Lightbulb } from 'lucide-react';
 import {
   generateHangoutTitle,
+  generateSuggestionTitle,
   getEventGradientClass,
   getFriendColor,
 } from '@/lib/colorUtils';
@@ -190,9 +191,15 @@ function CalendarView({
     return filtered;
   }, [pupFilteredHangouts, filters]);
 
-  // Transform hangouts to CalendarEvent format for MonthCalendar
+  // Suggestions filtered by selected pups
+  const pupFilteredSuggestions = useMemo(
+    () => (allPups.length > 1 ? suggestions.filter((s) => selectedPupIds.has(s.pup.id)) : suggestions),
+    [suggestions, allPups.length, selectedPupIds]
+  );
+
+  // Transform hangouts + suggestions to CalendarEvent format for MonthCalendar
   const calendarEvents = useMemo((): CalendarEvent[] => {
-    return pupFilteredHangouts.map((hangout) => ({
+    const hangoutEvents = pupFilteredHangouts.map((hangout) => ({
       id: hangout.id,
       title: hangout.eventName || generateHangoutTitle(hangout),
       startAt: new Date(hangout.startAt),
@@ -210,7 +217,22 @@ function CalendarView({
       seriesId: hangout.seriesId,
       isRecurring: !!hangout.seriesId,
     }));
-  }, [hangouts]);
+
+    const suggestionEvents = pupFilteredSuggestions.map((suggestion) => ({
+      id: suggestion.id,
+      title: generateSuggestionTitle(suggestion),
+      startAt: new Date(suggestion.startAt),
+      endAt: new Date(suggestion.endAt),
+      type: 'suggestion' as const,
+      status: 'PENDING',
+      pupId: suggestion.pup.id,
+      pupName: suggestion.pup.name,
+      pupPhotoUrl: suggestion.pup.profilePhotoUrl,
+      colorClass: getEventGradientClass(suggestion.pup.id),
+    }));
+
+    return [...hangoutEvents, ...suggestionEvents];
+  }, [pupFilteredHangouts, pupFilteredSuggestions]);
 
   // Handle list item click
   const handleListItemClick = useCallback(async (hangout: Hangout) => {
@@ -225,6 +247,7 @@ function CalendarView({
 
   // Handle calendar event view details
   const handleViewDetails = useCallback(async (event: CalendarEvent) => {
+    if (event.type === 'suggestion') return;
     if (event.hangout) {
       try {
         const response = await fetch(`/api/hangouts/${event.id}`);
