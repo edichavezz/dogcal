@@ -1,7 +1,7 @@
 'use client';
 
 import Avatar from './Avatar';
-import { formatPhoneForWaMe, type NotificationResult } from '@/lib/whatsapp';
+import { formatPhoneForWaMe, type NotificationResult } from '@/lib/whatsapp-client';
 
 type NotificationResultModalProps = {
   results: NotificationResult[];
