@@ -10,8 +10,18 @@ import { prisma } from '@/lib/prisma';
 
 const updatePupSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  breed: z.string().max(100).optional().nullable(),
   careInstructions: z.string().max(2000).optional().nullable(),
   profilePhotoUrl: z.string().url().optional().nullable(),
+  // FAQ fields
+  about: z.string().max(2000).optional().nullable(),
+  food: z.string().max(2000).optional().nullable(),
+  treats: z.string().max(2000).optional().nullable(),
+  walks: z.string().max(2000).optional().nullable(),
+  leash: z.string().max(2000).optional().nullable(),
+  socialising: z.string().max(2000).optional().nullable(),
+  tricks: z.string().max(2000).optional().nullable(),
+  play: z.string().max(2000).optional().nullable(),
 });
 
 export async function GET(
