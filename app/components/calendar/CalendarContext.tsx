@@ -23,16 +23,20 @@ export type CalendarEvent = {
   isRecurring?: boolean;
 };
 
+export type MobileViewMode = '3day' | 'month';
+
 type CalendarDataContextType = {
   currentMonth: Date;
   mobileFocusDate: Date;
   isMobileView: boolean;
+  mobileViewMode: MobileViewMode;
   events: CalendarEvent[];
   goToNextMonth: () => void;
   goToPrevMonth: () => void;
   goToToday: () => void;
   goToNext3Days: () => void;
   goToPrev3Days: () => void;
+  toggleMobileViewMode: () => void;
 };
 
 type CalendarSheetContextType = {
@@ -68,6 +72,7 @@ export function CalendarProvider({ children, events, initialDate }: CalendarProv
     resolvedInitial ? startOfDay(resolvedInitial) : startOfDay(new Date())
   );
   const [isMobileView, setIsMobileView] = useState(false);
+  const [mobileViewMode, setMobileViewMode] = useState<MobileViewMode>('3day');
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)');
@@ -98,6 +103,10 @@ export function CalendarProvider({ children, events, initialDate }: CalendarProv
     setMobileFocusDate(prev => subDays(prev, 3));
   }, []);
 
+  const toggleMobileViewMode = useCallback(() => {
+    setMobileViewMode(prev => (prev === '3day' ? 'month' : '3day'));
+  }, []);
+
   const selectEvent = useCallback((event: CalendarEvent | null) => {
     setSelectedEvent(event);
     if (event) {
@@ -118,13 +127,15 @@ export function CalendarProvider({ children, events, initialDate }: CalendarProv
     currentMonth,
     mobileFocusDate,
     isMobileView,
+    mobileViewMode,
     events,
     goToNextMonth,
     goToPrevMonth,
     goToToday,
     goToNext3Days,
     goToPrev3Days,
-  }), [currentMonth, mobileFocusDate, isMobileView, events, goToNextMonth, goToPrevMonth, goToToday, goToNext3Days, goToPrev3Days]);
+    toggleMobileViewMode,
+  }), [currentMonth, mobileFocusDate, isMobileView, mobileViewMode, events, goToNextMonth, goToPrevMonth, goToToday, goToNext3Days, goToPrev3Days, toggleMobileViewMode]);
 
   const sheetValue = useMemo(() => ({
     selectedEvent,

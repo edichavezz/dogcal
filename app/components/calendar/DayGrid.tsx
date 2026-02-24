@@ -18,11 +18,13 @@ const WEEK_STARTS_ON = 1 as const;
 const EMPTY_EVENTS: CalendarEvent[] = [];
 
 export default function DayGrid() {
-  const { currentMonth, events, mobileFocusDate, isMobileView } = useCalendarData();
+  const { currentMonth, events, mobileFocusDate, isMobileView, mobileViewMode } = useCalendarData();
   const { selectEvent } = useCalendarActions();
 
+  const show3Day = isMobileView && mobileViewMode === '3day';
+
   const days = useMemo(() => {
-    if (isMobileView) {
+    if (show3Day) {
       return [mobileFocusDate, addDays(mobileFocusDate, 1), addDays(mobileFocusDate, 2)];
     }
     const monthStart = startOfMonth(currentMonth);
@@ -30,9 +32,9 @@ export default function DayGrid() {
     const calendarStart = startOfWeek(monthStart, { weekStartsOn: WEEK_STARTS_ON });
     const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: WEEK_STARTS_ON });
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-  }, [currentMonth, isMobileView, mobileFocusDate]);
+  }, [currentMonth, show3Day, mobileFocusDate]);
 
-  const weekdayHeaders = isMobileView ? days.map((d) => format(d, 'EEE')) : WEEKDAYS;
+  const weekdayHeaders = show3Day ? days.map((d) => format(d, 'EEE')) : WEEKDAYS;
 
   // Group events by date
   const eventsByDate = useMemo(() => {
@@ -53,7 +55,7 @@ export default function DayGrid() {
   return (
     <div className="h-full min-h-0 flex flex-col bg-white">
       {/* Weekday headers */}
-      <div className={`grid ${isMobileView ? 'grid-cols-3' : 'grid-cols-7'} border-b border-slate-200`}>
+      <div className={`grid ${show3Day ? 'grid-cols-3' : 'grid-cols-7'} border-b border-slate-200`}>
         {weekdayHeaders.map((day, i) => (
           <div key={i} className="py-2 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
             {day}
@@ -62,7 +64,7 @@ export default function DayGrid() {
       </div>
 
       {/* Calendar grid */}
-      <div className={`flex-1 min-h-0 calendar-grid${isMobileView ? ' calendar-grid-3col' : ''}`}>
+      <div className={`flex-1 min-h-0 calendar-grid${show3Day ? ' calendar-grid-3col' : ''}`}>
         {days.map((day) => {
           const dateKey = day.toISOString().split('T')[0];
           const dayEvents = eventsByDate.get(dateKey) ?? EMPTY_EVENTS;
