@@ -18,6 +18,7 @@ type NotificationResultModalProps = {
   onClose: () => void;
   title: string;
   subtitle?: string;
+  genericMessage?: string;
 };
 
 export default function NotificationResultModal({
@@ -25,8 +26,18 @@ export default function NotificationResultModal({
   onClose,
   title,
   subtitle,
+  genericMessage,
 }: NotificationResultModalProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedGeneric, setCopiedGeneric] = useState(false);
+
+  const handleCopyGeneric = () => {
+    if (!genericMessage) return;
+    navigator.clipboard.writeText(genericMessage).then(() => {
+      setCopiedGeneric(true);
+      setTimeout(() => setCopiedGeneric(false), 2000);
+    });
+  };
 
   const handleCopy = (userId: string, text: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -141,7 +152,15 @@ export default function NotificationResultModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-6 pt-2">
+        <div className="px-6 pb-6 pt-2 space-y-2">
+          {genericMessage && (
+            <button
+              onClick={handleCopyGeneric}
+              className="w-full border border-gray-200 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm"
+            >
+              {copiedGeneric ? 'Copied!' : 'Copy group message'}
+            </button>
+          )}
           <button
             onClick={onClose}
             className="w-full bg-[#1a3a3a] text-white px-4 py-3 rounded-xl hover:bg-[#2a4a4a] transition-colors font-medium"

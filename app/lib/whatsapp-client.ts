@@ -28,3 +28,27 @@ export function formatPhoneForWaMe(phone: string): string {
   }
   return cleaned;
 }
+
+/**
+ * Build a generic, non-personalised message suitable for copying into a group chat.
+ * No names, no deeplinks — just the key event details.
+ */
+export function buildGenericMessage(params: {
+  pupName: string;
+  startAt: Date | string;
+  endAt: Date | string;
+  eventName?: string | null;
+}): string {
+  const start = new Date(params.startAt);
+  const end = new Date(params.endAt);
+  const dateStr = start.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const startTime = start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const endTime = end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const what = params.eventName || 'hangout';
+  return `Hi! Just so you know, ${params.pupName}'s ${what} is on ${dateStr} from ${startTime} to ${endTime}.`;
+}

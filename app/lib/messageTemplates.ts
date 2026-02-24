@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { getLoginUrl, getRespondUrl } from './loginTokens';
+import { getLoginUrl } from './loginTokens';
 
 /**
  * Strip emoji from a message string so it reads cleanly as email/plain text.
@@ -58,8 +58,6 @@ export async function generateHangoutCreatedMessage(params: {
 
   // Get static login URL for the friend
   const loginUrl = await getLoginUrl(friendUserId);
-  const yesUrl = await getRespondUrl(friendUserId, hangoutId, 'yes');
-  const noUrl = await getRespondUrl(friendUserId, hangoutId, 'no');
 
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
@@ -83,14 +81,7 @@ ${ownerName} needs someone to hang out with ${pupName} 🐾
     message += `\n\n💬 Notes: ${ownerNotes}`;
   }
 
-  // Format URL for WhatsApp clickability - ensure it's on its own line
-  message += `\n\n✅ Yes, I can help:
-${yesUrl}
-
-❌ Sorry, I can’t:
-${noUrl}
-
-🔍 View details:
+  message += `\n\n🔍 View details:
 ${loginUrl}
 
 Thanks for being a pup friend!`;
@@ -277,11 +268,9 @@ export async function generateHangoutRescheduledMessage(params: {
   endAt: Date;
   hangoutId: string;
 }): Promise<string> {
-  const { friendUserId, friendName, ownerName, pupName, startAt, endAt, hangoutId } = params;
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
 
   const loginUrl = await getLoginUrl(friendUserId);
-  const yesUrl = await getRespondUrl(friendUserId, hangoutId, 'yes');
-  const noUrl = await getRespondUrl(friendUserId, hangoutId, 'no');
 
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
@@ -295,15 +284,9 @@ ${ownerName} updated the hangout time for ${pupName} 🐾
 📅 ${startFormatted}
 ⏰ Until ${endTimeFormatted}
 
-Please re-confirm if you can still help.`;
+Please let ${ownerName} know if you can still make it.`;
 
-  message += `\n\n✅ Yes, I can help:
-${yesUrl}
-
-❌ Sorry, I can’t:
-${noUrl}
-
-🔍 View details:
+  message += `\n\n🔍 View details:
 ${loginUrl}`;
 
   return stripEmoji(message);
@@ -446,19 +429,16 @@ export async function getHangoutCreatedTemplateVars(params: {
   endAt: Date;
   hangoutId: string;
 }): Promise<Record<string, string>> {
-  const { friendUserId, friendName, ownerName, pupName, startAt, endAt, hangoutId } = params;
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
   const loginUrl = await getLoginUrl(friendUserId);
-  const yesUrl = await getRespondUrl(friendUserId, hangoutId, 'yes');
-  const noUrl = await getRespondUrl(friendUserId, hangoutId, 'no');
   const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
-  const responseLinks = `Yes: ${yesUrl}\nNo: ${noUrl}\nDetails: ${loginUrl}`;
 
   return {
     '1': friendName,
     '2': ownerName,
     '3': pupName,
     '4': dateTime,
-    '5': responseLinks,
+    '5': loginUrl,
   };
 }
 

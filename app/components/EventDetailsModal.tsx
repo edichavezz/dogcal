@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import Avatar from './Avatar';
 import NotificationResultModal from './NotificationResultModal';
+import { buildGenericMessage } from '@/lib/whatsapp-client';
 import { Repeat, Trash2 } from 'lucide-react';
 import type { NotificationResult } from '@/lib/whatsapp';
 
@@ -120,6 +121,7 @@ export default function EventDetailsModal({
   const [deleting, setDeleting] = useState(false);
   const [notificationResults, setNotificationResults] = useState<NotificationResult[] | null>(null);
   const [notificationTitle, setNotificationTitle] = useState('');
+  const [genericMessage, setGenericMessage] = useState<string | null>(null);
   const [responses, setResponses] = useState<NonNullable<Hangout['responses']>>(hangout.responses ?? []);
 
   const pendingActionRef = useRef<
@@ -307,6 +309,12 @@ export default function EventDetailsModal({
       if (data.notificationResults && data.notificationResults.length > 0) {
         pendingActionRef.current = { type: 'update', hangout: merged };
         setNotificationTitle(`Letting ${hangout.pup.name}'s friends know!`);
+        setGenericMessage(buildGenericMessage({
+          pupName: hangout.pup.name,
+          startAt: merged.startAt,
+          endAt: merged.endAt,
+          eventName: merged.eventName,
+        }));
         setNotificationResults(data.notificationResults);
       } else {
         setIsEditingFull(false);
@@ -346,6 +354,12 @@ export default function EventDetailsModal({
       if (data.notificationResults && data.notificationResults.length > 0) {
         pendingActionRef.current = { type: 'delete' };
         setNotificationTitle(`Letting ${hangout.pup.name}'s friends know!`);
+        setGenericMessage(buildGenericMessage({
+          pupName: hangout.pup.name,
+          startAt: hangout.startAt,
+          endAt: hangout.endAt,
+          eventName: hangout.eventName,
+        }));
         setNotificationResults(data.notificationResults);
       } else {
         onDelete(hangout.id);
@@ -360,6 +374,7 @@ export default function EventDetailsModal({
 
   const handleNotificationResultsClose = useCallback(() => {
     setNotificationResults(null);
+    setGenericMessage(null);
     const pending = pendingActionRef.current;
     pendingActionRef.current = null;
     if (pending?.type === 'update') {
@@ -812,6 +827,7 @@ export default function EventDetailsModal({
         <NotificationResultModal
           results={notificationResults}
           title={notificationTitle}
+          genericMessage={genericMessage ?? undefined}
           onClose={handleNotificationResultsClose}
         />
       )}

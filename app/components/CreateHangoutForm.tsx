@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { getPupColor } from '@/lib/colorUtils';
 import type { NotificationResult } from '@/lib/whatsapp';
+import { buildGenericMessage } from '@/lib/whatsapp-client';
 import NotificationResultModal from './NotificationResultModal';
 import TimePeriodPicker, { type TimePeriod } from './forms/TimePeriodPicker';
 
@@ -42,6 +43,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notificationResults, setNotificationResults] = useState<NotificationResult[] | null>(null);
+  const [genericMessage, setGenericMessage] = useState<string | null>(null);
 
   // Get current date
   const now = new Date();
@@ -95,6 +97,13 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
 
       // Show notification results if available
       if (data.notifications && data.notifications.length > 0) {
+        const pupName = pups.find(p => p.id === pupId)?.name ?? 'the pup';
+        setGenericMessage(buildGenericMessage({
+          pupName,
+          startAt: new Date(`${startDate}T${startTime}`),
+          endAt: new Date(`${endDate}T${endTime}`),
+          eventName: eventName || null,
+        }));
         setNotificationResults(data.notifications);
       } else {
         // No notifications to show, redirect immediately
@@ -335,8 +344,10 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
         <NotificationResultModal
           results={notificationResults}
           title={`Letting ${pups.find(p => p.id === pupId)?.name ?? 'the pup'}'s friends know!`}
+          genericMessage={genericMessage ?? undefined}
           onClose={() => {
             setNotificationResults(null);
+            setGenericMessage(null);
             router.push('/calendar');
           }}
         />
