@@ -10,12 +10,13 @@ type MonthCalendarProps = {
   events: CalendarEvent[];
   onViewDetails?: (event: CalendarEvent) => void;
   currentUserId?: string;
+  initialDate?: string;
 };
 
 function CalendarContent({
   onViewDetails,
-}: Omit<MonthCalendarProps, 'events'>) {
-  const { goToNextMonth, goToPrevMonth } = useCalendarData();
+}: Omit<MonthCalendarProps, 'events' | 'initialDate'>) {
+  const { goToNextMonth, goToPrevMonth, goToNext3Days, goToPrev3Days, isMobileView } = useCalendarData();
   const { selectedEvent, isSheetOpen } = useCalendarSheet();
   const { closeSheet } = useCalendarActions();
 
@@ -27,10 +28,10 @@ function CalendarContent({
     }
   }, [isSheetOpen, selectedEvent, onViewDetails, closeSheet]);
 
-  // Swipe gestures for month navigation
+  // Swipe gestures: navigate by 3 days on mobile, by month on desktop
   const { handlers, swipeOffset, isAnimating } = useCalendarGestures({
-    onSwipeLeft: goToNextMonth,
-    onSwipeRight: goToPrevMonth,
+    onSwipeLeft: isMobileView ? goToNext3Days : goToNextMonth,
+    onSwipeRight: isMobileView ? goToPrev3Days : goToPrevMonth,
   });
 
   return (
@@ -57,7 +58,7 @@ function CalendarContent({
 
 export default function MonthCalendar(props: MonthCalendarProps) {
   return (
-    <CalendarProvider events={props.events}>
+    <CalendarProvider events={props.events} initialDate={props.initialDate}>
       <CalendarContent
         onViewDetails={props.onViewDetails}
       />

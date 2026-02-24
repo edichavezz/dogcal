@@ -4,7 +4,12 @@ import { prisma } from '@/lib/prisma';
 import AppLayout from '@/components/AppLayout';
 import CalendarClient from './CalendarClient';
 
-export default async function CalendarPage() {
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { date: initialDate } = await searchParams;
   const actingUserId = await getActingUserId();
 
   if (!actingUserId) {
@@ -160,6 +165,7 @@ export default async function CalendarPage() {
               actingUserRole={actingUser.role}
               ownedPups={ownedPups}
               friendPups={friendPups}
+              initialDate={initialDate}
             />
           </div>
         </div>
@@ -208,6 +214,7 @@ export default async function CalendarPage() {
               actingUserRole={actingUser.role}
               ownedPups={[]}
               friendPups={friendPups}
+              initialDate={initialDate}
             />
           </div>
         </div>

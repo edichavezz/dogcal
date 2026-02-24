@@ -66,6 +66,7 @@ type CalendarClientProps = {
   actingUserRole: 'OWNER' | 'FRIEND';
   ownedPups?: PupInfo[];
   friendPups?: PupInfo[];
+  initialDate?: string;
 };
 
 export default function CalendarClient({
@@ -75,6 +76,7 @@ export default function CalendarClient({
   actingUserRole,
   ownedPups = [],
   friendPups = [],
+  initialDate,
 }: CalendarClientProps) {
   return (
     <CalendarView
@@ -84,6 +86,7 @@ export default function CalendarClient({
       actingUserRole={actingUserRole}
       ownedPups={ownedPups}
       friendPups={friendPups}
+      initialDate={initialDate}
     />
   );
 }

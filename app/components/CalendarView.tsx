@@ -83,6 +83,7 @@ type CalendarViewProps = {
   onUpdate?: () => void;
   ownedPups?: PupInfo[];
   friendPups?: PupInfo[];
+  initialDate?: string;
 };
 
 type ViewMode = 'calendar' | 'list';
@@ -103,6 +104,7 @@ function CalendarView({
   onUpdate,
   ownedPups = [],
   friendPups = [],
+  initialDate,
 }: CalendarViewProps) {
   const [selectedHangout, setSelectedHangout] = useState<Hangout | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
@@ -474,6 +476,7 @@ function CalendarView({
               events={calendarEvents}
               onViewDetails={handleViewDetails}
               currentUserId={actingUserId}
+              initialDate={initialDate}
             />
           </div>
         ) : (

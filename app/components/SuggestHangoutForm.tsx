@@ -92,7 +92,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
         setNotificationResults(data.notifications);
       } else {
         // No notifications to show, redirect immediately
-        router.push('/calendar');
+        router.push(`/calendar?date=${startDate}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -307,7 +307,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
           results={notificationResults}
           onClose={() => {
             setNotificationResults(null);
-            router.push('/calendar');
+            router.push(`/calendar?date=${startDate}`);
           }}
         />
       )}
