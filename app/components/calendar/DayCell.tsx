@@ -38,7 +38,7 @@ function DayCell({ date, events, currentMonth, onSelectEvent }: DayCellProps) {
         {format(date, 'd')}
       </div>
 
-      <div className="mt-1 space-y-0.5">
+      <div className="mt-1 min-h-0 space-y-0.5 overflow-hidden">
         {visibleEvents.map((event) => (
           <EventPill
             key={event.id}

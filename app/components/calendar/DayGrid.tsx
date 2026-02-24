@@ -46,7 +46,7 @@ export default function DayGrid() {
   }, [events]);
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="h-full min-h-0 flex flex-col bg-white">
       {/* Weekday headers */}
       <div className="grid grid-cols-7 border-b border-slate-200">
         {WEEKDAYS.map((day) => (
@@ -60,7 +60,7 @@ export default function DayGrid() {
       </div>
 
       {/* Calendar grid */}
-      <div className="flex-1 calendar-grid">
+      <div className="flex-1 min-h-0 calendar-grid">
         {days.map((day) => {
           const dateKey = day.toISOString().split('T')[0];
           const dayEvents = eventsByDate.get(dateKey) ?? EMPTY_EVENTS;
