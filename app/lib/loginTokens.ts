@@ -3,41 +3,33 @@
  *
  * Generates and validates memorable login passwords stored in the database.
  * Passwords are static (generated once) and human-readable.
- * Format: <pet name><fun verb><user name> all lowercase, no spaces
+ * Format:
+ *   OWNER  → <dogFirstName>-<natureWord>   e.g. buddy-meadow
+ *   FRIEND → <userFirstName>-<natureWord>  e.g. alex-sunbeam
  */
 
 import { prisma } from './prisma';
+import natureWordsData from '../../product/dogcal_nature_words_200.json';
 
-// Fun verbs for memorable passwords
-const FUN_VERBS = [
-  'cuddles',
-  'playswith',
-  'runswith',
-  'snuggles',
-  'walkswith',
-  'napswith',
-  'fetcheswith',
-  'adventureswith',
-  'chillswith',
-  'hangswith',
-];
+const NATURE_WORDS: string[] = natureWordsData.words;
 
 /**
- * Get a random fun verb
+ * Pick a random nature word
  */
-function getRandomVerb(): string {
-  return FUN_VERBS[Math.floor(Math.random() * FUN_VERBS.length)];
+function randomNatureWord(): string {
+  return NATURE_WORDS[Math.floor(Math.random() * NATURE_WORDS.length)];
 }
 
 /**
- * Clean a name for use in password (lowercase, no spaces, alphanumeric only)
+ * Return the first word of a name, lowercased and stripped to alphanumeric only.
+ * "Edi & Tom" → "edi", "Buddy Bear" → "buddy"
  */
-function cleanName(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+function firstWord(name: string): string {
+  return name.trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 /**
- * Generate a memorable password for a user based on their pets
+ * Generate a memorable password for a user based on their role.
  */
 async function generateMemorablePassword(userId: string): Promise<string> {
   const user = await prisma.user.findUnique({
@@ -56,25 +48,23 @@ async function generateMemorablePassword(userId: string): Promise<string> {
     throw new Error('User not found');
   }
 
-  const userName = cleanName(user.name.split(' ')[0]); // First name only
-  const verb = getRandomVerb();
-
-  let petName = '';
+  const natureWord = randomNatureWord();
 
   if (user.role === 'OWNER' && user.ownedPups.length > 0) {
-    // For owners, use their first pup's name
-    petName = cleanName(user.ownedPups[0].name);
-  } else if (user.role === 'FRIEND' && user.pupFriendships.length > 0) {
-    // For friends, use the first pup they care for
-    petName = cleanName(user.pupFriendships[0].pup.name);
+    // Owner → <dogFirstName>-<natureWord>
+    const dogName = firstWord(user.ownedPups[0].name);
+    return `${dogName}-${natureWord}`;
   }
 
-  // If no pet found, use a fallback
-  if (!petName) {
-    petName = 'dogcal';
+  if (user.role === 'FRIEND') {
+    // Friend → <userFirstName>-<natureWord>
+    const userName = firstWord(user.name);
+    return `${userName}-${natureWord}`;
   }
 
-  return `${petName}${verb}${userName}`;
+  // Fallback (owner with no pups, etc.)
+  const userName = firstWord(user.name);
+  return `${userName}-${natureWord}`;
 }
 
 /**
