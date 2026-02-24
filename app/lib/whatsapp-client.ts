@@ -49,6 +49,7 @@ export function buildGenericMessage(params: {
   });
   const startTime = start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const endTime = end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const what = params.eventName || 'hangout';
-  return `Hi! Just so you know, ${params.pupName}'s ${what} is on ${dateStr} from ${startTime} to ${endTime}.`;
+  const what = params.eventName ? `"${params.eventName}"` : 'a hangout';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'DogCal';
+  return `Hey! ${what} for ${params.pupName} is available on ${dateStr} from ${startTime} to ${endTime}. Let me know if you can make it, or log in to ${appUrl} to claim it!`;
 }

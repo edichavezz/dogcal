@@ -158,7 +158,7 @@ export default function NotificationResultModal({
               onClick={handleCopyGeneric}
               className="w-full border border-gray-200 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm"
             >
-              {copiedGeneric ? 'Copied!' : 'Copy group message'}
+              {copiedGeneric ? 'Copied!' : 'Copy message'}
             </button>
           )}
           <button
