@@ -64,7 +64,7 @@ export default function DayGrid() {
       </div>
 
       {/* Calendar grid */}
-      <div className={`flex-1 min-h-0 calendar-grid${show3Day ? ' calendar-grid-3col' : ''}`}>
+      <div className={`flex-1 min-h-0 ${show3Day ? 'calendar-grid-3col' : 'calendar-grid'}`}>
         {days.map((day) => {
           const dateKey = day.toISOString().split('T')[0];
           const dayEvents = eventsByDate.get(dateKey) ?? EMPTY_EVENTS;
