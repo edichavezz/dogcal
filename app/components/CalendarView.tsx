@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useState, useMemo, useCallback } from 'react';
+import Avatar from './Avatar';
 import EventDetailsModal from './EventDetailsModal';
 import HangoutListCard from './home/HangoutListCard';
 import HangoutFilters, { HangoutFiltersState, getTimeFilterRange } from './home/HangoutFilters';
@@ -10,6 +11,7 @@ import { Calendar, List, Plus, Lightbulb } from 'lucide-react';
 import {
   generateHangoutTitle,
   getEventGradientClass,
+  getFriendColor,
 } from '@/lib/colorUtils';
 
 type Hangout = {
@@ -126,6 +128,25 @@ function CalendarView({
     setSelectedPupIds(new Set());
   }, []);
 
+  // Pups that actually appear in event data (used for legend + filter pills)
+  const pupsWithEvents = useMemo(() => {
+    const ids = new Set(hangouts.map((h) => h.pup.id));
+    return allPups.filter((p) => ids.has(p.id));
+  }, [hangouts, allPups]);
+
+  // Friends that appear as assigned in event data (used for legend)
+  const friendsInEvents = useMemo(() => {
+    const seen = new Set<string>();
+    const result: { id: string; name: string; profilePhotoUrl?: string | null }[] = [];
+    for (const h of hangouts) {
+      if (h.assignedFriend && !seen.has(h.assignedFriend.id)) {
+        seen.add(h.assignedFriend.id);
+        result.push(h.assignedFriend);
+      }
+    }
+    return result;
+  }, [hangouts]);
+
   // Hangouts filtered by selected pups (applied before time/status filters)
   const pupFilteredHangouts = useMemo(
     () => (allPups.length > 1 ? hangouts.filter((h) => selectedPupIds.has(h.pup.id)) : hangouts),
@@ -184,7 +205,7 @@ function CalendarView({
       assignedFriendId: hangout.assignedFriend?.id,
       assignedFriendName: hangout.assignedFriend?.name,
       assignedFriendPhotoUrl: hangout.assignedFriend?.profilePhotoUrl,
-      colorClass: getEventGradientClass(hangout.assignedFriend?.id || hangout.pup.id),
+      colorClass: getEventGradientClass(hangout.pup.id),
       hangout,
       seriesId: hangout.seriesId,
       isRecurring: !!hangout.seriesId,
@@ -298,10 +319,10 @@ function CalendarView({
           </div>
         </div>
 
-        {/* Pup filter pills — only shown when there are multiple pups */}
-        {allPups.length > 1 && (
+        {/* Pup filter pills — only shown when ≥2 pups have events */}
+        {pupsWithEvents.length > 1 && (
           <div className="flex items-center gap-2 flex-wrap mt-3">
-            {allPups.length > 2 && (
+            {pupsWithEvents.length > 2 && (
               <>
                 <button
                   onClick={selectAllPups}
@@ -317,7 +338,7 @@ function CalendarView({
                 </button>
               </>
             )}
-            {allPups.map((pup) => (
+            {pupsWithEvents.map((pup) => (
               <button
                 key={pup.id}
                 onClick={() => togglePup(pup.id)}
@@ -329,6 +350,23 @@ function CalendarView({
               >
                 {pup.name}
               </button>
+            ))}
+          </div>
+        )}
+        {/* Friend legend row — only shown when ≥1 assigned friend exists in data */}
+        {friendsInEvents.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap mt-2">
+            <span className="text-xs text-gray-400">Friends:</span>
+            {friendsInEvents.map((f) => (
+              <span key={f.id} className="flex items-center gap-1 text-xs text-gray-600">
+                <Avatar
+                  name={f.name}
+                  photoUrl={f.profilePhotoUrl}
+                  size="xs"
+                  style={{ border: `2px solid ${getFriendColor(f.id)}` }}
+                />
+                {f.name.split(' ')[0]}
+              </span>
             ))}
           </div>
         )}

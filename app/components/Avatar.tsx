@@ -7,6 +7,7 @@ type AvatarProps = {
   name: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  style?: React.CSSProperties;
 };
 
 export default function Avatar({
@@ -14,6 +15,7 @@ export default function Avatar({
   name,
   size = 'md',
   className = '',
+  style,
 }: AvatarProps) {
   const sizeClasses = {
     xs: 'w-6 h-6 text-xs',
@@ -34,6 +36,7 @@ export default function Avatar({
   return (
     <div
       className={`${sizeClasses[size]} rounded-full overflow-hidden bg-[#f4a9a8] flex items-center justify-center flex-shrink-0 ${className}`}
+      style={style}
     >
       {photoUrl ? (
         <Image

@@ -2,7 +2,7 @@
 
 import { format, isToday, isTomorrow, isThisWeek, startOfWeek, addWeeks, differenceInDays, isSameWeek } from 'date-fns';
 import Avatar from '../Avatar';
-import { getEventGradient } from '@/lib/colorUtils';
+import { getEventGradient, getFriendColor } from '@/lib/colorUtils';
 import { Repeat } from 'lucide-react';
 
 export type HangoutCardData = {
@@ -63,8 +63,8 @@ export default function HangoutListCard({ hangout, onClick }: HangoutListCardPro
   const isOpen = hangout.status === 'OPEN';
   const isRecurring = !!hangout.seriesId;
 
-  // Get deterministic color based on assigned friend or pup
-  const colorId = hangout.assignedFriend?.id || hangout.pup.id;
+  // Get deterministic color based on pup (always pup, regardless of assignment)
+  const colorId = hangout.pup.id;
   const gradient = getEventGradient(colorId);
 
   // Format date/time display
@@ -142,6 +142,7 @@ export default function HangoutListCard({ hangout, onClick }: HangoutListCardPro
               photoUrl={hangout.assignedFriend.profilePhotoUrl}
               name={hangout.assignedFriend.name}
               size="sm"
+              style={{ border: `2px solid ${getFriendColor(hangout.assignedFriend.id)}` }}
             />
           ) : null}
         </div>
