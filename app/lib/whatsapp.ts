@@ -18,6 +18,9 @@ export const TEMPLATE_SIDS = {
   hangout_deleted: 'HX31c59973c094cd1060fd787b1b848bac',
   hangout_cancelled: 'HX9bf5e4646a15ffd347d21e04fd19aa55',
   suggestion_deleted: 'HXb74e40dc2bb0036bcdde6e9621a2020a',
+  // TODO: register these templates in Twilio and replace the placeholder SIDs
+  suggestion_approved: 'HX_PLACEHOLDER_suggestion_approved',
+  suggestion_rejected: 'HX_PLACEHOLDER_suggestion_rejected',
 } as const;
 
 export type TemplateName = keyof typeof TEMPLATE_SIDS;
