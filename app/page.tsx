@@ -130,8 +130,10 @@ export default async function Home() {
       status: { in: ['OPEN', 'ASSIGNED'] },
     };
 
-    // OWNER: Upcoming hangouts for their pups + pending suggestions
-    const [allUpcomingHangouts, upcomingHangoutsTotal, pendingSuggestions] = await Promise.all([
+    const friendPupIds = user.pupFriendships.map((f) => f.pupId);
+
+    // OWNER: Upcoming hangouts for their pups + pending suggestions + owner's own submitted suggestions
+    const [allUpcomingHangouts, upcomingHangoutsTotal, pendingSuggestions, mySubmittedSuggestions] = await Promise.all([
       prisma.hangout.findMany({
         where: ownerHangoutWhere,
         orderBy: { startAt: 'asc' },
@@ -192,6 +194,39 @@ export default async function Home() {
           },
         },
       }),
+      // Suggestions submitted by this owner for friend pups
+      friendPupIds.length > 0
+        ? prisma.hangoutSuggestion.findMany({
+            where: {
+              suggestedByFriendUserId: actingUserId,
+              status: 'PENDING',
+              endAt: { gte: now },
+            },
+            orderBy: { startAt: 'asc' },
+            take: HOME_PAGE_SIZE,
+            select: {
+              id: true,
+              startAt: true,
+              endAt: true,
+              eventName: true,
+              friendComment: true,
+              pup: {
+                select: {
+                  id: true,
+                  name: true,
+                  profilePhotoUrl: true,
+                },
+              },
+              suggestedByFriend: {
+                select: {
+                  id: true,
+                  name: true,
+                  profilePhotoUrl: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
     ]);
 
     // Filter to show only the first of each recurring series, then take 5
@@ -217,6 +252,11 @@ export default async function Home() {
         upcomingHangouts={upcomingHangouts.map(toIsoHangoutSummary)}
         upcomingHangoutsTotal={upcomingHangoutsTotal}
         pendingSuggestions={pendingSuggestions.map(s => ({
+          ...s,
+          startAt: s.startAt.toISOString(),
+          endAt: s.endAt.toISOString(),
+        }))}
+        mySubmittedSuggestions={mySubmittedSuggestions.map(s => ({
           ...s,
           startAt: s.startAt.toISOString(),
           endAt: s.endAt.toISOString(),

@@ -3,7 +3,9 @@
 import { memo, useState, useMemo, useCallback } from 'react';
 import Avatar from './Avatar';
 import EventDetailsModal from './EventDetailsModal';
+import SuggestionDetailsModal from './SuggestionDetailsModal';
 import HangoutListCard from './home/HangoutListCard';
+import SuggestionPreviewCard from './home/SuggestionPreviewCard';
 import HangoutFilters, { HangoutFiltersState, getTimeFilterRange } from './home/HangoutFilters';
 import { MonthCalendar, CalendarEvent } from './calendar';
 import Link from 'next/link';
@@ -94,6 +96,7 @@ function CalendarView({
   friendPups = [],
 }: CalendarViewProps) {
   const [selectedHangout, setSelectedHangout] = useState<Hangout | null>(null);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
 
   // Filters state - default to "week" for calendar list
@@ -197,6 +200,19 @@ function CalendarView({
     [suggestions, allPups.length, selectedPupIds]
   );
 
+  // Suggestions filtered by time range for the list view
+  const filteredSuggestionsForList = useMemo(() => {
+    let filtered = [...pupFilteredSuggestions];
+    const timeRange = getTimeFilterRange(filters.timeRange);
+    if (timeRange) {
+      filtered = filtered.filter((s) => {
+        const start = new Date(s.startAt);
+        return start >= timeRange.start && start <= timeRange.end;
+      });
+    }
+    return filtered;
+  }, [pupFilteredSuggestions, filters.timeRange]);
+
   // Transform hangouts + suggestions to CalendarEvent format for MonthCalendar
   const calendarEvents = useMemo((): CalendarEvent[] => {
     const hangoutEvents = pupFilteredHangouts.map((hangout) => ({
@@ -247,7 +263,11 @@ function CalendarView({
 
   // Handle calendar event view details
   const handleViewDetails = useCallback(async (event: CalendarEvent) => {
-    if (event.type === 'suggestion') return;
+    if (event.type === 'suggestion') {
+      const s = suggestions.find((s) => s.id === event.id);
+      if (s) setSelectedSuggestion(s);
+      return;
+    }
     if (event.hangout) {
       try {
         const response = await fetch(`/api/hangouts/${event.id}`);
@@ -257,14 +277,27 @@ function CalendarView({
         console.error('Error fetching hangout details:', error);
       }
     }
+  }, [suggestions]);
+
+  const handleListSuggestionClick = useCallback((suggestion: Suggestion) => {
+    setSelectedSuggestion(suggestion);
   }, []);
 
   const handleCloseModal = useCallback(() => {
     setSelectedHangout(null);
   }, []);
 
+  const handleCloseSuggestionModal = useCallback(() => {
+    setSelectedSuggestion(null);
+  }, []);
+
   const handleModalUpdate = useCallback(() => {
     setSelectedHangout(null);
+    onUpdate();
+  }, [onUpdate]);
+
+  const handleSuggestionModalUpdate = useCallback(() => {
+    setSelectedSuggestion(null);
     onUpdate();
   }, [onUpdate]);
 
@@ -407,19 +440,41 @@ function CalendarView({
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full overflow-y-auto p-4">
-            {filteredHangouts.length > 0 ? (
+            {filteredHangouts.length > 0 || filteredSuggestionsForList.length > 0 ? (
               <div className="space-y-3">
-                {filteredHangouts.map((hangout) => (
-                  <HangoutListCard
-                    key={hangout.id}
-                    hangout={{
-                      ...hangout,
-                      startAt: hangout.startAt.toString(),
-                      endAt: hangout.endAt.toString(),
-                    }}
-                    onClick={() => handleListItemClick(hangout)}
-                  />
-                ))}
+                {[
+                  ...filteredHangouts.map((h) => ({ type: 'hangout' as const, startAt: new Date(h.startAt), id: h.id, hangout: h })),
+                  ...filteredSuggestionsForList.map((s) => ({ type: 'suggestion' as const, startAt: new Date(s.startAt), id: s.id, suggestion: s })),
+                ]
+                  .sort((a, b) => a.startAt.getTime() - b.startAt.getTime())
+                  .map((item) =>
+                    item.type === 'hangout' ? (
+                      <HangoutListCard
+                        key={item.id}
+                        hangout={{
+                          ...item.hangout,
+                          startAt: item.hangout.startAt.toString(),
+                          endAt: item.hangout.endAt.toString(),
+                        }}
+                        onClick={() => handleListItemClick(item.hangout)}
+                      />
+                    ) : (
+                      <SuggestionPreviewCard
+                        key={item.id}
+                        suggestion={{
+                          id: item.suggestion.id,
+                          startAt: item.suggestion.startAt.toString(),
+                          endAt: item.suggestion.endAt.toString(),
+                          eventName: null,
+                          friendComment: item.suggestion.friendComment,
+                          pup: item.suggestion.pup,
+                          suggestedByFriend: item.suggestion.suggestedByFriend,
+                        }}
+                        showFriend={true}
+                        onClick={() => handleListSuggestionClick(item.suggestion)}
+                      />
+                    )
+                  )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
@@ -448,6 +503,14 @@ function CalendarView({
           actingUserRole={actingUserRole}
           onClose={handleCloseModal}
           onUpdate={handleModalUpdate}
+        />
+      )}
+      {selectedSuggestion && (
+        <SuggestionDetailsModal
+          suggestion={selectedSuggestion}
+          actingUserId={actingUserId}
+          onClose={handleCloseSuggestionModal}
+          onUpdate={handleSuggestionModalUpdate}
         />
       )}
     </div>
