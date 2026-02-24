@@ -303,6 +303,15 @@ export async function PATCH(
           whatsappMessage: message,
         });
       } else {
+        const whatsappMessage = await generateHangoutRescheduledMessage({
+          friendUserId: friend.id,
+          friendName: friend.name,
+          ownerName: existingHangout.pup.owner.name,
+          pupName: existingHangout.pup.name,
+          startAt: newStartAt,
+          endAt: newEndAt,
+          hangoutId: existingHangout.id,
+        });
         notificationResults.push({
           userId: friend.id,
           userName: friend.name,
@@ -311,6 +320,7 @@ export async function PATCH(
           relationship: `${existingHangout.pup.name}'s friend`,
           status: 'skipped',
           reason: 'No valid phone number',
+          whatsappMessage,
         });
       }
     }
@@ -343,6 +353,14 @@ export async function PATCH(
           whatsappMessage: message,
         });
       } else {
+        const whatsappMessage = await generateHangoutConfirmedMessage({
+          friendUserId: assignedFriend.id,
+          friendName: assignedFriend.name,
+          ownerName,
+          pupName,
+          startAt: updatedHangout.startAt,
+          endAt: updatedHangout.endAt,
+        });
         notificationResults.push({
           userId: assignedFriend.id,
           userName: assignedFriend.name,
@@ -351,6 +369,7 @@ export async function PATCH(
           relationship: `${pupName}'s friend`,
           status: 'skipped',
           reason: 'No valid phone number',
+          whatsappMessage,
         });
       }
 
@@ -477,6 +496,14 @@ export async function DELETE(
             whatsappMessage,
           });
         } else {
+          const whatsappMessage = await generateHangoutCancelledMessage({
+            friendUserId: friend.id,
+            friendName: friend.name,
+            ownerName,
+            pupName,
+            startAt: hangout.startAt,
+            endAt: hangout.endAt,
+          });
           notificationResults.push({
             userId: friend.id,
             userName: friend.name,
@@ -485,6 +512,7 @@ export async function DELETE(
             relationship: `${pupName}'s friend`,
             status: 'skipped',
             reason: 'No valid phone number',
+            whatsappMessage,
           });
         }
       } else if (hangout.status === 'OPEN') {
@@ -530,6 +558,14 @@ export async function DELETE(
               whatsappMessage,
             });
           } else {
+            const whatsappMessage = await generateHangoutDeletedMessage({
+              friendUserId: friend.id,
+              friendName: friend.name,
+              ownerName,
+              pupName,
+              startAt: hangout.startAt,
+              endAt: hangout.endAt,
+            });
             notificationResults.push({
               userId: friend.id,
               userName: friend.name,
@@ -538,6 +574,7 @@ export async function DELETE(
               relationship: `${pupName}'s friend`,
               status: 'skipped',
               reason: 'No valid phone number',
+              whatsappMessage,
             });
           }
 

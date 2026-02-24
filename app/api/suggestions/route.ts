@@ -137,6 +137,17 @@ export async function POST(request: NextRequest) {
 
           // Check if owner has valid phone number
           if (!isValidPhoneNumber(owner.phoneNumber)) {
+            const whatsappMessage = await generateSuggestionCreatedMessage({
+              ownerUserId: owner.id,
+              ownerName: owner.name,
+              friendName: actingUser.name,
+              pupName: suggestions[0].pup.name,
+              startAt: suggestions[0].startAt,
+              endAt: suggestions[0].endAt,
+              eventName: suggestions[0].eventName,
+              friendComment: suggestions[0].friendComment,
+              suggestionId: suggestions[0].id,
+            });
             notificationResults.push({
               userId: owner.id,
               userName: owner.name,
@@ -145,6 +156,7 @@ export async function POST(request: NextRequest) {
               relationship: `${suggestions[0].pup.name}'s owner`,
               status: 'skipped',
               reason: 'No valid phone number',
+              whatsappMessage,
             });
           } else {
             // Generate template variables and plain-text message using first suggestion in series
@@ -223,6 +235,17 @@ export async function POST(request: NextRequest) {
 
           // Check if owner has valid phone number
           if (!isValidPhoneNumber(owner.phoneNumber)) {
+            const whatsappMessage = await generateSuggestionCreatedMessage({
+              ownerUserId: owner.id,
+              ownerName: owner.name,
+              friendName: actingUser.name,
+              pupName: suggestion.pup.name,
+              startAt: suggestion.startAt,
+              endAt: suggestion.endAt,
+              eventName: suggestion.eventName,
+              friendComment: suggestion.friendComment,
+              suggestionId: suggestion.id,
+            });
             notificationResults.push({
               userId: owner.id,
               userName: owner.name,
@@ -231,6 +254,7 @@ export async function POST(request: NextRequest) {
               relationship: `${suggestion.pup.name}'s owner`,
               status: 'skipped',
               reason: 'No valid phone number',
+              whatsappMessage,
             });
           } else {
             // Generate template variables and plain-text message in parallel

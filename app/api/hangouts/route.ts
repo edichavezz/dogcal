@@ -156,8 +156,19 @@ export async function POST(request: NextRequest) {
           for (const friendship of friendships) {
             const friend = friendship.friend;
 
-            // Skip if no valid phone number
+            // Skip if no valid phone number — still generate copy message for the owner
             if (!isValidPhoneNumber(friend.phoneNumber)) {
+              const whatsappMessage = await generateHangoutCreatedMessage({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: pup.name,
+                startAt: hangouts[0].startAt,
+                endAt: hangouts[0].endAt,
+                eventName: eventName || null,
+                ownerNotes: ownerNotes || null,
+                hangoutId: hangouts[0].id,
+              });
               notificationResults.push({
                 userId: friend.id,
                 userName: friend.name,
@@ -166,6 +177,7 @@ export async function POST(request: NextRequest) {
                 relationship: `${pup.name}'s friend`,
                 status: 'skipped',
                 reason: 'No valid phone number',
+                whatsappMessage,
               });
               continue;
             }
@@ -251,8 +263,19 @@ export async function POST(request: NextRequest) {
           for (const friendship of friendships) {
             const friend = friendship.friend;
 
-            // Skip if no valid phone number
+            // Skip if no valid phone number — still generate copy message for the owner
             if (!isValidPhoneNumber(friend.phoneNumber)) {
+              const whatsappMessage = await generateHangoutCreatedMessage({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: pup.name,
+                startAt: hangout.startAt,
+                endAt: hangout.endAt,
+                eventName: eventName || null,
+                ownerNotes: ownerNotes || null,
+                hangoutId: hangout.id,
+              });
               notificationResults.push({
                 userId: friend.id,
                 userName: friend.name,
@@ -261,6 +284,7 @@ export async function POST(request: NextRequest) {
                 relationship: `${pup.name}'s friend`,
                 status: 'skipped',
                 reason: 'No valid phone number',
+                whatsappMessage,
               });
               continue;
             }

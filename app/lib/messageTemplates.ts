@@ -2,6 +2,18 @@ import { format } from 'date-fns';
 import { getLoginUrl, getRespondUrl } from './loginTokens';
 
 /**
+ * Strip emoji from a message string so it reads cleanly as email/plain text.
+ */
+function stripEmoji(text: string): string {
+  return text
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')  // most pictographic emoji
+    .replace(/[\u{2300}-\u{27BF}]/gu, '')     // misc technical + dingbats (⏰ ✅ ❌ etc.)
+    .replace(/[^\S\n]+/g, ' ')               // collapse multiple spaces (preserve newlines)
+    .replace(/^ +/gm, '')                    // trim leading spaces on each line
+    .trim();
+}
+
+/**
  * Format a date for display in messages
  * Example: "Monday, January 15 at 2:00 PM"
  */
@@ -83,7 +95,7 @@ ${loginUrl}
 
 Thanks for being a pup friend!`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -144,7 +156,7 @@ ${loginUrl}
 
 You can approve or reject this suggestion.`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -197,7 +209,7 @@ ${loginUrl}
 
 Thanks for using DogCal!`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -249,7 +261,7 @@ ${friendName} can no longer hang out with ${pupName} 🐾
 
 ${loginUrl}`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -294,7 +306,7 @@ ${noUrl}
 🔍 View details:
 ${loginUrl}`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -327,7 +339,7 @@ ${ownerName} confirmed you to hang out with ${pupName} 🐾
   message += `\n\n🔍 View details:
 ${loginUrl}`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -359,7 +371,7 @@ ${ownerName} has confirmed help for ${pupName} 🐾
   message += `\n\n🔍 View details:
 ${loginUrl}`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -412,7 +424,7 @@ ${loginUrl}
 
 Thanks for suggesting a time!`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 // =============================================================================

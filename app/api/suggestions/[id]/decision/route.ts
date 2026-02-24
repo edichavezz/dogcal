@@ -152,6 +152,16 @@ export async function POST(
               whatsappMessage,
             });
           } else {
+            const whatsappMessage = await generateSuggestionApprovedMessage({
+              friendUserId: friend.id,
+              friendName: friend.name,
+              ownerName: actingUser.name,
+              pupName: suggestion.pup.name,
+              startAt: suggestion.startAt,
+              endAt: suggestion.endAt,
+              eventName: suggestion.eventName,
+              hangoutId: hangout.id,
+            });
             approvalNotifications.push({
               userId: friend.id,
               userName: friend.name,
@@ -160,6 +170,7 @@ export async function POST(
               relationship: `${suggestion.pup.name}'s friend`,
               status: 'skipped',
               reason: 'No valid phone number',
+              whatsappMessage,
             });
           }
         } catch (error) {
@@ -226,6 +237,14 @@ export async function POST(
               whatsappMessage,
             });
           } else {
+            const whatsappMessage = await generateSuggestionRejectedMessage({
+              friendUserId: friend.id,
+              friendName: friend.name,
+              ownerName: actingUser.name,
+              pupName: updatedSuggestion.pup.name,
+              startAt: updatedSuggestion.startAt,
+              endAt: updatedSuggestion.endAt,
+            });
             rejectionNotifications.push({
               userId: friend.id,
               userName: friend.name,
@@ -234,6 +253,7 @@ export async function POST(
               relationship: `${updatedSuggestion.pup.name}'s friend`,
               status: 'skipped',
               reason: 'No valid phone number',
+              whatsappMessage,
             });
           }
         } catch (error) {

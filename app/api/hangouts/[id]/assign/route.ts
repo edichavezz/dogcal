@@ -93,6 +93,16 @@ export async function POST(
         const owner = updatedHangout.createdByOwner;
 
         if (!isValidPhoneNumber(owner.phoneNumber)) {
+          const whatsappMessage = await generateHangoutAssignedMessage({
+            ownerUserId: owner.id,
+            ownerName: owner.name,
+            friendName: actingUser.name,
+            pupName: updatedHangout.pup.name,
+            startAt: updatedHangout.startAt,
+            endAt: updatedHangout.endAt,
+            eventName: updatedHangout.eventName,
+            hangoutId: updatedHangout.id,
+          });
           notificationResults.push({
             userId: owner.id,
             userName: owner.name,
@@ -101,6 +111,7 @@ export async function POST(
             relationship: `${updatedHangout.pup.name}'s owner`,
             status: 'skipped',
             reason: 'No valid phone number',
+            whatsappMessage,
           });
         } else {
           const [templateVars, whatsappMessage] = await Promise.all([

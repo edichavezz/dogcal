@@ -1,7 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import Avatar from './Avatar';
 import { formatPhoneForWaMe, type NotificationResult } from '@/lib/whatsapp-client';
+
+function formatPhoneDisplay(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('44') && digits.length === 12) {
+    const local = '0' + digits.substring(2);
+    return `${local.substring(0, 5)} ${local.substring(5, 8)} ${local.substring(8)}`;
+  }
+  return phone;
+}
 
 type NotificationResultModalProps = {
   results: NotificationResult[];
@@ -10,22 +20,21 @@ type NotificationResultModalProps = {
   subtitle?: string;
 };
 
-function formatPhoneDisplay(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  // UK 447xxxxxxxxx → 07xxx xxxxxx
-  if (digits.startsWith('44') && digits.length === 12) {
-    const local = '0' + digits.substring(2);
-    return `${local.substring(0, 5)} ${local.substring(5, 8)} ${local.substring(8)}`;
-  }
-  return phone;
-}
-
 export default function NotificationResultModal({
   results,
   onClose,
   title,
   subtitle,
 }: NotificationResultModalProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (userId: string, text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(userId);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -37,12 +46,9 @@ export default function NotificationResultModal({
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🐾</span>
-            <h2 className="text-xl font-bold text-[#1a3a3a]">{title}</h2>
-          </div>
+          <h2 className="text-xl font-bold text-[#1a3a3a]">{title}</h2>
           {subtitle && (
-            <p className="text-sm text-gray-500 mt-1 ml-9">{subtitle}</p>
+            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
           )}
         </div>
 
@@ -57,6 +63,7 @@ export default function NotificationResultModal({
           {results.map((result) => {
             const hasPhone = !!result.phoneNumber;
             const canOpenWA = hasPhone && !!result.whatsappMessage;
+            const canCopy = !hasPhone && !!result.whatsappMessage;
             const waUrl = canOpenWA
               ? `https://wa.me/${formatPhoneForWaMe(result.phoneNumber!)}?text=${encodeURIComponent(result.whatsappMessage!)}`
               : null;
@@ -101,22 +108,30 @@ export default function NotificationResultModal({
                       )}
                       {result.status === 'failed' && (
                         <>
-                          <span className="text-amber-500 text-xs flex-shrink-0">⚠</span>
+                          <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
                           <span className="text-xs text-amber-700">Delivery issue — send it yourself</span>
                         </>
                       )}
                     </div>
 
-                    {/* Open in WhatsApp button */}
+                    {/* Action button: Open WhatsApp (has phone) or Copy message (no phone) */}
                     {waUrl && (
                       <a
                         href={waUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-green-700 font-medium flex items-center gap-1 hover:text-green-800 flex-shrink-0 whitespace-nowrap"
+                        className="text-xs text-green-700 font-medium hover:text-green-800 flex-shrink-0 whitespace-nowrap"
                       >
-                        ↗ Open WhatsApp
+                        Open WhatsApp
                       </a>
+                    )}
+                    {canCopy && (
+                      <button
+                        onClick={() => handleCopy(result.userId, result.whatsappMessage!)}
+                        className="text-xs text-blue-600 font-medium hover:text-blue-700 flex-shrink-0 whitespace-nowrap"
+                      >
+                        {copiedId === result.userId ? 'Copied!' : 'Copy message'}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -131,7 +146,7 @@ export default function NotificationResultModal({
             onClick={onClose}
             className="w-full bg-[#1a3a3a] text-white px-4 py-3 rounded-xl hover:bg-[#2a4a4a] transition-colors font-medium"
           >
-            Done →
+            Done
           </button>
         </div>
       </div>
