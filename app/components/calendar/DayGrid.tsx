@@ -11,7 +11,8 @@ import {
 import { CalendarEvent, useCalendarActions, useCalendarData } from './CalendarContext';
 import DayCell from './DayCell';
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEK_STARTS_ON = 1 as const;
 const EMPTY_EVENTS: CalendarEvent[] = [];
 
 export default function DayGrid() {
@@ -22,8 +23,8 @@ export default function DayGrid() {
   const days = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
-    const calendarStart = startOfWeek(monthStart);
-    const calendarEnd = endOfWeek(monthEnd);
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: WEEK_STARTS_ON });
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: WEEK_STARTS_ON });
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   }, [currentMonth]);
 
@@ -45,7 +46,7 @@ export default function DayGrid() {
   }, [events]);
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="h-full min-h-0 flex flex-col bg-white">
       {/* Weekday headers */}
       <div className="grid grid-cols-7 border-b border-slate-200">
         {WEEKDAYS.map((day) => (
@@ -59,7 +60,7 @@ export default function DayGrid() {
       </div>
 
       {/* Calendar grid */}
-      <div className="flex-1 calendar-grid">
+      <div className="flex-1 min-h-0 calendar-grid">
         {days.map((day) => {
           const dateKey = day.toISOString().split('T')[0];
           const dayEvents = eventsByDate.get(dateKey) ?? EMPTY_EVENTS;
