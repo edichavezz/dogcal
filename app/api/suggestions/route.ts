@@ -8,7 +8,7 @@ import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import { addDays, addWeeks, addMonths } from 'date-fns';
 import { sendWhatsAppTemplate, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
-import { getSuggestionCreatedTemplateVars } from '@/lib/messageTemplates';
+import { getSuggestionCreatedTemplateVars, generateSuggestionCreatedMessage } from '@/lib/messageTemplates';
 
 const createSuggestionSchema = z.object({
   pupId: z.string().uuid(),
@@ -141,19 +141,34 @@ export async function POST(request: NextRequest) {
               userId: owner.id,
               userName: owner.name,
               phoneNumber: owner.phoneNumber,
+              profilePhotoUrl: owner.profilePhotoUrl,
+              relationship: `${suggestions[0].pup.name}'s owner`,
               status: 'skipped',
               reason: 'No valid phone number',
             });
           } else {
-            // Generate template variables using first suggestion in series
-            const templateVars = await getSuggestionCreatedTemplateVars({
-              ownerUserId: owner.id,
-              ownerName: owner.name,
-              friendName: actingUser.name,
-              pupName: suggestions[0].pup.name,
-              startAt: suggestions[0].startAt,
-              endAt: suggestions[0].endAt,
-            });
+            // Generate template variables and plain-text message using first suggestion in series
+            const [templateVars, whatsappMessage] = await Promise.all([
+              getSuggestionCreatedTemplateVars({
+                ownerUserId: owner.id,
+                ownerName: owner.name,
+                friendName: actingUser.name,
+                pupName: suggestions[0].pup.name,
+                startAt: suggestions[0].startAt,
+                endAt: suggestions[0].endAt,
+              }),
+              generateSuggestionCreatedMessage({
+                ownerUserId: owner.id,
+                ownerName: owner.name,
+                friendName: actingUser.name,
+                pupName: suggestions[0].pup.name,
+                startAt: suggestions[0].startAt,
+                endAt: suggestions[0].endAt,
+                eventName: suggestions[0].eventName,
+                friendComment: suggestions[0].friendComment,
+                suggestionId: suggestions[0].id,
+              }),
+            ]);
 
             // Send WhatsApp template message
             const result = await sendWhatsAppTemplate(owner.phoneNumber!, 'suggestion_created', templateVars);
@@ -162,9 +177,12 @@ export async function POST(request: NextRequest) {
               userId: owner.id,
               userName: owner.name,
               phoneNumber: owner.phoneNumber,
+              profilePhotoUrl: owner.profilePhotoUrl,
+              relationship: `${suggestions[0].pup.name}'s owner`,
               status: result.success ? 'sent' : 'failed',
               reason: result.error,
               twilioSid: result.sid,
+              whatsappMessage,
             });
           }
         } catch (error) {
@@ -209,19 +227,34 @@ export async function POST(request: NextRequest) {
               userId: owner.id,
               userName: owner.name,
               phoneNumber: owner.phoneNumber,
+              profilePhotoUrl: owner.profilePhotoUrl,
+              relationship: `${suggestion.pup.name}'s owner`,
               status: 'skipped',
               reason: 'No valid phone number',
             });
           } else {
-            // Generate template variables
-            const templateVars = await getSuggestionCreatedTemplateVars({
-              ownerUserId: owner.id,
-              ownerName: owner.name,
-              friendName: actingUser.name,
-              pupName: suggestion.pup.name,
-              startAt: suggestion.startAt,
-              endAt: suggestion.endAt,
-            });
+            // Generate template variables and plain-text message in parallel
+            const [templateVars, whatsappMessage] = await Promise.all([
+              getSuggestionCreatedTemplateVars({
+                ownerUserId: owner.id,
+                ownerName: owner.name,
+                friendName: actingUser.name,
+                pupName: suggestion.pup.name,
+                startAt: suggestion.startAt,
+                endAt: suggestion.endAt,
+              }),
+              generateSuggestionCreatedMessage({
+                ownerUserId: owner.id,
+                ownerName: owner.name,
+                friendName: actingUser.name,
+                pupName: suggestion.pup.name,
+                startAt: suggestion.startAt,
+                endAt: suggestion.endAt,
+                eventName: suggestion.eventName,
+                friendComment: suggestion.friendComment,
+                suggestionId: suggestion.id,
+              }),
+            ]);
 
             // Send WhatsApp template message
             const result = await sendWhatsAppTemplate(owner.phoneNumber!, 'suggestion_created', templateVars);
@@ -230,9 +263,12 @@ export async function POST(request: NextRequest) {
               userId: owner.id,
               userName: owner.name,
               phoneNumber: owner.phoneNumber,
+              profilePhotoUrl: owner.profilePhotoUrl,
+              relationship: `${suggestion.pup.name}'s owner`,
               status: result.success ? 'sent' : 'failed',
               reason: result.error,
               twilioSid: result.sid,
+              whatsappMessage,
             });
           }
         } catch (error) {

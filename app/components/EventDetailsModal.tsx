@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import Avatar from './Avatar';
 import NotificationResultModal from './NotificationResultModal';
 import { Repeat, Trash2 } from 'lucide-react';
+import type { NotificationResult } from '@/lib/whatsapp';
 
 type Hangout = {
   id: string;
@@ -117,14 +118,8 @@ export default function EventDetailsModal({
   const [editedAssignedFriend, setEditedAssignedFriend] = useState(hangout.assignedFriend?.id || '');
   const [friends, setFriends] = useState<Array<{ id: string; name: string }>>([]);
   const [deleting, setDeleting] = useState(false);
-  const [notificationResults, setNotificationResults] = useState<Array<{
-    userId: string;
-    userName: string;
-    phoneNumber: string | null;
-    status: 'sent' | 'skipped' | 'failed';
-    reason?: string;
-    twilioSid?: string;
-  }> | null>(null);
+  const [notificationResults, setNotificationResults] = useState<NotificationResult[] | null>(null);
+  const [notificationTitle, setNotificationTitle] = useState('');
   const [responses, setResponses] = useState<NonNullable<Hangout['responses']>>(hangout.responses ?? []);
 
   const pendingActionRef = useRef<
@@ -311,6 +306,7 @@ export default function EventDetailsModal({
 
       if (data.notificationResults && data.notificationResults.length > 0) {
         pendingActionRef.current = { type: 'update', hangout: merged };
+        setNotificationTitle(`Letting ${hangout.pup.name}'s friends know!`);
         setNotificationResults(data.notificationResults);
       } else {
         setIsEditingFull(false);
@@ -349,6 +345,7 @@ export default function EventDetailsModal({
 
       if (data.notificationResults && data.notificationResults.length > 0) {
         pendingActionRef.current = { type: 'delete' };
+        setNotificationTitle(`Letting ${hangout.pup.name}'s friends know!`);
         setNotificationResults(data.notificationResults);
       } else {
         onDelete(hangout.id);
@@ -814,6 +811,7 @@ export default function EventDetailsModal({
       {notificationResults && (
         <NotificationResultModal
           results={notificationResults}
+          title={notificationTitle}
           onClose={handleNotificationResultsClose}
         />
       )}

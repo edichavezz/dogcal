@@ -21,6 +21,8 @@ import {
   generateHangoutConfirmedMessage,
   getHangoutDeletedTemplateVars,
   getHangoutCancelledTemplateVars,
+  generateHangoutDeletedMessage,
+  generateHangoutCancelledMessage,
 } from '@/lib/messageTemplates';
 
 const updateHangoutSchema = z.object({
@@ -293,15 +295,20 @@ export async function PATCH(
           userId: friend.id,
           userName: friend.name,
           phoneNumber: friend.phoneNumber,
+          profilePhotoUrl: friend.profilePhotoUrl,
+          relationship: `${existingHangout.pup.name}'s friend`,
           status: result.success ? 'sent' : 'failed',
           reason: result.error,
           twilioSid: result.sid,
+          whatsappMessage: message,
         });
       } else {
         notificationResults.push({
           userId: friend.id,
           userName: friend.name,
           phoneNumber: friend.phoneNumber,
+          profilePhotoUrl: friend.profilePhotoUrl,
+          relationship: `${existingHangout.pup.name}'s friend`,
           status: 'skipped',
           reason: 'No valid phone number',
         });
@@ -328,15 +335,20 @@ export async function PATCH(
           userId: assignedFriend.id,
           userName: assignedFriend.name,
           phoneNumber: assignedFriend.phoneNumber,
+          profilePhotoUrl: assignedFriend.profilePhotoUrl,
+          relationship: `${pupName}'s friend`,
           status: result.success ? 'sent' : 'failed',
           reason: result.error,
           twilioSid: result.sid,
+          whatsappMessage: message,
         });
       } else {
         notificationResults.push({
           userId: assignedFriend.id,
           userName: assignedFriend.name,
           phoneNumber: assignedFriend.phoneNumber,
+          profilePhotoUrl: assignedFriend.profilePhotoUrl,
+          relationship: `${pupName}'s friend`,
           status: 'skipped',
           reason: 'No valid phone number',
         });
@@ -428,14 +440,24 @@ export async function DELETE(
         const friend = hangout.assignedFriend;
 
         if (isValidPhoneNumber(friend.phoneNumber)) {
-          const templateVars = await getHangoutCancelledTemplateVars({
-            friendUserId: friend.id,
-            friendName: friend.name,
-            ownerName,
-            pupName,
-            startAt: hangout.startAt,
-            endAt: hangout.endAt,
-          });
+          const [templateVars, whatsappMessage] = await Promise.all([
+            getHangoutCancelledTemplateVars({
+              friendUserId: friend.id,
+              friendName: friend.name,
+              ownerName,
+              pupName,
+              startAt: hangout.startAt,
+              endAt: hangout.endAt,
+            }),
+            generateHangoutCancelledMessage({
+              friendUserId: friend.id,
+              friendName: friend.name,
+              ownerName,
+              pupName,
+              startAt: hangout.startAt,
+              endAt: hangout.endAt,
+            }),
+          ]);
 
           const result = await sendWhatsAppTemplate(
             friend.phoneNumber!,
@@ -447,15 +469,20 @@ export async function DELETE(
             userId: friend.id,
             userName: friend.name,
             phoneNumber: friend.phoneNumber,
+            profilePhotoUrl: friend.profilePhotoUrl,
+            relationship: `${pupName}'s friend`,
             status: result.success ? 'sent' : 'failed',
             reason: result.error,
             twilioSid: result.sid,
+            whatsappMessage,
           });
         } else {
           notificationResults.push({
             userId: friend.id,
             userName: friend.name,
             phoneNumber: friend.phoneNumber,
+            profilePhotoUrl: friend.profilePhotoUrl,
+            relationship: `${pupName}'s friend`,
             status: 'skipped',
             reason: 'No valid phone number',
           });
@@ -466,14 +493,24 @@ export async function DELETE(
           const friend = friendship.friend;
 
           if (isValidPhoneNumber(friend.phoneNumber)) {
-            const templateVars = await getHangoutDeletedTemplateVars({
-              friendUserId: friend.id,
-              friendName: friend.name,
-              ownerName,
-              pupName,
-              startAt: hangout.startAt,
-              endAt: hangout.endAt,
-            });
+            const [templateVars, whatsappMessage] = await Promise.all([
+              getHangoutDeletedTemplateVars({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName,
+                pupName,
+                startAt: hangout.startAt,
+                endAt: hangout.endAt,
+              }),
+              generateHangoutDeletedMessage({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName,
+                pupName,
+                startAt: hangout.startAt,
+                endAt: hangout.endAt,
+              }),
+            ]);
 
             const result = await sendWhatsAppTemplate(
               friend.phoneNumber!,
@@ -485,15 +522,20 @@ export async function DELETE(
               userId: friend.id,
               userName: friend.name,
               phoneNumber: friend.phoneNumber,
+              profilePhotoUrl: friend.profilePhotoUrl,
+              relationship: `${pupName}'s friend`,
               status: result.success ? 'sent' : 'failed',
               reason: result.error,
               twilioSid: result.sid,
+              whatsappMessage,
             });
           } else {
             notificationResults.push({
               userId: friend.id,
               userName: friend.name,
               phoneNumber: friend.phoneNumber,
+              profilePhotoUrl: friend.profilePhotoUrl,
+              relationship: `${pupName}'s friend`,
               status: 'skipped',
               reason: 'No valid phone number',
             });

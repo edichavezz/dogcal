@@ -1,134 +1,137 @@
 'use client';
 
-import type { NotificationResult } from '@/lib/whatsapp';
+import Avatar from './Avatar';
+import { formatPhoneForWaMe, type NotificationResult } from '@/lib/whatsapp';
 
 type NotificationResultModalProps = {
   results: NotificationResult[];
   onClose: () => void;
+  title: string;
+  subtitle?: string;
 };
 
-export default function NotificationResultModal({ results, onClose }: NotificationResultModalProps) {
-  // Categorize results
-  const sent = results.filter(r => r.status === 'sent');
-  const skipped = results.filter(r => r.status === 'skipped');
-  const failed = results.filter(r => r.status === 'failed');
+function formatPhoneDisplay(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  // UK 447xxxxxxxxx → 07xxx xxxxxx
+  if (digits.startsWith('44') && digits.length === 12) {
+    const local = '0' + digits.substring(2);
+    return `${local.substring(0, 5)} ${local.substring(5, 8)} ${local.substring(8)}`;
+  }
+  return phone;
+}
 
+export default function NotificationResultModal({
+  results,
+  onClose,
+  title,
+  subtitle,
+}: NotificationResultModalProps) {
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+        className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            WhatsApp Notification Results
-          </h2>
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🐾</span>
+            <h2 className="text-xl font-bold text-[#1a3a3a]">{title}</h2>
+          </div>
+          {subtitle && (
+            <p className="text-sm text-gray-500 mt-1 ml-9">{subtitle}</p>
+          )}
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-4 space-y-6">
-          {/* Successfully Sent */}
-          {sent.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-green-900 flex items-center gap-2 mb-3">
-                <span className="text-lg">✅</span>
-                Sent Successfully ({sent.length})
-              </h3>
-              <ul className="space-y-2">
-                {sent.map((result) => (
-                  <li
-                    key={result.userId}
-                    className="text-sm bg-green-50 border border-green-200 rounded px-3 py-2"
-                  >
-                    <div className="font-medium text-green-900">{result.userName}</div>
-                    <div className="text-green-700">{result.phoneNumber}</div>
-                    {result.twilioSid && (
-                      <div className="text-xs text-green-600 mt-1">
-                        Message ID: {result.twilioSid}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Could Not Notify (Skipped) */}
-          {skipped.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-yellow-900 flex items-center gap-2 mb-3">
-                <span className="text-lg">⚠️</span>
-                Could Not Notify ({skipped.length})
-              </h3>
-              <ul className="space-y-2">
-                {skipped.map((result) => (
-                  <li
-                    key={result.userId}
-                    className="text-sm bg-yellow-50 border border-yellow-200 rounded px-3 py-2"
-                  >
-                    <div className="font-medium text-yellow-900">{result.userName}</div>
-                    <div className="text-yellow-700">
-                      {result.phoneNumber || 'No phone number'}
-                    </div>
-                    {result.reason && (
-                      <div className="text-xs text-yellow-600 mt-1">
-                        Reason: {result.reason}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Failed to Send */}
-          {failed.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-red-900 flex items-center gap-2 mb-3">
-                <span className="text-lg">❌</span>
-                Failed to Send ({failed.length})
-              </h3>
-              <ul className="space-y-2">
-                {failed.map((result) => (
-                  <li
-                    key={result.userId}
-                    className="text-sm bg-red-50 border border-red-200 rounded px-3 py-2"
-                  >
-                    <div className="font-medium text-red-900">{result.userName}</div>
-                    <div className="text-red-700">{result.phoneNumber}</div>
-                    {result.reason && (
-                      <div className="text-xs text-red-600 mt-1">
-                        Error: {result.reason}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* No results at all */}
+        {/* Recipient list */}
+        <div className="px-4 py-3 space-y-2">
           {results.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>No notifications were sent.</p>
-              <p className="text-sm mt-2">
-                WhatsApp notifications may be disabled or there are no recipients to notify.
-              </p>
-            </div>
+            <p className="text-center text-gray-500 py-6 text-sm">
+              No recipients to notify.
+            </p>
           )}
+
+          {results.map((result) => {
+            const hasPhone = !!result.phoneNumber;
+            const canOpenWA = hasPhone && !!result.whatsappMessage;
+            const waUrl = canOpenWA
+              ? `https://wa.me/${formatPhoneForWaMe(result.phoneNumber!)}?text=${encodeURIComponent(result.whatsappMessage!)}`
+              : null;
+
+            return (
+              <div
+                key={result.userId}
+                className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
+              >
+                <Avatar
+                  photoUrl={result.profilePhotoUrl}
+                  name={result.userName}
+                  size="sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 text-sm">{result.userName}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {result.relationship && `${result.relationship} · `}
+                    {hasPhone ? formatPhoneDisplay(result.phoneNumber!) : 'No phone number'}
+                  </p>
+
+                  <div className="flex items-center justify-between mt-2 gap-2">
+                    {/* Status indicator */}
+                    <div className="flex items-center gap-1.5">
+                      {result.status === 'sent' && (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                          <span className="text-xs text-green-700">Notified via WhatsApp</span>
+                        </>
+                      )}
+                      {result.status === 'skipped' && !hasPhone && (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
+                          <span className="text-xs text-gray-500">No phone number on file</span>
+                        </>
+                      )}
+                      {result.status === 'skipped' && hasPhone && (
+                        <>
+                          <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
+                          <span className="text-xs text-gray-500">Notifications paused</span>
+                        </>
+                      )}
+                      {result.status === 'failed' && (
+                        <>
+                          <span className="text-amber-500 text-xs flex-shrink-0">⚠</span>
+                          <span className="text-xs text-amber-700">Delivery issue — send it yourself</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Open in WhatsApp button */}
+                    {waUrl && (
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-green-700 font-medium flex items-center gap-1 hover:text-green-800 flex-shrink-0 whitespace-nowrap"
+                      >
+                        ↗ Open WhatsApp
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+        <div className="px-6 pb-6 pt-2">
           <button
             onClick={onClose}
-            className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors font-medium"
+            className="w-full bg-[#1a3a3a] text-white px-4 py-3 rounded-xl hover:bg-[#2a4a4a] transition-colors font-medium"
           >
-            Close
+            Done →
           </button>
         </div>
       </div>

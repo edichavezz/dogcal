@@ -6,10 +6,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
-import { sendWhatsAppTemplate, isValidPhoneNumber } from '@/lib/whatsapp';
+import { sendWhatsAppTemplate, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
 import {
   getSuggestionApprovedTemplateVars,
   getSuggestionRejectedTemplateVars,
+  generateSuggestionApprovedMessage,
+  generateSuggestionRejectedMessage,
 } from '@/lib/messageTemplates';
 
 const decisionSchema = z.object({
@@ -111,20 +113,54 @@ export async function POST(
       ]);
 
       // Notify the friend that their suggestion was approved
+      const approvalNotifications: NotificationResult[] = [];
       if (process.env.WHATSAPP_ENABLED === 'true') {
         try {
           const friend = suggestion.suggestedByFriend;
           if (isValidPhoneNumber(friend.phoneNumber)) {
-            const templateVars = await getSuggestionApprovedTemplateVars({
-              friendUserId: friend.id,
-              friendName: friend.name,
-              ownerName: actingUser.name,
-              pupName: suggestion.pup.name,
-              startAt: suggestion.startAt,
-              endAt: suggestion.endAt,
-              hangoutId: hangout.id,
+            const [templateVars, whatsappMessage] = await Promise.all([
+              getSuggestionApprovedTemplateVars({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: suggestion.pup.name,
+                startAt: suggestion.startAt,
+                endAt: suggestion.endAt,
+                hangoutId: hangout.id,
+              }),
+              generateSuggestionApprovedMessage({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: suggestion.pup.name,
+                startAt: suggestion.startAt,
+                endAt: suggestion.endAt,
+                eventName: suggestion.eventName,
+                hangoutId: hangout.id,
+              }),
+            ]);
+            const result = await sendWhatsAppTemplate(friend.phoneNumber!, 'suggestion_approved', templateVars);
+            approvalNotifications.push({
+              userId: friend.id,
+              userName: friend.name,
+              phoneNumber: friend.phoneNumber,
+              profilePhotoUrl: friend.profilePhotoUrl,
+              relationship: `${suggestion.pup.name}'s friend`,
+              status: result.success ? 'sent' : 'failed',
+              reason: result.error,
+              twilioSid: result.sid,
+              whatsappMessage,
             });
-            await sendWhatsAppTemplate(friend.phoneNumber!, 'suggestion_approved', templateVars);
+          } else {
+            approvalNotifications.push({
+              userId: friend.id,
+              userName: friend.name,
+              phoneNumber: friend.phoneNumber,
+              profilePhotoUrl: friend.profilePhotoUrl,
+              relationship: `${suggestion.pup.name}'s friend`,
+              status: 'skipped',
+              reason: 'No valid phone number',
+            });
           }
         } catch (error) {
           console.error('Error sending approval WhatsApp notification:', error);
@@ -134,6 +170,7 @@ export async function POST(
       return NextResponse.json({
         suggestion: updatedSuggestion,
         hangout,
+        notifications: approvalNotifications,
       });
     } else {
       // REJECT — mark the suggestion as rejected (disappears from calendar since we only query PENDING)
@@ -153,26 +190,58 @@ export async function POST(
       });
 
       // Notify the friend that their suggestion was rejected
+      const rejectionNotifications: NotificationResult[] = [];
       if (process.env.WHATSAPP_ENABLED === 'true') {
         try {
           const friend = updatedSuggestion.suggestedByFriend;
           if (isValidPhoneNumber(friend.phoneNumber)) {
-            const templateVars = await getSuggestionRejectedTemplateVars({
-              friendUserId: friend.id,
-              friendName: friend.name,
-              ownerName: actingUser.name,
-              pupName: updatedSuggestion.pup.name,
-              startAt: updatedSuggestion.startAt,
-              endAt: updatedSuggestion.endAt,
+            const [templateVars, whatsappMessage] = await Promise.all([
+              getSuggestionRejectedTemplateVars({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: updatedSuggestion.pup.name,
+                startAt: updatedSuggestion.startAt,
+                endAt: updatedSuggestion.endAt,
+              }),
+              generateSuggestionRejectedMessage({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: updatedSuggestion.pup.name,
+                startAt: updatedSuggestion.startAt,
+                endAt: updatedSuggestion.endAt,
+              }),
+            ]);
+            const result = await sendWhatsAppTemplate(friend.phoneNumber!, 'suggestion_rejected', templateVars);
+            rejectionNotifications.push({
+              userId: friend.id,
+              userName: friend.name,
+              phoneNumber: friend.phoneNumber,
+              profilePhotoUrl: friend.profilePhotoUrl,
+              relationship: `${updatedSuggestion.pup.name}'s friend`,
+              status: result.success ? 'sent' : 'failed',
+              reason: result.error,
+              twilioSid: result.sid,
+              whatsappMessage,
             });
-            await sendWhatsAppTemplate(friend.phoneNumber!, 'suggestion_rejected', templateVars);
+          } else {
+            rejectionNotifications.push({
+              userId: friend.id,
+              userName: friend.name,
+              phoneNumber: friend.phoneNumber,
+              profilePhotoUrl: friend.profilePhotoUrl,
+              relationship: `${updatedSuggestion.pup.name}'s friend`,
+              status: 'skipped',
+              reason: 'No valid phone number',
+            });
           }
         } catch (error) {
           console.error('Error sending rejection WhatsApp notification:', error);
         }
       }
 
-      return NextResponse.json({ suggestion: updatedSuggestion });
+      return NextResponse.json({ suggestion: updatedSuggestion, notifications: rejectionNotifications });
     }
   } catch (error) {
     if (error instanceof z.ZodError) {

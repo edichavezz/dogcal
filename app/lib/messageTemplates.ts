@@ -627,6 +627,98 @@ export async function getSuggestionRejectedTemplateVars(params: {
 }
 
 /**
+ * Generate WhatsApp message for when an owner deletes an OPEN hangout
+ * Sent to all pup friends (plain-text equivalent of hangout_deleted template)
+ */
+export async function generateHangoutDeletedMessage(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<string> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  return `🐕 *DogCal: Hangout Cancelled*
+
+Hi ${friendName},
+
+${ownerName} cancelled the hangout with ${pupName} 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}
+
+👉 View calendar:
+${loginUrl}`;
+}
+
+/**
+ * Generate WhatsApp message for when an owner cancels an ASSIGNED hangout
+ * Sent to the assigned friend (plain-text equivalent of hangout_cancelled template)
+ */
+export async function generateHangoutCancelledMessage(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<string> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  return `🐕 *DogCal: Your Hangout Was Cancelled*
+
+Hi ${friendName},
+
+Sorry, ${ownerName} had to cancel your confirmed hangout with ${pupName} 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}
+
+👉 View calendar:
+${loginUrl}`;
+}
+
+/**
+ * Generate WhatsApp message for when an owner rejects a suggestion
+ * Sent to the friend who suggested (plain-text equivalent of suggestion_rejected template)
+ */
+export async function generateSuggestionRejectedMessage(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<string> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  return `🐕 *DogCal: Suggestion Not Available*
+
+Hi ${friendName},
+
+Thanks for suggesting a hangout with ${pupName}, but ${ownerName} isn't able to go with that time 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}
+
+Feel free to suggest another time!
+
+👉 View calendar:
+${loginUrl}`;
+}
+
+/**
  * Generate template variables for suggestion_deleted template
  * Sent to the owner when a friend deletes their suggestion
  */

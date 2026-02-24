@@ -116,15 +116,20 @@ export async function POST(
           userId: assignedFriend.id,
           userName: assignedFriend.name,
           phoneNumber: assignedFriend.phoneNumber,
+          profilePhotoUrl: assignedFriend.profilePhotoUrl,
+          relationship: `${pupName}'s friend`,
           status: result.success ? 'sent' : 'failed',
           reason: result.error,
           twilioSid: result.sid,
+          whatsappMessage: message,
         });
       } else {
         notificationResults.push({
           userId: assignedFriend.id,
           userName: assignedFriend.name,
           phoneNumber: assignedFriend.phoneNumber,
+          profilePhotoUrl: assignedFriend.profilePhotoUrl,
+          relationship: `${pupName}'s friend`,
           status: 'skipped',
           reason: 'No valid phone number',
         });
@@ -149,15 +154,20 @@ export async function POST(
             userId: friend.id,
             userName: friend.name,
             phoneNumber: friend.phoneNumber,
+            profilePhotoUrl: friend.profilePhotoUrl,
+            relationship: `${pupName}'s friend`,
             status: result.success ? 'sent' : 'failed',
             reason: result.error,
             twilioSid: result.sid,
+            whatsappMessage: message,
           });
         } else {
           notificationResults.push({
             userId: friend.id,
             userName: friend.name,
             phoneNumber: friend.phoneNumber,
+            profilePhotoUrl: friend.profilePhotoUrl,
+            relationship: `${pupName}'s friend`,
             status: 'skipped',
             reason: 'No valid phone number',
           });

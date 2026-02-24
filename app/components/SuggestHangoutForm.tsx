@@ -305,6 +305,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
       {notificationResults && (
         <NotificationResultModal
           results={notificationResults}
+          title={`Letting ${pups.find(p => p.id === pupId)?.owner.name ?? 'the owner'} know!`}
           onClose={() => {
             setNotificationResults(null);
             router.push('/calendar');

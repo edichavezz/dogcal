@@ -334,6 +334,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
       {notificationResults && (
         <NotificationResultModal
           results={notificationResults}
+          title={`Letting ${pups.find(p => p.id === pupId)?.name ?? 'the pup'}'s friends know!`}
           onClose={() => {
             setNotificationResults(null);
             router.push('/calendar');
