@@ -11,7 +11,8 @@ import {
 import { CalendarEvent, useCalendarActions, useCalendarData } from './CalendarContext';
 import DayCell from './DayCell';
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEK_STARTS_ON = 1 as const;
 const EMPTY_EVENTS: CalendarEvent[] = [];
 
 export default function DayGrid() {
@@ -22,8 +23,8 @@ export default function DayGrid() {
   const days = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
-    const calendarStart = startOfWeek(monthStart);
-    const calendarEnd = endOfWeek(monthEnd);
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: WEEK_STARTS_ON });
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: WEEK_STARTS_ON });
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   }, [currentMonth]);
 
