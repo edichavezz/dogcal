@@ -576,6 +576,57 @@ export async function getHangoutCancelledTemplateVars(params: {
 }
 
 /**
+ * Generate template variables for suggestion_approved template
+ * Sent to the friend who suggested the hangout when the owner approves it
+ */
+export async function getSuggestionApprovedTemplateVars(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+  hangoutId: string;
+}): Promise<Record<string, string>> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+
+  return {
+    '1': friendName,
+    '2': ownerName,
+    '3': pupName,
+    '4': dateTime,
+    '5': loginUrl,
+  };
+}
+
+/**
+ * Generate template variables for suggestion_rejected template
+ * Sent to the friend who suggested the hangout when the owner rejects it
+ */
+export async function getSuggestionRejectedTemplateVars(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<Record<string, string>> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
+
+  return {
+    '1': friendName,
+    '2': ownerName,
+    '3': pupName,
+    '4': dateTime,
+    '5': loginUrl,
+  };
+}
+
+/**
  * Generate template variables for suggestion_deleted template
  * Sent to the owner when a friend deletes their suggestion
  */

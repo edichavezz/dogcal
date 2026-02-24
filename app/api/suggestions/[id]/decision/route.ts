@@ -6,6 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
+import { sendWhatsAppTemplate, isValidPhoneNumber } from '@/lib/whatsapp';
+import {
+  getSuggestionApprovedTemplateVars,
+  getSuggestionRejectedTemplateVars,
+} from '@/lib/messageTemplates';
 
 const decisionSchema = z.object({
   decision: z.enum(['APPROVE', 'REJECT']),
@@ -46,11 +51,12 @@ export async function POST(
     const body = await request.json();
     const { decision, ownerComment } = decisionSchema.parse(body);
 
-    // Get suggestion
+    // Get suggestion — include friend so we can send WhatsApp notifications
     const suggestion = await prisma.hangoutSuggestion.findUnique({
       where: { id },
       include: {
         pup: true,
+        suggestedByFriend: true,
       },
     });
 
@@ -79,7 +85,7 @@ export async function POST(
     }
 
     if (decision === 'APPROVE') {
-      // Create hangout and update suggestion
+      // Create hangout assigned directly to the suggester, and mark suggestion approved
       const [hangout, updatedSuggestion] = await prisma.$transaction([
         prisma.hangout.create({
           data: {
@@ -104,12 +110,33 @@ export async function POST(
         }),
       ]);
 
+      // Notify the friend that their suggestion was approved
+      if (process.env.WHATSAPP_ENABLED === 'true') {
+        try {
+          const friend = suggestion.suggestedByFriend;
+          if (isValidPhoneNumber(friend.phoneNumber)) {
+            const templateVars = await getSuggestionApprovedTemplateVars({
+              friendUserId: friend.id,
+              friendName: friend.name,
+              ownerName: actingUser.name,
+              pupName: suggestion.pup.name,
+              startAt: suggestion.startAt,
+              endAt: suggestion.endAt,
+              hangoutId: hangout.id,
+            });
+            await sendWhatsAppTemplate(friend.phoneNumber!, 'suggestion_approved', templateVars);
+          }
+        } catch (error) {
+          console.error('Error sending approval WhatsApp notification:', error);
+        }
+      }
+
       return NextResponse.json({
         suggestion: updatedSuggestion,
         hangout,
       });
     } else {
-      // REJECT
+      // REJECT — mark the suggestion as rejected (disappears from calendar since we only query PENDING)
       const updatedSuggestion = await prisma.hangoutSuggestion.update({
         where: { id },
         data: {
@@ -124,6 +151,26 @@ export async function POST(
           ownerDecisionBy: true,
         },
       });
+
+      // Notify the friend that their suggestion was rejected
+      if (process.env.WHATSAPP_ENABLED === 'true') {
+        try {
+          const friend = updatedSuggestion.suggestedByFriend;
+          if (isValidPhoneNumber(friend.phoneNumber)) {
+            const templateVars = await getSuggestionRejectedTemplateVars({
+              friendUserId: friend.id,
+              friendName: friend.name,
+              ownerName: actingUser.name,
+              pupName: updatedSuggestion.pup.name,
+              startAt: updatedSuggestion.startAt,
+              endAt: updatedSuggestion.endAt,
+            });
+            await sendWhatsAppTemplate(friend.phoneNumber!, 'suggestion_rejected', templateVars);
+          }
+        } catch (error) {
+          console.error('Error sending rejection WhatsApp notification:', error);
+        }
+      }
 
       return NextResponse.json({ suggestion: updatedSuggestion });
     }
