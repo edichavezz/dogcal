@@ -122,6 +122,7 @@ export default function EventDetailsModal({
   const [notificationResults, setNotificationResults] = useState<NotificationResult[] | null>(null);
   const [notificationTitle, setNotificationTitle] = useState('');
   const [genericMessage, setGenericMessage] = useState<string | null>(null);
+  const [copiedGenericMsg, setCopiedGenericMsg] = useState(false);
   const [responses, setResponses] = useState<NonNullable<Hangout['responses']>>(hangout.responses ?? []);
 
   const pendingActionRef = useRef<
@@ -370,6 +371,19 @@ export default function EventDetailsModal({
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleCopyGenericMessage = () => {
+    const msg = buildGenericMessage({
+      pupName: hangout.pup.name,
+      startAt: hangout.startAt,
+      endAt: hangout.endAt,
+      eventName: hangout.eventName,
+    });
+    navigator.clipboard.writeText(msg).then(() => {
+      setCopiedGenericMsg(true);
+      setTimeout(() => setCopiedGenericMsg(false), 2000);
+    });
   };
 
   const handleNotificationResultsClose = useCallback(() => {
@@ -816,6 +830,14 @@ export default function EventDetailsModal({
                     Close
                   </button>
                 </div>
+              )}
+              {isOwner && !isEditingFull && (
+                <button
+                  onClick={handleCopyGenericMessage}
+                  className="w-full mt-1 px-4 py-2 border border-gray-200 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  {copiedGenericMsg ? 'Copied!' : 'Copy notification message'}
+                </button>
               )}
             </>
           )}

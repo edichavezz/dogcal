@@ -30,8 +30,8 @@ export function formatPhoneForWaMe(phone: string): string {
 }
 
 /**
- * Build a generic, non-personalised message suitable for copying into a group chat.
- * No names, no deeplinks — just the key event details.
+ * Build a generic, non-personalised message suitable for copying into a group chat or DM.
+ * No recipient names, no deeplinks — just the key event details with a title and sign-off.
  */
 export function buildGenericMessage(params: {
   pupName: string;
@@ -49,7 +49,20 @@ export function buildGenericMessage(params: {
   });
   const startTime = start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const endTime = end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const what = params.eventName ? `"${params.eventName}"` : 'a hangout';
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'DogCal';
-  return `Hey! ${what} for ${params.pupName} is available on ${dateStr} from ${startTime} to ${endTime}. Let me know if you can make it, or log in to ${appUrl} to claim it!`;
+  const what = params.eventName
+    ? `${params.eventName} for ${params.pupName}`
+    : `A hangout for ${params.pupName}`;
+
+  return `DogCal: New Hangout Available!
+
+${what} is coming up:
+
+${dateStr}
+${startTime} - ${endTime}
+
+Let us know if you can make it, or log in to claim it:
+${appUrl}
+
+Thanks for being a pup friend!`;
 }
