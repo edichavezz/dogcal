@@ -53,6 +53,9 @@ export async function GET(
         pup: {
           include: {
             owner: true,
+            friendships: {
+              include: { friend: { select: { id: true, name: true } } },
+            },
           },
         },
         assignedFriend: true,

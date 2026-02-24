@@ -10,7 +10,6 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import AppLayout from './AppLayout';
 import Avatar from './Avatar';
 import { useFunMessage } from './home/FunMessage';
@@ -71,6 +70,7 @@ type HangoutModalData = {
       id: string;
       name: string;
     };
+    friendships?: Array<{ friend: { id: string; name: string } }>;
   };
   assignedFriend?: {
     id: string;
@@ -121,7 +121,6 @@ export default function WelcomeScreen({
   friendPups = [],
   mySubmittedSuggestions = [],
 }: WelcomeScreenProps) {
-  const router = useRouter();
   const isOwner = user.role === 'OWNER';
 
   // Memoize pups to prevent recreation on every render
@@ -223,7 +222,7 @@ export default function WelcomeScreen({
     return { hangouts: data.hangouts as HangoutSummary[], total: data.total as number };
   }, []);
 
-  const handleModalUpdate = useCallback(async () => {
+  const handleModalUpdate = useCallback(async (_updated: HangoutModalData) => {
     setSelectedHangout(null);
 
     try {
@@ -244,15 +243,41 @@ export default function WelcomeScreen({
     } catch (error) {
       console.error('Error refreshing hangouts:', error);
     }
-
-    router.refresh();
   }, [
     isOwner,
     fetchHangouts,
     ownerFilters,
     friendAvailableFilters,
     friendMyFilters,
-    router,
+  ]);
+
+  const handleModalDelete = useCallback(async (_id: string) => {
+    setSelectedHangout(null);
+
+    try {
+      if (isOwner) {
+        const { hangouts, total } = await fetchHangouts('owner', ownerFilters);
+        setUpcomingHangouts(hangouts);
+        setUpcomingTotal(total);
+      } else {
+        const [available, myAssigned] = await Promise.all([
+          fetchHangouts('friend-available', friendAvailableFilters),
+          fetchHangouts('friend-assigned', friendMyFilters),
+        ]);
+        setAvailableHangouts(available.hangouts);
+        setAvailableTotal(available.total);
+        setMyHangouts(myAssigned.hangouts);
+        setMyTotal(myAssigned.total);
+      }
+    } catch (error) {
+      console.error('Error refreshing after delete:', error);
+    }
+  }, [
+    isOwner,
+    fetchHangouts,
+    ownerFilters,
+    friendAvailableFilters,
+    friendMyFilters,
   ]);
 
   // Handle filter change for owners
@@ -610,6 +635,7 @@ export default function WelcomeScreen({
           actingUserRole={isOwner ? 'OWNER' : 'FRIEND'}
           onClose={handleModalClose}
           onUpdate={handleModalUpdate}
+          onDelete={handleModalDelete}
         />
       )}
 

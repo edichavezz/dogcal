@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import Avatar from './Avatar';
 import NotificationResultModal from './NotificationResultModal';
@@ -24,6 +24,7 @@ type Hangout = {
       id: string;
       name: string;
     };
+    friendships?: Array<{ friend: { id: string; name: string } }>;
   };
   assignedFriend?: {
     id: string;
@@ -55,7 +56,8 @@ type EventDetailsModalProps = {
   actingUserId: string;
   actingUserRole: 'OWNER' | 'FRIEND';
   onClose: () => void;
-  onUpdate: () => void;
+  onUpdate: (updatedHangout: Hangout) => void;
+  onDelete: (id: string) => void;
 };
 
 function buildGoogleCalendarUrl(hangout: Hangout): string {
@@ -98,6 +100,7 @@ export default function EventDetailsModal({
   actingUserRole,
   onClose,
   onUpdate,
+  onDelete,
 }: EventDetailsModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -123,7 +126,12 @@ export default function EventDetailsModal({
     twilioSid?: string;
   }> | null>(null);
   const [responses, setResponses] = useState<NonNullable<Hangout['responses']>>(hangout.responses ?? []);
-  const [loadingResponses, setLoadingResponses] = useState(false);
+
+  const pendingActionRef = useRef<
+    | { type: 'update'; hangout: Hangout }
+    | { type: 'delete' }
+    | null
+  >(null);
 
   const isAssignedToMe = hangout.assignedFriend?.id === actingUserId;
   const isOwner = actingUserRole === 'OWNER' && hangout.pup.owner.id === actingUserId;
@@ -136,6 +144,11 @@ export default function EventDetailsModal({
       hangout.assignedFriend ? ` - ${hangout.assignedFriend.name}` : ' (Open)'
     }`;
 
+  // Sync responses from prop when hangout id changes
+  useEffect(() => {
+    setResponses(hangout.responses ?? []);
+  }, [hangout.id]);
+
   const handleAssign = async () => {
     setLoading(true);
     setError('');
@@ -145,12 +158,10 @@ export default function EventDetailsModal({
         method: 'POST',
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to assign');
-      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to assign');
 
-      onUpdate();
+      onUpdate({ ...hangout, ...data.hangout, pup: { ...hangout.pup, ...data.hangout.pup } });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -172,12 +183,10 @@ export default function EventDetailsModal({
         method: 'POST',
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to unassign');
-      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to unassign');
 
-      onUpdate();
+      onUpdate({ ...hangout, ...data.hangout, pup: { ...hangout.pup, ...data.hangout.pup } });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -200,42 +209,18 @@ export default function EventDetailsModal({
         body: JSON.stringify({ noteText }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to add note');
-      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to add note');
 
       setNoteText('');
-      onUpdate();
+      onUpdate({ ...hangout, notes: [...(hangout.notes ?? []), data.note] });
+      // Modal stays open — onUpdate no longer implicitly closes it
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSubmittingNote(false);
     }
   };
-
-  const refreshResponses = useCallback(async () => {
-    setLoadingResponses(true);
-
-    try {
-      const response = await fetch(`/api/hangouts/${hangout.id}`);
-      if (!response.ok) return;
-
-      const data = await response.json();
-      if (data.hangout?.responses) {
-        setResponses(data.hangout.responses);
-      }
-    } catch (err) {
-      console.error('Error fetching responses:', err);
-    } finally {
-      setLoadingResponses(false);
-    }
-  }, [hangout.id]);
-
-  useEffect(() => {
-    setResponses(hangout.responses ?? []);
-    refreshResponses();
-  }, [hangout.responses, refreshResponses]);
 
   const handleSaveEventName = async () => {
     setLoading(true);
@@ -248,13 +233,11 @@ export default function EventDetailsModal({
         body: JSON.stringify({ eventName: editedEventName || null }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update event name');
-      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to update event name');
 
       setIsEditingName(false);
-      onUpdate();
+      onUpdate({ ...hangout, ...data.hangout, pup: { ...hangout.pup, ...data.hangout.pup } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -267,7 +250,7 @@ export default function EventDetailsModal({
     setIsEditingName(false);
   };
 
-  const handleStartFullEdit = async () => {
+  const handleStartFullEdit = () => {
     // Initialize form with current values
     const startDate = new Date(hangout.startAt);
     const endDate = new Date(hangout.endAt);
@@ -279,17 +262,9 @@ export default function EventDetailsModal({
     setEditedOwnerNotes(hangout.ownerNotes || '');
     setEditedAssignedFriend(hangout.assignedFriend?.id || '');
 
-    // Fetch friends for the pup if owner is editing
+    // Use friendships already included in the hangout prop — no extra API call
     if (isOwner) {
-      try {
-        const response = await fetch(`/api/pups/${hangout.pup.id}`);
-        const data = await response.json();
-        if (data.pup?.friendships) {
-          setFriends(data.pup.friendships.map((f: { friend: { id: string; name: string } }) => ({ id: f.friend.id, name: f.friend.name })));
-        }
-      } catch (error) {
-        console.error('Error fetching friends:', error);
-      }
+      setFriends((hangout.pup.friendships ?? []).map(f => f.friend));
     }
 
     setIsEditingFull(true);
@@ -332,12 +307,14 @@ export default function EventDetailsModal({
       }
 
       const data = await response.json();
+      const merged = { ...hangout, ...data.hangout, pup: { ...hangout.pup, ...data.hangout.pup } };
 
       if (data.notificationResults && data.notificationResults.length > 0) {
+        pendingActionRef.current = { type: 'update', hangout: merged };
         setNotificationResults(data.notificationResults);
       } else {
         setIsEditingFull(false);
-        onUpdate();
+        onUpdate(merged);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -370,11 +347,11 @@ export default function EventDetailsModal({
         throw new Error(data.error || 'Failed to delete hangout');
       }
 
-      // Show notification results if any
       if (data.notificationResults && data.notificationResults.length > 0) {
+        pendingActionRef.current = { type: 'delete' };
         setNotificationResults(data.notificationResults);
       } else {
-        onUpdate();
+        onDelete(hangout.id);
         onClose();
       }
     } catch (err) {
@@ -384,11 +361,18 @@ export default function EventDetailsModal({
     }
   };
 
-  const handleNotificationResultsClose = () => {
+  const handleNotificationResultsClose = useCallback(() => {
     setNotificationResults(null);
-    onUpdate();
-    onClose();
-  };
+    const pending = pendingActionRef.current;
+    pendingActionRef.current = null;
+    if (pending?.type === 'update') {
+      setIsEditingFull(false);
+      onUpdate(pending.hangout);
+    } else if (pending?.type === 'delete') {
+      onDelete(hangout.id);
+      onClose();
+    }
+  }, [hangout.id, onClose, onDelete, onUpdate]);
 
   const canEdit = isOwner || isAssignedToMe;
 
@@ -734,9 +718,7 @@ export default function EventDetailsModal({
           {isOwner && hangout.status === 'OPEN' && (
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2">Responses</h3>
-              {loadingResponses ? (
-                <p className="text-sm text-gray-500">Loading responses…</p>
-              ) : responses && responses.length > 0 ? (
+              {responses && responses.length > 0 ? (
                 <div className="space-y-2">
                   {responses.map((response) => (
                     <div key={response.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-xl">

@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useMemo, useCallback } from 'react';
+import { memo, useState, useMemo, useCallback, useEffect } from 'react';
 import Avatar from './Avatar';
 import EventDetailsModal from './EventDetailsModal';
 import SuggestionDetailsModal from './SuggestionDetailsModal';
@@ -35,6 +35,7 @@ type Hangout = {
       id: string;
       name: string;
     };
+    friendships?: Array<{ friend: { id: string; name: string } }>;
   };
   assignedFriend?: {
     id: string;
@@ -79,12 +80,20 @@ type CalendarViewProps = {
   suggestions: Suggestion[];
   actingUserId: string;
   actingUserRole: 'OWNER' | 'FRIEND';
-  onUpdate: () => void;
+  onUpdate?: () => void;
   ownedPups?: PupInfo[];
   friendPups?: PupInfo[];
 };
 
 type ViewMode = 'calendar' | 'list';
+
+// Shape of hangout data coming from EventDetailsModal (API dates are strings, status is string)
+type ModalHangout = Omit<Hangout, 'startAt' | 'endAt' | 'status' | 'notes'> & {
+  startAt: string;
+  endAt: string;
+  status: string;
+  notes?: Array<{ id: string; noteText: string; createdAt: string; author: { name: string } }>;
+};
 
 function CalendarView({
   hangouts,
@@ -98,6 +107,14 @@ function CalendarView({
   const [selectedHangout, setSelectedHangout] = useState<Hangout | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+
+  // Local optimistic state — updated immediately on mutations
+  const [hangoutsState, setHangoutsState] = useState(hangouts);
+
+  // Sync when server re-renders push new data (e.g. after suggestion approval)
+  useEffect(() => {
+    setHangoutsState(hangouts);
+  }, [hangouts]);
 
   // Filters state - default to "week" for calendar list
   const [filters, setFilters] = useState<HangoutFiltersState>({
@@ -134,27 +151,27 @@ function CalendarView({
 
   // Pups that actually appear in event data (used for legend + filter pills)
   const pupsWithEvents = useMemo(() => {
-    const ids = new Set(hangouts.map((h) => h.pup.id));
+    const ids = new Set(hangoutsState.map((h) => h.pup.id));
     return allPups.filter((p) => ids.has(p.id));
-  }, [hangouts, allPups]);
+  }, [hangoutsState, allPups]);
 
   // Friends that appear as assigned in event data (used for legend)
   const friendsInEvents = useMemo(() => {
     const seen = new Set<string>();
     const result: { id: string; name: string; profilePhotoUrl?: string | null }[] = [];
-    for (const h of hangouts) {
+    for (const h of hangoutsState) {
       if (h.assignedFriend && !seen.has(h.assignedFriend.id)) {
         seen.add(h.assignedFriend.id);
         result.push(h.assignedFriend);
       }
     }
     return result;
-  }, [hangouts]);
+  }, [hangoutsState]);
 
   // Hangouts filtered by selected pups (applied before time/status filters)
   const pupFilteredHangouts = useMemo(
-    () => (allPups.length > 1 ? hangouts.filter((h) => selectedPupIds.has(h.pup.id)) : hangouts),
-    [hangouts, allPups.length, selectedPupIds]
+    () => (allPups.length > 1 ? hangoutsState.filter((h) => selectedPupIds.has(h.pup.id)) : hangoutsState),
+    [hangoutsState, allPups.length, selectedPupIds]
   );
 
   // Filter hangouts for list view
@@ -291,14 +308,35 @@ function CalendarView({
     setSelectedSuggestion(null);
   }, []);
 
-  const handleModalUpdate = useCallback(() => {
+  // Optimistic update: merge the updated hangout into local state immediately
+  const handleModalUpdate = useCallback((updatedHangout: ModalHangout) => {
+    const mergeIntoCalHangout = (h: Hangout): Hangout => ({
+      ...h,
+      ...updatedHangout,
+      status: updatedHangout.status as Hangout['status'],
+      startAt: new Date(updatedHangout.startAt),
+      endAt: new Date(updatedHangout.endAt),
+      pup: { ...h.pup, ...updatedHangout.pup },
+      notes: updatedHangout.notes
+        ? updatedHangout.notes.map(n => ({ ...n, createdAt: new Date(n.createdAt) }))
+        : h.notes,
+    });
+
+    setSelectedHangout(prev => prev ? mergeIntoCalHangout(prev) : null);
+    setHangoutsState(prev =>
+      prev.map(h => h.id === updatedHangout.id ? mergeIntoCalHangout(h) : h)
+    );
+  }, []);
+
+  // Optimistic delete: remove from local state immediately
+  const handleModalDelete = useCallback((id: string) => {
     setSelectedHangout(null);
-    onUpdate();
-  }, [onUpdate]);
+    setHangoutsState(prev => prev.filter(h => h.id !== id));
+  }, []);
 
   const handleSuggestionModalUpdate = useCallback(() => {
     setSelectedSuggestion(null);
-    onUpdate();
+    onUpdate?.();
   }, [onUpdate]);
 
   return (
@@ -503,6 +541,7 @@ function CalendarView({
           actingUserRole={actingUserRole}
           onClose={handleCloseModal}
           onUpdate={handleModalUpdate}
+          onDelete={handleModalDelete}
         />
       )}
       {selectedSuggestion && (

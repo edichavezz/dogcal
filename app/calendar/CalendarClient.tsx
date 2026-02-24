@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import CalendarView from '@/components/CalendarView';
 
 type Hangout = {
@@ -77,19 +76,12 @@ export default function CalendarClient({
   ownedPups = [],
   friendPups = [],
 }: CalendarClientProps) {
-  const router = useRouter();
-
-  const handleUpdate = () => {
-    router.refresh();
-  };
-
   return (
     <CalendarView
       hangouts={hangouts}
       suggestions={suggestions}
       actingUserId={actingUserId}
       actingUserRole={actingUserRole}
-      onUpdate={handleUpdate}
       ownedPups={ownedPups}
       friendPups={friendPups}
     />
