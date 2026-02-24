@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import Avatar from './Avatar';
 import NotificationResultModal from './NotificationResultModal';
+import { buildGenericMessage } from '@/lib/whatsapp-client';
 import { Repeat, Trash2 } from 'lucide-react';
+import type { NotificationResult } from '@/lib/whatsapp';
 
 type Hangout = {
   id: string;
@@ -117,14 +119,10 @@ export default function EventDetailsModal({
   const [editedAssignedFriend, setEditedAssignedFriend] = useState(hangout.assignedFriend?.id || '');
   const [friends, setFriends] = useState<Array<{ id: string; name: string }>>([]);
   const [deleting, setDeleting] = useState(false);
-  const [notificationResults, setNotificationResults] = useState<Array<{
-    userId: string;
-    userName: string;
-    phoneNumber: string | null;
-    status: 'sent' | 'skipped' | 'failed';
-    reason?: string;
-    twilioSid?: string;
-  }> | null>(null);
+  const [notificationResults, setNotificationResults] = useState<NotificationResult[] | null>(null);
+  const [notificationTitle, setNotificationTitle] = useState('');
+  const [genericMessage, setGenericMessage] = useState<string | null>(null);
+  const [copiedGenericMsg, setCopiedGenericMsg] = useState(false);
   const [responses, setResponses] = useState<NonNullable<Hangout['responses']>>(hangout.responses ?? []);
 
   const pendingActionRef = useRef<
@@ -318,6 +316,13 @@ export default function EventDetailsModal({
 
       if (data.notificationResults && data.notificationResults.length > 0) {
         pendingActionRef.current = { type: 'update', hangout: merged };
+        setNotificationTitle(`Letting ${hangout.pup.name}'s friends know!`);
+        setGenericMessage(buildGenericMessage({
+          pupName: hangout.pup.name,
+          startAt: merged.startAt,
+          endAt: merged.endAt,
+          eventName: merged.eventName,
+        }));
         setNotificationResults(data.notificationResults);
       } else {
         setIsEditingFull(false);
@@ -356,6 +361,13 @@ export default function EventDetailsModal({
 
       if (data.notificationResults && data.notificationResults.length > 0) {
         pendingActionRef.current = { type: 'delete' };
+        setNotificationTitle(`Letting ${hangout.pup.name}'s friends know!`);
+        setGenericMessage(buildGenericMessage({
+          pupName: hangout.pup.name,
+          startAt: hangout.startAt,
+          endAt: hangout.endAt,
+          eventName: hangout.eventName,
+        }));
         setNotificationResults(data.notificationResults);
       } else {
         onDelete(hangout.id);
@@ -368,8 +380,22 @@ export default function EventDetailsModal({
     }
   };
 
+  const handleCopyGenericMessage = () => {
+    const msg = buildGenericMessage({
+      pupName: hangout.pup.name,
+      startAt: hangout.startAt,
+      endAt: hangout.endAt,
+      eventName: hangout.eventName,
+    });
+    navigator.clipboard.writeText(msg).then(() => {
+      setCopiedGenericMsg(true);
+      setTimeout(() => setCopiedGenericMsg(false), 2000);
+    });
+  };
+
   const handleNotificationResultsClose = useCallback(() => {
     setNotificationResults(null);
+    setGenericMessage(null);
     const pending = pendingActionRef.current;
     pendingActionRef.current = null;
     if (pending?.type === 'update') {
@@ -812,6 +838,14 @@ export default function EventDetailsModal({
                   </button>
                 </div>
               )}
+              {isOwner && !isEditingFull && (
+                <button
+                  onClick={handleCopyGenericMessage}
+                  className="w-full mt-1 px-4 py-2 border border-gray-200 text-gray-500 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  {copiedGenericMsg ? 'Copied!' : 'Copy notification message'}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -821,6 +855,8 @@ export default function EventDetailsModal({
       {notificationResults && (
         <NotificationResultModal
           results={notificationResults}
+          title={notificationTitle}
+          genericMessage={genericMessage ?? undefined}
           onClose={handleNotificationResultsClose}
         />
       )}

@@ -1,5 +1,17 @@
 import { format } from 'date-fns';
-import { getLoginUrl, getRespondUrl } from './loginTokens';
+import { getLoginUrl } from './loginTokens';
+
+/**
+ * Strip emoji from a message string so it reads cleanly as email/plain text.
+ */
+function stripEmoji(text: string): string {
+  return text
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')  // most pictographic emoji
+    .replace(/[\u{2300}-\u{27BF}]/gu, '')     // misc technical + dingbats (⏰ ✅ ❌ etc.)
+    .replace(/[^\S\n]+/g, ' ')               // collapse multiple spaces (preserve newlines)
+    .replace(/^ +/gm, '')                    // trim leading spaces on each line
+    .trim();
+}
 
 /**
  * Format a date for display in messages
@@ -46,8 +58,6 @@ export async function generateHangoutCreatedMessage(params: {
 
   // Get static login URL for the friend
   const loginUrl = await getLoginUrl(friendUserId);
-  const yesUrl = await getRespondUrl(friendUserId, hangoutId, 'yes');
-  const noUrl = await getRespondUrl(friendUserId, hangoutId, 'no');
 
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
@@ -71,19 +81,12 @@ ${ownerName} needs someone to hang out with ${pupName} 🐾
     message += `\n\n💬 Notes: ${ownerNotes}`;
   }
 
-  // Format URL for WhatsApp clickability - ensure it's on its own line
-  message += `\n\n✅ Yes, I can help:
-${yesUrl}
-
-❌ Sorry, I can’t:
-${noUrl}
-
-🔍 View details:
+  message += `\n\n🔍 View details:
 ${loginUrl}
 
 Thanks for being a pup friend!`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -144,7 +147,7 @@ ${loginUrl}
 
 You can approve or reject this suggestion.`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -197,7 +200,7 @@ ${loginUrl}
 
 Thanks for using DogCal!`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -249,7 +252,7 @@ ${friendName} can no longer hang out with ${pupName} 🐾
 
 ${loginUrl}`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -265,11 +268,9 @@ export async function generateHangoutRescheduledMessage(params: {
   endAt: Date;
   hangoutId: string;
 }): Promise<string> {
-  const { friendUserId, friendName, ownerName, pupName, startAt, endAt, hangoutId } = params;
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
 
   const loginUrl = await getLoginUrl(friendUserId);
-  const yesUrl = await getRespondUrl(friendUserId, hangoutId, 'yes');
-  const noUrl = await getRespondUrl(friendUserId, hangoutId, 'no');
 
   const startFormatted = formatDateTime(startAt);
   const endTimeFormatted = formatTime(endAt);
@@ -283,18 +284,12 @@ ${ownerName} updated the hangout time for ${pupName} 🐾
 📅 ${startFormatted}
 ⏰ Until ${endTimeFormatted}
 
-Please re-confirm if you can still help.`;
+Please let ${ownerName} know if you can still make it.`;
 
-  message += `\n\n✅ Yes, I can help:
-${yesUrl}
-
-❌ Sorry, I can’t:
-${noUrl}
-
-🔍 View details:
+  message += `\n\n🔍 View details:
 ${loginUrl}`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -327,7 +322,7 @@ ${ownerName} confirmed you to hang out with ${pupName} 🐾
   message += `\n\n🔍 View details:
 ${loginUrl}`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -359,7 +354,7 @@ ${ownerName} has confirmed help for ${pupName} 🐾
   message += `\n\n🔍 View details:
 ${loginUrl}`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 /**
@@ -412,7 +407,7 @@ ${loginUrl}
 
 Thanks for suggesting a time!`;
 
-  return message;
+  return stripEmoji(message);
 }
 
 // =============================================================================
@@ -434,19 +429,16 @@ export async function getHangoutCreatedTemplateVars(params: {
   endAt: Date;
   hangoutId: string;
 }): Promise<Record<string, string>> {
-  const { friendUserId, friendName, ownerName, pupName, startAt, endAt, hangoutId } = params;
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
   const loginUrl = await getLoginUrl(friendUserId);
-  const yesUrl = await getRespondUrl(friendUserId, hangoutId, 'yes');
-  const noUrl = await getRespondUrl(friendUserId, hangoutId, 'no');
   const dateTime = `${formatDateTime(startAt)} - ${formatTime(endAt)}`;
-  const responseLinks = `Yes: ${yesUrl}\nNo: ${noUrl}\nDetails: ${loginUrl}`;
 
   return {
     '1': friendName,
     '2': ownerName,
     '3': pupName,
     '4': dateTime,
-    '5': responseLinks,
+    '5': loginUrl,
   };
 }
 
@@ -624,6 +616,98 @@ export async function getSuggestionRejectedTemplateVars(params: {
     '4': dateTime,
     '5': loginUrl,
   };
+}
+
+/**
+ * Generate WhatsApp message for when an owner deletes an OPEN hangout
+ * Sent to all pup friends (plain-text equivalent of hangout_deleted template)
+ */
+export async function generateHangoutDeletedMessage(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<string> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  return `🐕 *DogCal: Hangout Cancelled*
+
+Hi ${friendName},
+
+${ownerName} cancelled the hangout with ${pupName} 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}
+
+👉 View calendar:
+${loginUrl}`;
+}
+
+/**
+ * Generate WhatsApp message for when an owner cancels an ASSIGNED hangout
+ * Sent to the assigned friend (plain-text equivalent of hangout_cancelled template)
+ */
+export async function generateHangoutCancelledMessage(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<string> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  return `🐕 *DogCal: Your Hangout Was Cancelled*
+
+Hi ${friendName},
+
+Sorry, ${ownerName} had to cancel your confirmed hangout with ${pupName} 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}
+
+👉 View calendar:
+${loginUrl}`;
+}
+
+/**
+ * Generate WhatsApp message for when an owner rejects a suggestion
+ * Sent to the friend who suggested (plain-text equivalent of suggestion_rejected template)
+ */
+export async function generateSuggestionRejectedMessage(params: {
+  friendUserId: string;
+  friendName: string;
+  ownerName: string;
+  pupName: string;
+  startAt: Date;
+  endAt: Date;
+}): Promise<string> {
+  const { friendUserId, friendName, ownerName, pupName, startAt, endAt } = params;
+  const loginUrl = await getLoginUrl(friendUserId);
+  const startFormatted = formatDateTime(startAt);
+  const endTimeFormatted = formatTime(endAt);
+
+  return `🐕 *DogCal: Suggestion Not Available*
+
+Hi ${friendName},
+
+Thanks for suggesting a hangout with ${pupName}, but ${ownerName} isn't able to go with that time 🐾
+
+📅 ${startFormatted}
+⏰ Until ${endTimeFormatted}
+
+Feel free to suggest another time!
+
+👉 View calendar:
+${loginUrl}`;
 }
 
 /**

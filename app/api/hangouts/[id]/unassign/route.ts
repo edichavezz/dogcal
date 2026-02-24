@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsAppTemplate, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
-import { getHangoutUnassignedTemplateVars } from '@/lib/messageTemplates';
+import { getHangoutUnassignedTemplateVars, generateHangoutUnassignedMessage } from '@/lib/messageTemplates';
 
 export async function POST(
   request: NextRequest,
@@ -69,22 +69,48 @@ export async function POST(
         const owner = updatedHangout.createdByOwner;
 
         if (!isValidPhoneNumber(owner.phoneNumber)) {
-          notificationResults.push({
-            userId: owner.id,
-            userName: owner.name,
-            phoneNumber: owner.phoneNumber,
-            status: 'skipped',
-            reason: 'No valid phone number',
-          });
-        } else {
-          const templateVars = await getHangoutUnassignedTemplateVars({
+          const whatsappMessage = await generateHangoutUnassignedMessage({
             ownerUserId: owner.id,
             ownerName: owner.name,
             friendName: friendUser?.name || 'A friend',
             pupName: updatedHangout.pup.name,
             startAt: updatedHangout.startAt,
             endAt: updatedHangout.endAt,
+            eventName: updatedHangout.eventName,
+            hangoutId: updatedHangout.id,
           });
+          notificationResults.push({
+            userId: owner.id,
+            userName: owner.name,
+            phoneNumber: owner.phoneNumber,
+            profilePhotoUrl: owner.profilePhotoUrl,
+            relationship: `${updatedHangout.pup.name}'s owner`,
+            status: 'skipped',
+            reason: 'No valid phone number',
+            whatsappMessage,
+          });
+        } else {
+          const friendName = friendUser?.name || 'A friend';
+          const [templateVars, whatsappMessage] = await Promise.all([
+            getHangoutUnassignedTemplateVars({
+              ownerUserId: owner.id,
+              ownerName: owner.name,
+              friendName,
+              pupName: updatedHangout.pup.name,
+              startAt: updatedHangout.startAt,
+              endAt: updatedHangout.endAt,
+            }),
+            generateHangoutUnassignedMessage({
+              ownerUserId: owner.id,
+              ownerName: owner.name,
+              friendName,
+              pupName: updatedHangout.pup.name,
+              startAt: updatedHangout.startAt,
+              endAt: updatedHangout.endAt,
+              eventName: updatedHangout.eventName,
+              hangoutId: updatedHangout.id,
+            }),
+          ]);
 
           const result = await sendWhatsAppTemplate(owner.phoneNumber!, 'hangout_unassigned', templateVars);
 
@@ -92,9 +118,12 @@ export async function POST(
             userId: owner.id,
             userName: owner.name,
             phoneNumber: owner.phoneNumber,
+            profilePhotoUrl: owner.profilePhotoUrl,
+            relationship: `${updatedHangout.pup.name}'s owner`,
             status: result.success ? 'sent' : 'failed',
             reason: result.error,
             twilioSid: result.sid,
+            whatsappMessage,
           });
         }
       } catch (error) {

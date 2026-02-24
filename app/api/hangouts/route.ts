@@ -8,7 +8,7 @@ import { getActingUserId } from '@/lib/cookies';
 import { prisma } from '@/lib/prisma';
 import { addDays, addWeeks, addMonths } from 'date-fns';
 import { sendWhatsAppTemplate, isValidPhoneNumber, type NotificationResult } from '@/lib/whatsapp';
-import { getHangoutCreatedTemplateVars } from '@/lib/messageTemplates';
+import { getHangoutCreatedTemplateVars, generateHangoutCreatedMessage } from '@/lib/messageTemplates';
 
 const createHangoutSchema = z.object({
   pupId: z.string().uuid(),
@@ -156,28 +156,55 @@ export async function POST(request: NextRequest) {
           for (const friendship of friendships) {
             const friend = friendship.friend;
 
-            // Skip if no valid phone number
+            // Skip if no valid phone number — still generate copy message for the owner
             if (!isValidPhoneNumber(friend.phoneNumber)) {
+              const whatsappMessage = await generateHangoutCreatedMessage({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: pup.name,
+                startAt: hangouts[0].startAt,
+                endAt: hangouts[0].endAt,
+                eventName: eventName || null,
+                ownerNotes: ownerNotes || null,
+                hangoutId: hangouts[0].id,
+              });
               notificationResults.push({
                 userId: friend.id,
                 userName: friend.name,
                 phoneNumber: friend.phoneNumber,
+                profilePhotoUrl: friend.profilePhotoUrl,
+                relationship: `${pup.name}'s friend`,
                 status: 'skipped',
                 reason: 'No valid phone number',
+                whatsappMessage,
               });
               continue;
             }
 
-            // Generate template variables using first hangout in series
-            const templateVars = await getHangoutCreatedTemplateVars({
-              friendUserId: friend.id,
-              friendName: friend.name,
-              ownerName: actingUser.name,
-              pupName: pup.name,
-              startAt: hangouts[0].startAt,
-              endAt: hangouts[0].endAt,
-              hangoutId: hangouts[0].id,
-            });
+            // Generate template variables and plain-text message for first hangout in series
+            const [templateVars, whatsappMessage] = await Promise.all([
+              getHangoutCreatedTemplateVars({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: pup.name,
+                startAt: hangouts[0].startAt,
+                endAt: hangouts[0].endAt,
+                hangoutId: hangouts[0].id,
+              }),
+              generateHangoutCreatedMessage({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: pup.name,
+                startAt: hangouts[0].startAt,
+                endAt: hangouts[0].endAt,
+                eventName: eventName || null,
+                ownerNotes: ownerNotes || null,
+                hangoutId: hangouts[0].id,
+              }),
+            ]);
 
             // Send WhatsApp template message
             const result = await sendWhatsAppTemplate(friend.phoneNumber!, 'hangout_created', templateVars);
@@ -186,9 +213,12 @@ export async function POST(request: NextRequest) {
               userId: friend.id,
               userName: friend.name,
               phoneNumber: friend.phoneNumber,
+              profilePhotoUrl: friend.profilePhotoUrl,
+              relationship: `${pup.name}'s friend`,
               status: result.success ? 'sent' : 'failed',
               reason: result.error,
               twilioSid: result.sid,
+              whatsappMessage,
             });
           }
         } catch (error) {
@@ -233,28 +263,55 @@ export async function POST(request: NextRequest) {
           for (const friendship of friendships) {
             const friend = friendship.friend;
 
-            // Skip if no valid phone number
+            // Skip if no valid phone number — still generate copy message for the owner
             if (!isValidPhoneNumber(friend.phoneNumber)) {
+              const whatsappMessage = await generateHangoutCreatedMessage({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: pup.name,
+                startAt: hangout.startAt,
+                endAt: hangout.endAt,
+                eventName: eventName || null,
+                ownerNotes: ownerNotes || null,
+                hangoutId: hangout.id,
+              });
               notificationResults.push({
                 userId: friend.id,
                 userName: friend.name,
                 phoneNumber: friend.phoneNumber,
+                profilePhotoUrl: friend.profilePhotoUrl,
+                relationship: `${pup.name}'s friend`,
                 status: 'skipped',
                 reason: 'No valid phone number',
+                whatsappMessage,
               });
               continue;
             }
 
-            // Generate template variables
-            const templateVars = await getHangoutCreatedTemplateVars({
-              friendUserId: friend.id,
-              friendName: friend.name,
-              ownerName: actingUser.name,
-              pupName: pup.name,
-              startAt: hangout.startAt,
-              endAt: hangout.endAt,
-              hangoutId: hangout.id,
-            });
+            // Generate template variables and plain-text message in parallel
+            const [templateVars, whatsappMessage] = await Promise.all([
+              getHangoutCreatedTemplateVars({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: pup.name,
+                startAt: hangout.startAt,
+                endAt: hangout.endAt,
+                hangoutId: hangout.id,
+              }),
+              generateHangoutCreatedMessage({
+                friendUserId: friend.id,
+                friendName: friend.name,
+                ownerName: actingUser.name,
+                pupName: pup.name,
+                startAt: hangout.startAt,
+                endAt: hangout.endAt,
+                eventName: eventName || null,
+                ownerNotes: ownerNotes || null,
+                hangoutId: hangout.id,
+              }),
+            ]);
 
             // Send WhatsApp template message
             const result = await sendWhatsAppTemplate(friend.phoneNumber!, 'hangout_created', templateVars);
@@ -263,9 +320,12 @@ export async function POST(request: NextRequest) {
               userId: friend.id,
               userName: friend.name,
               phoneNumber: friend.phoneNumber,
+              profilePhotoUrl: friend.profilePhotoUrl,
+              relationship: `${pup.name}'s friend`,
               status: result.success ? 'sent' : 'failed',
               reason: result.error,
               twilioSid: result.sid,
+              whatsappMessage,
             });
           }
         } catch (error) {

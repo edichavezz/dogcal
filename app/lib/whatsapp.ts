@@ -1,13 +1,10 @@
 import twilio from 'twilio';
 
-export type NotificationResult = {
-  userId: string;
-  userName: string;
-  phoneNumber: string | null;
-  status: 'sent' | 'skipped' | 'failed';
-  reason?: string;
-  twilioSid?: string;
-};
+// Browser-safe types and utils — imported here for use within this file
+// and re-exported so existing server-side imports remain unchanged.
+import type { NotificationResult } from './whatsapp-client';
+export type { NotificationResult };
+export { formatPhoneForWaMe } from './whatsapp-client';
 
 // WhatsApp Message Template SIDs
 export const TEMPLATE_SIDS = {
