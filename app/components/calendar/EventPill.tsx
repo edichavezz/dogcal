@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import { CalendarEvent } from './CalendarContext';
 import Avatar from '../Avatar';
+import { getFriendColor } from '@/lib/colorUtils';
 
 type EventPillProps = {
   event: CalendarEvent;
@@ -42,7 +43,8 @@ function EventPill({ event, onClick, compact = false }: EventPillProps) {
               name={event.assignedFriendName!}
               photoUrl={event.assignedFriendPhotoUrl}
               size="xs"
-              className="-ml-2 border border-white"
+              className="-ml-2"
+              style={{ border: `2px solid ${getFriendColor(event.assignedFriendId)}` }}
             />
           )}
         </div>

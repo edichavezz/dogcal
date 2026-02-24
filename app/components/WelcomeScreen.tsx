@@ -103,6 +103,8 @@ interface WelcomeScreenProps {
   myHangoutsTotal: number;
   // For owners who are also friends for other pups
   friendPups?: PupCardData[];
+  // Suggestions the owner submitted for friend pups (awaiting their approval)
+  mySubmittedSuggestions?: SuggestionCardData[];
 }
 
 const ITEMS_PER_PAGE = 5;
@@ -117,6 +119,7 @@ export default function WelcomeScreen({
   myHangoutsAndSuggestions,
   myHangoutsTotal: initialMyTotal,
   friendPups = [],
+  mySubmittedSuggestions = [],
 }: WelcomeScreenProps) {
   const router = useRouter();
   const isOwner = user.role === 'OWNER';
@@ -371,6 +374,26 @@ export default function WelcomeScreen({
                       key={suggestion.id}
                       suggestion={suggestion}
                       showFriend={true}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Suggestions this owner submitted for friend pups */}
+            {mySubmittedSuggestions.length > 0 && (
+              <section>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                  Suggestions you submitted
+                </h2>
+                <div className="space-y-3">
+                  {mySubmittedSuggestions.map(suggestion => (
+                    <SuggestionPreviewCard
+                      key={suggestion.id}
+                      suggestion={suggestion}
+                      showFriend={false}
+                      interactive={false}
                     />
                   ))}
                 </div>
