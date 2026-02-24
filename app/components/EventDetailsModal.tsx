@@ -292,7 +292,14 @@ export default function EventDetailsModal({
       if (isOwner) {
         updates.eventName = editedEventName || null;
         updates.ownerNotes = editedOwnerNotes || null;
-        updates.assignedFriendUserId = editedAssignedFriend || null;
+        // Only send assignedFriendUserId if the owner actually changed the assignment.
+        // Normalize both sides to null (not "") so a stale/open modal doesn't
+        // accidentally unassign when the owner only edits time.
+        const originalFriendId = hangout.assignedFriend?.id ?? null;
+        const newFriendId = editedAssignedFriend || null;
+        if (newFriendId !== originalFriendId) {
+          updates.assignedFriendUserId = newFriendId;
+        }
       }
 
       const response = await fetch(`/api/hangouts/${hangout.id}`, {
