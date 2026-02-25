@@ -11,7 +11,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import AppLayout from './AppLayout';
-import Avatar from './Avatar';
 import { useFunMessage } from './home/FunMessage';
 import HangoutListCard, { HangoutCardData } from './home/HangoutListCard';
 import SuggestionPreviewCard, { SuggestionCardData } from './home/SuggestionPreviewCard';
@@ -136,7 +135,8 @@ export default function WelcomeScreen({
 
   // Memoize pupNames to prevent fun message from changing on filter updates
   const pupNames = useMemo(() => pups.map(p => p.name), [pups]);
-  const funMessage = useFunMessage(isOwner ? 'OWNER' : 'FRIEND', pupNames);
+  const firstName = user.name.split(' ')[0];
+  const funMessage = useFunMessage(isOwner ? 'OWNER' : 'FRIEND', pupNames, firstName);
 
   // Modal state
   const [selectedHangout, setSelectedHangout] = useState<HangoutModalData | null>(null);
@@ -368,19 +368,11 @@ export default function WelcomeScreen({
   return (
     <AppLayout user={user}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Header with small avatar and fun message */}
-        <div className="flex items-center gap-3 mb-6 sm:mb-8">
-          <Avatar
-            photoUrl={user.profilePhotoUrl}
-            name={user.name}
-            size="md"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-gray-500">Welcome back, {user.name}!</p>
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900 truncate">
-              {funMessage || "Ready for today's adventures?"}
-            </h1>
-          </div>
+        {/* Header */}
+        <div className="mb-6 sm:mb-8">
+          <p className="text-base sm:text-lg text-gray-400 font-normal">
+            {funMessage || `Hey ${firstName}!`}
+          </p>
         </div>
 
         {/* Owner Layout */}
@@ -558,7 +550,7 @@ export default function WelcomeScreen({
             {(myHangouts.length > 0 || friendSuggestions.length > 0 || myTotal > 0) && (
               <section>
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-                  Your upcoming hangouts and suggestions
+                  Upcoming hangouts
                 </h2>
                 <HangoutFilters
                   filters={friendMyFilters}
