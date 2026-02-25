@@ -27,7 +27,7 @@ export default function PupActionCard({ pup, isOwner, ownerName }: PupActionCard
     ? `/hangouts/new?pupId=${pup.id}`
     : `/suggest?pupId=${pup.id}`;
 
-  const actionLabel = isOwner ? 'Create Hangout' : 'Suggest Time';
+  const actionLabel = isOwner ? 'Create Hangout' : 'Suggest Hangout';
   const ActionIcon = isOwner ? Plus : Lightbulb;
 
   return (

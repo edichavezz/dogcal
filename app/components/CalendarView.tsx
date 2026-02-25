@@ -396,7 +396,7 @@ function CalendarView({
                 href="/suggest"
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-[#1a3a3a] text-white hover:bg-[#2a4a4a] transition-colors"
               >
-                <Lightbulb className="w-4 h-4" /> Suggest Time
+                <Lightbulb className="w-4 h-4" /> Suggest Hangout
               </Link>
             )}
             {/* Fallback for users with neither (shouldn't happen) */}
@@ -408,7 +408,7 @@ function CalendarView({
                 {actingUserRole === 'OWNER' ? (
                   <><Plus className="w-4 h-4" /> Create Hangout</>
                 ) : (
-                  <><Lightbulb className="w-4 h-4" /> Suggest Time</>
+                  <><Lightbulb className="w-4 h-4" /> Suggest Hangout</>
                 )}
               </Link>
             )}

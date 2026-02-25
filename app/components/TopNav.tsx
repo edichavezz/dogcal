@@ -93,7 +93,7 @@ export default function TopNav({ user }: TopNavProps) {
                       : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  Suggest Time
+                  Suggest Hangout
                 </Link>
                 <Link
                   href="/manage"
