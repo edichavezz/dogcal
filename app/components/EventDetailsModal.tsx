@@ -119,6 +119,8 @@ export default function EventDetailsModal({
   const [editedAssignedFriend, setEditedAssignedFriend] = useState(hangout.assignedFriend?.id || '');
   const [friends, setFriends] = useState<Array<{ id: string; name: string }>>([]);
   const [deleting, setDeleting] = useState(false);
+  const [quickAssignFriendId, setQuickAssignFriendId] = useState('');
+  const [quickAssigning, setQuickAssigning] = useState(false);
   const [notificationResults, setNotificationResults] = useState<NotificationResult[] | null>(null);
   const [notificationTitle, setNotificationTitle] = useState('');
   const [genericMessage, setGenericMessage] = useState<string | null>(null);
@@ -135,6 +137,7 @@ export default function EventDetailsModal({
   const isOwner = actingUserRole === 'OWNER' && hangout.pup.owner.id === actingUserId;
   const canAssign = actingUserRole === 'FRIEND' && hangout.status === 'OPEN';
   const canUnassign = actingUserRole === 'FRIEND' && isAssignedToMe;
+  const pupFriends = (hangout.pup.friendships ?? []).map(f => f.friend);
 
   // Generate display title
   const displayTitle = hangout.eventName ||
@@ -391,6 +394,63 @@ export default function EventDetailsModal({
       setCopiedGenericMsg(true);
       setTimeout(() => setCopiedGenericMsg(false), 2000);
     });
+  };
+
+  const handleOwnerQuickAssign = async () => {
+    if (!quickAssignFriendId) return;
+    setQuickAssigning(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/hangouts/${hangout.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startAt: hangout.startAt,
+          endAt: hangout.endAt,
+          assignedFriendUserId: quickAssignFriendId,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to assign');
+      const merged = { ...hangout, ...data.hangout, pup: { ...hangout.pup, ...data.hangout.pup } };
+      if (data.notificationResults?.length > 0) {
+        pendingActionRef.current = { type: 'update', hangout: merged };
+        setNotificationTitle(`Letting ${hangout.pup.name}'s friends know!`);
+        setGenericMessage(buildGenericMessage({ pupName: hangout.pup.name, startAt: merged.startAt, endAt: merged.endAt, eventName: merged.eventName }));
+        setNotificationResults(data.notificationResults);
+      } else {
+        onUpdate(merged);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setQuickAssigning(false);
+    }
+  };
+
+  const handleOwnerQuickUnassign = async () => {
+    if (!confirm(`Unassign ${hangout.assignedFriend?.name} from this hangout?`)) return;
+    setQuickAssigning(true);
+    setError('');
+    try {
+      const response = await fetch(`/api/hangouts/${hangout.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startAt: hangout.startAt,
+          endAt: hangout.endAt,
+          assignedFriendUserId: null,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to unassign');
+      const merged = { ...hangout, ...data.hangout, pup: { ...hangout.pup, ...data.hangout.pup } };
+      onUpdate(merged);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setQuickAssigning(false);
+    }
   };
 
   const handleNotificationResultsClose = useCallback(() => {
@@ -664,19 +724,50 @@ export default function EventDetailsModal({
                 </span>
               )}
             </div>
-          {hangout.assignedFriend && (
+          {hangout.assignedFriend ? (
             <div className="flex items-center gap-2 mt-3">
               <Avatar
                 photoUrl={hangout.assignedFriend.profilePhotoUrl}
-                  name={hangout.assignedFriend.name}
-                  size="sm"
-                />
-                <div>
-                  <p className="text-sm text-gray-600">Assigned to:</p>
-                  <p className="text-sm font-semibold text-gray-900">{hangout.assignedFriend.name}</p>
-                </div>
+                name={hangout.assignedFriend.name}
+                size="sm"
+              />
+              <div className="flex-1">
+                <p className="text-sm text-gray-600">Assigned to:</p>
+                <p className="text-sm font-semibold text-gray-900">{hangout.assignedFriend.name}</p>
               </div>
-            )}
+              {isOwner && !isEditingFull && (
+                <button
+                  onClick={handleOwnerQuickUnassign}
+                  disabled={quickAssigning}
+                  className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 disabled:opacity-50 transition-colors"
+                >
+                  {quickAssigning ? 'Unassigning…' : 'Unassign'}
+                </button>
+              )}
+            </div>
+          ) : (
+            isOwner && !isEditingFull && pupFriends.length > 0 && (
+              <div className="mt-3 flex items-center gap-2">
+                <select
+                  value={quickAssignFriendId}
+                  onChange={(e) => setQuickAssignFriendId(e.target.value)}
+                  className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] bg-white"
+                >
+                  <option value="">Assign to a friend…</option>
+                  {pupFriends.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleOwnerQuickAssign}
+                  disabled={!quickAssignFriendId || quickAssigning}
+                  className="px-3 py-1.5 text-xs font-medium text-[#1a3a3a] bg-[#f4a9a8] rounded-lg hover:bg-[#f5b9b8] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {quickAssigning ? 'Assigning…' : 'Assign'}
+                </button>
+              </div>
+            )
+          )}
           </div>
 
           {/* Owner Notes */}
