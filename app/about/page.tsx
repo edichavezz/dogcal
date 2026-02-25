@@ -265,7 +265,7 @@ export default function AboutPage() {
             </h2>
             <div className="space-y-4 text-slate-500 leading-relaxed text-base">
               <p>
-                Hi, I&apos;m Edi — I live in North London, and I&apos;m completely dog obsessed.
+                Hi, I&apos;m Edi — I live in North London, and I&apos;m a big dog lover.
                 I don&apos;t have a dog of my own, but I&apos;ve been lucky enough to spend a huge
                 amount of time with some truly wonderful pups nearby.
               </p>
@@ -283,7 +283,7 @@ export default function AboutPage() {
                 can spend quality time with lovely dogs nearby.
               </p>
               <p className="font-medium text-[#1a3a3a]">
-                dogcal is here to help everyone find caring, balanced time with dogs.
+                dogcal — Dog care, from people you trust.
               </p>
             </div>
           </div>
