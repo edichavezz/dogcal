@@ -63,6 +63,22 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
   const [repeatFrequency, setRepeatFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [repeatCount, setRepeatCount] = useState(4);
 
+  // When start time changes on a same-day event, shift end time by the same span.
+  // On multi-day events the end time is independent so leave it alone.
+  const handleStartTimeChange = (newTime: string) => {
+    if (endDate === startDate) {
+      const [sh, sm] = startTime.split(':').map(Number);
+      const [eh, em] = endTime.split(':').map(Number);
+      const [nsh, nsm] = newTime.split(':').map(Number);
+      const spanMins = Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+      const newEndMins = Math.min(nsh * 60 + nsm + spanMins, 23 * 60 + 59);
+      setEndTime(
+        `${Math.floor(newEndMins / 60).toString().padStart(2, '0')}:${(newEndMins % 60).toString().padStart(2, '0')}`
+      );
+    }
+    setStartTime(newTime);
+  };
+
   // When start date changes, shift end date by the same offset (preserves multi-day spans).
   // Parse at noon to avoid UTC/local-midnight timezone edge cases.
   const handleStartDateChange = (newStart: string) => {
@@ -178,7 +194,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
       </div>
 
       {/* Start & End Date */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
             Start Date *
@@ -217,7 +233,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
         startTime={startTime}
         endTime={endTime}
         onPeriodChange={setTimePeriod}
-        onStartTimeChange={setStartTime}
+        onStartTimeChange={handleStartTimeChange}
         onEndTimeChange={setEndTime}
       />
 
@@ -299,7 +315,7 @@ export default function CreateHangoutForm({ pups, friends }: CreateHangoutFormPr
         </div>
 
         {repeatEnabled && (
-          <div className="grid grid-cols-2 gap-4 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
             <div>
               <label htmlFor="repeatFrequency" className="block text-sm font-medium text-gray-700 mb-2">
                 Frequency

@@ -58,6 +58,20 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
   const [repeatFrequency, setRepeatFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [repeatCount, setRepeatCount] = useState(4);
 
+  const handleStartTimeChange = (newTime: string) => {
+    if (endDate === startDate) {
+      const [sh, sm] = startTime.split(':').map(Number);
+      const [eh, em] = endTime.split(':').map(Number);
+      const [nsh, nsm] = newTime.split(':').map(Number);
+      const spanMins = Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+      const newEndMins = Math.min(nsh * 60 + nsm + spanMins, 23 * 60 + 59);
+      setEndTime(
+        `${Math.floor(newEndMins / 60).toString().padStart(2, '0')}:${(newEndMins % 60).toString().padStart(2, '0')}`
+      );
+    }
+    setStartTime(newTime);
+  };
+
   const handleStartDateChange = (newStart: string) => {
     const offsetDays = differenceInCalendarDays(
       new Date(`${endDate}T12:00:00`),
@@ -171,7 +185,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
       </div>
 
       {/* Start & End Date */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
             Start Date *
@@ -210,7 +224,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
         startTime={startTime}
         endTime={endTime}
         onPeriodChange={setTimePeriod}
-        onStartTimeChange={setStartTime}
+        onStartTimeChange={handleStartTimeChange}
         onEndTimeChange={setEndTime}
       />
 
@@ -268,7 +282,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
         </div>
 
         {repeatEnabled && (
-          <div className="grid grid-cols-2 gap-4 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
             <div>
               <label htmlFor="repeatFrequency" className="block text-sm font-medium text-gray-700 mb-2">
                 Frequency

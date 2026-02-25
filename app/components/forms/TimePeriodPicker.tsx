@@ -112,20 +112,20 @@ export default function TimePeriodPicker({
           className="flex items-center gap-1 text-sm text-[#1a3a3a] font-medium mb-3 hover:text-[#2a4a4a]"
         >
           {showTimeAdjust ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          Adjust times
+          {showTimeAdjust ? 'Hide times' : 'Adjust times'}
         </button>
       )}
 
       {/* Time inputs */}
       {(showTimeAdjust || period === 'exact') && (
-        <div className="flex gap-3 items-center">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex gap-3 items-center">
           <div className="flex-1">
             <label className="block text-xs text-gray-500 mb-1">Start</label>
             <input
               type="time"
               value={startTime}
               onChange={(e) => onStartTimeChange(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f4a9a8] focus:ring-2 focus:ring-[#f4a9a8]/20 outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-[#f4a9a8] focus:ring-2 focus:ring-[#f4a9a8]/20 outline-none"
             />
           </div>
           <span className="text-gray-400 pt-5">to</span>
@@ -135,7 +135,7 @@ export default function TimePeriodPicker({
               type="time"
               value={endTime}
               onChange={(e) => onEndTimeChange(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f4a9a8] focus:ring-2 focus:ring-[#f4a9a8]/20 outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:border-[#f4a9a8] focus:ring-2 focus:ring-[#f4a9a8]/20 outline-none"
             />
           </div>
         </div>
