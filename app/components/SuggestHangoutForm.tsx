@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays, addDays } from 'date-fns';
 import { getPupColor } from '@/lib/colorUtils';
 import type { NotificationResult } from '@/lib/whatsapp';
 import { buildGenericMessage } from '@/lib/whatsapp-client';
@@ -57,6 +57,15 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [repeatFrequency, setRepeatFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [repeatCount, setRepeatCount] = useState(4);
+
+  const handleStartDateChange = (newStart: string) => {
+    const offsetDays = differenceInCalendarDays(
+      new Date(`${endDate}T12:00:00`),
+      new Date(`${startDate}T12:00:00`),
+    );
+    setStartDate(newStart);
+    setEndDate(format(addDays(new Date(`${newStart}T12:00:00`), offsetDays), 'yyyy-MM-dd'));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -171,7 +180,7 @@ export default function SuggestHangoutForm({ pups }: SuggestHangoutFormProps) {
             type="date"
             id="startDate"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => handleStartDateChange(e.target.value)}
             required
             min={today}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f4a9a8] cursor-pointer"
