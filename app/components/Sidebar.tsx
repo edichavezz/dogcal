@@ -35,7 +35,7 @@ export default function Sidebar({ user }: SidebarProps) {
   const friendTabs = [
     { id: 'home', path: '/', label: 'Home', icon: Home },
     { id: 'calendar', path: '/calendar', label: 'Calendar', icon: Calendar },
-    { id: 'suggest', path: '/suggest', label: 'Suggest time', icon: Lightbulb },
+    { id: 'suggest', path: '/suggest', label: 'Suggest hangout', icon: Lightbulb },
     { id: 'pups', path: '/manage', label: 'Pups', icon: Users },
   ];
 
