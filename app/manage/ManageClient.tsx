@@ -982,7 +982,7 @@ type MeetupWithRsvp = Meetup & {
 function MeetNewFriendsSection({ userRole, userId, userName }: { userRole: 'OWNER' | 'FRIEND'; userId: string; userName: string }) {
   const [meetups, setMeetups] = useState<MeetupWithRsvp[]>([]);
   const [showInvite, setShowInvite] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ name: '', email: '', type: '' });
+  const [inviteForm, setInviteForm] = useState({ name: '', email: '', type: '', neighbourhood: '' });
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [rsvpLoading, setRsvpLoading] = useState<string | null>(null);
 
@@ -999,7 +999,7 @@ function MeetNewFriendsSection({ userRole, userId, userName }: { userRole: 'OWNE
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteForm.name.trim() || !inviteForm.email.trim() || !inviteForm.type) return;
+    if (!inviteForm.name.trim() || !inviteForm.email.trim() || !inviteForm.type || !inviteForm.neighbourhood.trim()) return;
     setInviteStatus('sending');
     try {
       const res = await fetch('/api/meetups/invite', {
@@ -1009,6 +1009,7 @@ function MeetNewFriendsSection({ userRole, userId, userName }: { userRole: 'OWNE
           name: inviteForm.name,
           email: inviteForm.email,
           type: inviteForm.type,
+          neighbourhood: inviteForm.neighbourhood,
           requestedBy: userName,
         }),
       });
@@ -1187,6 +1188,19 @@ function MeetNewFriendsSection({ userRole, userId, userName }: { userRole: 'OWNE
                     <option value="owner">They have a dog and want care help</option>
                     <option value="friend">They want to hang out with dogs</option>
                   </select>
+                  <div>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Where are they based?"
+                      value={inviteForm.neighbourhood}
+                      onChange={(e) => setInviteForm({ ...inviteForm, neighbourhood: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#f4a9a8]"
+                    />
+                    <p className="mt-1 text-xs text-gray-400">
+                      What neighbourhood? e.g. North London, Finsbury Park, Stoke Newington… so we know to pair them up with local doggos.
+                    </p>
+                  </div>
                   {inviteStatus === 'error' && (
                     <p className="text-xs text-red-600">Something went wrong. Please try again.</p>
                   )}

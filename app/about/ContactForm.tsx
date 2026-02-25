@@ -24,6 +24,7 @@ export default function ContactForm() {
       name: (form.elements.namedItem('name') as HTMLInputElement).value.trim(),
       email: (form.elements.namedItem('email') as HTMLInputElement).value.trim(),
       interest: (form.elements.namedItem('interest') as HTMLSelectElement).value,
+      neighbourhood: (form.elements.namedItem('neighbourhood') as HTMLInputElement).value.trim(),
       message: (form.elements.namedItem('message') as HTMLTextAreaElement).value.trim(),
     };
 
@@ -122,6 +123,23 @@ export default function ContactForm() {
             </option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <label htmlFor="neighbourhood" className="block text-sm font-medium text-slate-700 mb-1.5">
+          Where are you based?
+        </label>
+        <input
+          id="neighbourhood"
+          name="neighbourhood"
+          type="text"
+          required
+          placeholder="e.g. North London, Finsbury Park, Stoke Newington…"
+          className={inputClass}
+        />
+        <p className="mt-1.5 text-xs text-slate-400">
+          What neighbourhood? So we know to pair you up with local doggos.
+        </p>
       </div>
 
       <div>

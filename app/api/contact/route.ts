@@ -22,13 +22,14 @@ const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   email: z.string().email('Please provide a valid email').max(200),
   interest: z.enum(['owner', 'friend', 'both', 'other']),
+  neighbourhood: z.string().min(1, 'Neighbourhood is required').max(200),
   message: z.string().max(2000).optional(),
 });
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, interest, message } = schema.parse(body);
+    const { name, email, interest, neighbourhood, message } = schema.parse(body);
 
     const gmailUser = process.env.GMAIL_USER;
     const gmailPass = process.env.GMAIL_APP_PASSWORD;
@@ -86,6 +87,10 @@ export async function POST(request: Request) {
             <tr>
               <td style="padding:10px 0;color:#64748b;font-size:13px;vertical-align:top;font-weight:500;">Interest</td>
               <td style="padding:10px 0;color:#0f172a;font-size:14px;">${escapeHtml(interestLabel)}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:#64748b;font-size:13px;vertical-align:top;font-weight:500;">Based in</td>
+              <td style="padding:10px 0;color:#0f172a;font-size:14px;">${escapeHtml(neighbourhood)}</td>
             </tr>
             ${
               messageBody

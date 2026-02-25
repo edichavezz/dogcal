@@ -6,7 +6,7 @@ import dns from 'dns';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, type, requestedBy } = body as { name?: string; email?: string; type?: string; requestedBy?: string };
+    const { name, email, type, neighbourhood, requestedBy } = body as { name?: string; email?: string; type?: string; neighbourhood?: string; requestedBy?: string };
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -16,6 +16,9 @@ export async function POST(request: Request) {
     }
     if (!type || !['owner', 'friend'].includes(type)) {
       return NextResponse.json({ error: 'Type is required' }, { status: 400 });
+    }
+    if (!neighbourhood || typeof neighbourhood !== 'string' || neighbourhood.trim().length === 0) {
+      return NextResponse.json({ error: 'Neighbourhood is required' }, { status: 400 });
     }
 
     const gmailUser = process.env.GMAIL_USER;
@@ -67,6 +70,10 @@ export async function POST(request: Request) {
             <tr>
               <td style="padding:10px 0;color:#64748b;font-size:13px;vertical-align:top;font-weight:500;">They</td>
               <td style="padding:10px 0;color:#0f172a;font-size:14px;">${escapeHtml(typeLabel)}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 0;color:#64748b;font-size:13px;vertical-align:top;font-weight:500;">Based in</td>
+              <td style="padding:10px 0;color:#0f172a;font-size:14px;">${escapeHtml(neighbourhood.trim())}</td>
             </tr>
           </table>
           <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
