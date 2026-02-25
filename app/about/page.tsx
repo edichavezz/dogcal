@@ -1,8 +1,33 @@
 import type { Metadata } from 'next';
+import fs from 'fs';
+import path from 'path';
 import Image from 'next/image';
 import Link from 'next/link';
 import ContactForm from './ContactForm';
 import PupPhotoCarousel from './PupPhotoCarousel';
+
+// Photos that should always appear first, in this order.
+// Everything else in the folder is sorted alphabetically after these.
+const PRIORITY_PHOTOS = ['tom-zoro-cute', 'indie-bella', 'edi-tom-edu-navy'];
+
+function loadPupPhotos() {
+  const dir = path.join(process.cwd(), 'public/pup-photos');
+  const files = fs.readdirSync(dir).filter(f => /\.(jpe?g|png|webp|gif)$/i.test(f));
+
+  const priority = PRIORITY_PHOTOS
+    .map(stem => files.find(f => f.replace(/\.[^.]+$/, '').toLowerCase() === stem.toLowerCase()))
+    .filter(Boolean) as string[];
+
+  const rest = files
+    .filter(f => !priority.includes(f))
+    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+  return [...priority, ...rest].map(filename => ({
+    src: `/pup-photos/${filename}`,
+    // "edi-tom-lucy.jpg" → "Edi Tom Lucy"
+    alt: filename.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+  }));
+}
 
 export const metadata: Metadata = {
   title: 'dogcal — Dog care, from people you trust.',
@@ -44,6 +69,7 @@ const features = [
 
 export default function AboutPage() {
   const year = new Date().getFullYear();
+  const pupPhotos = loadPupPhotos();
 
   return (
     <main className="min-h-screen bg-white">
@@ -264,7 +290,7 @@ export default function AboutPage() {
 
           {/* Photo carousel */}
           <div>
-            <PupPhotoCarousel />
+            <PupPhotoCarousel photos={pupPhotos} />
           </div>
         </div>
       </section>

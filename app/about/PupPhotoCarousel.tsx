@@ -3,44 +3,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 
-const photos = [
-  // Featured photos first
-  { src: '/pup-photos/tom-zoro-cute.JPG', alt: 'Tom and Zoro' },
-  { src: '/pup-photos/indie-bella.jpg', alt: 'Indie and Bella' },
-  { src: '/pup-photos/edi-tom-edu-navy.jpg', alt: 'Edi, Tom and Navy' },
-  // Rest of the gang
-  { src: '/pup-photos/edi-zoro-navy.jpg', alt: 'Edi with Zoro and Navy' },
-  { src: '/pup-photos/tom-navy-nap.jpg', alt: 'Tom and Navy having a nap' },
-  { src: '/pup-photos/tom-zoro-shoulder.jpg', alt: 'Zoro on Tom\'s shoulder' },
-  { src: '/pup-photos/tom-zoro-escalator.jpg', alt: 'Tom and Zoro on the escalator' },
-  { src: '/pup-photos/zoro-park-dogs.JPG', alt: 'Zoro with park dogs' },
-  { src: '/pup-photos/edi-aston.jpg', alt: 'Edi and Aston' },
-  { src: '/pup-photos/edi-stevie-dingo.jpg', alt: 'Edi with Stevie and Dingo' },
-  { src: '/pup-photos/edi-tom-lucy.jpg', alt: 'Edi, Tom and Lucy' },
-  { src: '/pup-photos/edi-perrito.jpg', alt: 'Edi and Perrito' },
-  { src: '/pup-photos/navy-flowers.jpg', alt: 'Navy in the flowers' },
-  { src: '/pup-photos/park-dog.JPG', alt: 'A happy park dog' },
-  { src: '/pup-photos/tom-bailey.jpg', alt: 'Tom and Bailey' },
-  { src: '/pup-photos/tom-jojo.jpg', alt: 'Tom and Jojo' },
-  { src: '/pup-photos/tom-lupe.jpg', alt: 'Tom and Lupe' },
-  { src: '/pup-photos/edi-kiki.jpg', alt: 'Edi and Kiki' },
-  { src: '/pup-photos/cat-kiki.jpg', alt: 'Kiki the cat' },
-];
+type Photo = { src: string; alt: string };
 
 const INTERVAL_MS = 4500;
 
-export default function PupPhotoCarousel() {
+export default function PupPhotoCarousel({ photos }: { photos: Photo[] }) {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const next = useCallback(() => setCurrent(c => (c + 1) % photos.length), []);
-  const prev = useCallback(() => setCurrent(c => (c - 1 + photos.length) % photos.length), []);
+  const next = useCallback(() => setCurrent(c => (c + 1) % photos.length), [photos.length]);
+  const prev = useCallback(() => setCurrent(c => (c - 1 + photos.length) % photos.length), [photos.length]);
 
   useEffect(() => {
     if (paused) return;
     const id = setInterval(next, INTERVAL_MS);
     return () => clearInterval(id);
   }, [paused, next]);
+
+  if (photos.length === 0) return null;
 
   return (
     <div
