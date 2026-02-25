@@ -508,7 +508,7 @@ export default function WelcomeScreen({
             <section>
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                Looking for a pup hangout? Available slots:
+                Available hangouts
               </h2>
               <HangoutFilters
                 filters={friendAvailableFilters}
