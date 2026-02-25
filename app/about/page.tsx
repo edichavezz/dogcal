@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import ContactForm from './ContactForm';
+import PupPhotoCarousel from './PupPhotoCarousel';
 
 export const metadata: Metadata = {
   title: 'dogcal — Dog care, from people you trust.',
@@ -221,6 +222,50 @@ export default function AboutPage() {
           </div>
 
           <ContactForm />
+        </div>
+      </section>
+
+      {/* ─── About dogcal ─── */}
+      <section id="about" className="py-20 md:py-28 px-6 sm:px-8 bg-[#f8fafc]">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+
+          {/* Story */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-4 text-[#f4a9a8]">
+              Our story
+            </p>
+            <h2 className="text-3xl md:text-4xl font-display font-semibold tracking-tight mb-6 text-[#1a3a3a]">
+              Built by a dog lover who doesn&apos;t own a dog.
+            </h2>
+            <div className="space-y-4 text-slate-500 leading-relaxed text-base">
+              <p>
+                Hi, I&apos;m Edi — I live in North London, and I&apos;m completely dog obsessed.
+                I don&apos;t have a dog of my own, but I&apos;ve been lucky enough to spend a huge
+                amount of time with some truly wonderful pups nearby.
+              </p>
+              <p>
+                Over the years I&apos;ve built real, loving bonds with these dogs — and the
+                arrangement genuinely works perfectly for everyone. Owners get trusted care from
+                someone their dog already knows and loves. I get the joy and connection of having
+                a dog in my life without the full-time commitment. And the dogs? They get more
+                walks, cuddles, and adventures.
+              </p>
+              <p>
+                The problem was always the scheduling. Group chats, missed messages, last-minute
+                scrambles. I built dogcal to make this simple — so that dog owners can easily find
+                care from the people who already love their pup, and so that more people like me
+                can spend quality time with lovely dogs nearby.
+              </p>
+              <p className="font-medium text-[#1a3a3a]">
+                dogcal is here to help everyone find caring, balanced time with dogs.
+              </p>
+            </div>
+          </div>
+
+          {/* Photo carousel */}
+          <div>
+            <PupPhotoCarousel />
+          </div>
         </div>
       </section>
 

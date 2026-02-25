@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Calendar, Users, Home } from 'lucide-react';
+import { Calendar, Users, Home, Info } from 'lucide-react';
 import Avatar from './Avatar';
 import PawsIcon from './PawsIcon';
 
@@ -24,11 +24,12 @@ export default function MobileNav({ user }: MobileNavProps) {
 
   const isActive = (path: string) => pathname === path;
 
-  // Mobile nav shows 3 main tabs
+  // Mobile nav shows 4 main tabs
   const tabs = useMemo(() => ([
     { id: 'home', path: '/', label: 'Home', icon: Home },
     { id: 'calendar', path: '/calendar', label: 'Calendar', icon: Calendar },
     { id: 'pups', path: '/manage', label: 'Pups', icon: Users },
+    { id: 'about', path: '/about', label: 'About', icon: Info },
   ]), []);
 
   useEffect(() => {

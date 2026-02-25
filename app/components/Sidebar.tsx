@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Calendar, Users, Home, Plus, CheckSquare, Lightbulb } from 'lucide-react';
+import { Calendar, Users, Home, Plus, CheckSquare, Lightbulb, Info } from 'lucide-react';
 import Avatar from './Avatar';
 import PawsIcon from './PawsIcon';
 
@@ -98,6 +98,21 @@ export default function Sidebar({ user }: SidebarProps) {
             })}
           </div>
         </nav>
+
+        {/* About link */}
+        <div className="px-4 pb-2">
+          <Link
+            href="/about"
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              isActive('/about')
+                ? 'bg-[#f4a9a8] text-[#1a3a3a]'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-[#2a4a4a]'
+            }`}
+          >
+            <Info className="w-4 h-4" />
+            About dogcal
+          </Link>
+        </div>
 
         {/* User Profile */}
         <div className="p-4 border-t border-[#2a4a4a]">
