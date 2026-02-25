@@ -24,12 +24,11 @@ export default function MobileNav({ user }: MobileNavProps) {
 
   const isActive = (path: string) => pathname === path;
 
-  // Mobile nav shows 4 main tabs
+  // Mobile nav shows 3 main tabs
   const tabs = useMemo(() => ([
     { id: 'home', path: '/', label: 'Home', icon: Home },
     { id: 'calendar', path: '/calendar', label: 'Calendar', icon: Calendar },
     { id: 'pups', path: '/manage', label: 'Pups', icon: Users },
-    { id: 'about', path: '/about', label: 'About', icon: Info },
   ]), []);
 
   useEffect(() => {
@@ -59,13 +58,25 @@ export default function MobileNav({ user }: MobileNavProps) {
             <PawsIcon size={28} color="pink" />
             <span className="text-lg font-semibold text-white">dogcal</span>
           </Link>
-          <Link href="/manage" onMouseEnter={() => router.prefetch('/manage')}>
-            <Avatar
-              photoUrl={user.profilePhotoUrl}
-              name={user.name}
-              size="sm"
-            />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/about"
+              onMouseEnter={() => router.prefetch('/about')}
+              aria-label="About dogcal"
+              className={`p-1.5 rounded-lg transition-colors ${
+                isActive('/about') ? 'text-[#f4a9a8]' : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              <Info className="w-5 h-5" />
+            </Link>
+            <Link href="/manage" onMouseEnter={() => router.prefetch('/manage')}>
+              <Avatar
+                photoUrl={user.profilePhotoUrl}
+                name={user.name}
+                size="sm"
+              />
+            </Link>
+          </div>
         </div>
       </div>
 
